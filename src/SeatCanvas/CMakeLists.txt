@@ -75,7 +75,7 @@ elseif (OHOS)
     find_library(ACE_NDK_LIB ace_ndk.z)
     find_library(HILOG_NDK_LIB hilog_ndk.z)
     find_library(ACE_NAPI_LIB ace_napi.z)
-    find_library(NATIVE_VSYNC_LIB native_vsync)
+    find_library(NATIVE_DISPLAY_SOLOIST_LIB native_display_soloist)
     find_library(NATIVE_RAWFILE_Z_LIB rawfile.z)
     list(APPEND SeatCanvas_SHARED_LIBS
         ${GLESV3_LIB}
@@ -83,7 +83,7 @@ elseif (OHOS)
         ${ACE_NDK_LIB}
         ${HILOG_NDK_LIB}
         ${ACE_NAPI_LIB}
-        ${NATIVE_VSYNC_LIB}
+        ${NATIVE_DISPLAY_SOLOIST_LIB}
         ${NATIVE_RAWFILE_Z_LIB}
     )
     
@@ -102,9 +102,13 @@ endif()
 add_library(${LIB_TARGET_NAME} SHARED ${SeatCanvas_ALL_FILES} ${SeatCanvas_LDS})
 
 target_include_directories(${LIB_TARGET_NAME} PRIVATE ${PROJECT_ROOT_INCLUDE_DIR}/${PROJECT_NAME})
-target_include_directories(${LIB_TARGET_NAME} PRIVATE ${PROJECT_THIRD_PARTY_ROOT_DIR}/tgfx/include)
+target_include_directories(${LIB_TARGET_NAME} PRIVATE ${PROJECT_THIRD_PARTY_ROOT_DIR}/tgfx/include ${PROJECT_THIRD_PARTY_ROOT_DIR}/tgfx/src)
 target_include_directories(${LIB_TARGET_NAME} PRIVATE .)
-target_link_libraries(${LIB_TARGET_NAME} PRIVATE ${SeatCanvas_STATIC_LIBS} ${SeatCanvas_SHARED_LIBS})
+target_link_libraries(${LIB_TARGET_NAME} PRIVATE 
+    ${SeatCanvas_STATIC_LIBS} 
+    ${SeatCanvas_SHARED_LIBS}
+    nlohmann_json
+)
 
 target_compile_definitions(${LIB_TARGET_NAME} PRIVATE $<$<CONFIG:Debug>:DEBUG>)
 target_compile_definitions(${LIB_TARGET_NAME} PRIVATE $<$<CONFIG:RelWithDebInfo>:DEBUG>)
@@ -153,6 +157,7 @@ if(MACOS OR IOS)
     )
 
     target_compile_options(${LIB_TARGET_NAME} PRIVATE
+        "$<$<COMPILE_LANGUAGE:Swift>:-package-name;${LIB_TARGET_NAME}>"
         "$<$<COMPILE_LANGUAGE:Swift>:-cxx-interoperability-mode=default>"
         "$<$<COMPILE_LANGUAGE:Swift>:-enable-library-evolution>"
         "$<$<COMPILE_LANGUAGE:Swift>:-emit-module-interface>"

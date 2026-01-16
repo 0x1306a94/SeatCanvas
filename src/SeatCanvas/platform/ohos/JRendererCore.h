@@ -10,6 +10,7 @@
 
 #include <napi/native_api.h>
 
+#include <memory>
 #include <mutex>
 
 #include "XComponentHandler.h"
@@ -21,7 +22,7 @@ class SeatCanvasCoreRenderer;
 };
 
 namespace kk::js {
-
+class OHOSSeatCanvasCoreRendererDelegate;
 class JRendererCore : public XComponentListener {
   public:
     std::string id;
@@ -50,9 +51,15 @@ class JRendererCore : public XComponentListener {
         return renderer.get();
     }
 
+    std::shared_ptr<OHOSSeatCanvasCoreRendererDelegate> getDelegate() {
+        return delegate;
+    }
+
   private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
-    std::unique_ptr<kk::renderer::SeatCanvasCoreRenderer> renderer{nullptr};
+    std::unique_ptr<kk::renderer::SeatCanvasCoreRenderer> renderer = {nullptr};
+    std::shared_ptr<OHOSSeatCanvasCoreRendererDelegate> delegate = {nullptr};
+
     std::mutex locker;
 };
 

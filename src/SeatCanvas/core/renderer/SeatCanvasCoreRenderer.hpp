@@ -15,6 +15,7 @@
 #include <tgfx/core/Color.h>
 #include <tgfx/core/Point.h>
 #include <tgfx/core/Rect.h>
+#include <tgfx/gpu/RenderPass.h>
 
 #include "core/RegionInfo.hpp"
 #include "core/SeatRenderMode.hpp"
@@ -22,17 +23,23 @@
 #include "core/ZoomScaleConfig.hpp"
 #include "core/gesture/GestureState.hpp"
 #include "core/renderer/SeatCanvasCoreRendererDelegate.hpp"
+#include "core/style/SeatStyleConfig.hpp"
+#include "core/style/SeatStyleKey.hpp"
 
 namespace tgfx {
 class Recording;
 class TextShaper;
+class Context;
 class Canvas;
+class Surface;
+class Texture;
+class GPU;
+class Image;
 };  // namespace tgfx
 
 namespace kk {
 class DisplayLink;
 class BaseMapConfig;
-class BaseMapLayerManager;
 };  // namespace kk
 
 namespace kk::animation {
@@ -44,7 +51,7 @@ class BaseMapRootLayer;
 };
 
 namespace kk::drawers {
-class SeatLayerTree;
+class SeatRegionNameLayerTree;
 class SeatOverlayLayerTree;
 };  // namespace kk::drawers
 
@@ -53,9 +60,13 @@ class ElasticZoomPanController;
 };
 
 namespace kk::renderer {
-class RendererBackend;
+class PlatformView;
 class RenderFrameMetrics;
-class SeatItemImageProvider;
+class CustomBaseMapPass;
+class CustomSeatPass;
+struct SeatRegionMesh;
+class SeatRegionMeshManager;
+class SeatStyleAtlasManager;
 class SeatCanvasCoreRendererState;
 class SeatCanvasCoreRenderer {
   private:
@@ -65,7 +76,10 @@ class SeatCanvasCoreRenderer {
     };
 
   public:
-    explicit SeatCanvasCoreRenderer(std::unique_ptr<RendererBackend> backend, std::unique_ptr<kk::gesture::ElasticZoomPanController> zoomPanController);
+    explicit SeatCanvasCoreRenderer(
+        std::unique_ptr<PlatformView> platformView,
+        std::unique_ptr<kk::gesture::ElasticZoomPanController> zoomPanController,
+        const std::unordered_map<kk::SeatStyleKey, std::shared_ptr<SeatStyleConfig>> &styleKeyToConfig = {});
 
     ~SeatCanvasCoreRenderer();
 
@@ -77,13 +91,14 @@ class SeatCanvasCoreRenderer {
 
     const kk::ZoomLevelConfig &zoomLevelConfig() const;
 
-    void replaceBackend(std::unique_ptr<RendererBackend> backend);
+    void replacePlatformView(std::unique_ptr<PlatformView> platformView);
 
     bool updateSize();
     void setMaxWidth(float maxWidth);
     float getMaxWidth() const;
 
-    float getSvgScale() const;
+    // 内容缩放比例
+    float getContentScale() const;
 
     float getMinimumZoomScale() const;
     float getMaximumZoomScale() const;
@@ -94,6 +109,20 @@ class SeatCanvasCoreRenderer {
     bool isSmallVenue() const;
     float showBackZoomThreshold() const;
     void setBackgroundColor(const tgfx::Color &color);
+
+    /**
+     * 设置样式键到配置的映射
+     * 动态更新座位样式配置，会同步更新到 SeatStyleAtlasManager
+     * @param styleKeyToConfig 样式键到配置的映射
+     */
+    void setStyleKeyToConfig(const std::unordered_map<kk::SeatStyleKey, std::shared_ptr<SeatStyleConfig>> &styleKeyToConfig);
+
+    /**
+     * 从 JSON 数据设置样式键到配置的映射
+     * @param bytes JSON 数据的字节数组
+     * @param len JSON 数据的长度
+     */
+    void setStyleKeyToConfigFromJSON(const void *bytes, size_t len);
 
     kk::SeatRenderMode seatRenderMode() const;
 
@@ -125,9 +154,6 @@ class SeatCanvasCoreRenderer {
     /// - Parameter renderMode: 渲染模式
     void setBaseMapConfig(std::shared_ptr<kk::BaseMapConfig> baseMapConfig, kk::SeatRenderMode renderMode);
 
-    void enableTiled(bool enable);
-    void enableZoomBlur(bool enable);
-
     void invalidateSeatStatusImage();
 
     void invalidateContent();
@@ -138,10 +164,10 @@ class SeatCanvasCoreRenderer {
 
     void draw(bool force = false);
 
-    /// 获取当前显示范围（在内容坐标系中的可见区域矩形）
+    /// 获取当前显示范围（在原始坐标系中的可见区域矩形）
     /// 考虑了当前的缩放和偏移
-    /// @return 在内容坐标系中的可见区域矩形，如果内容为空则返回空矩形
-    tgfx::Rect getVisibleContentRect() const;
+    /// @return 在原始坐标系中的可见区域矩形，如果内容为空则返回空矩形
+    tgfx::Rect getVisibleOriginalRect() const;
 
     /// 将屏幕坐标转为内容坐标系中的坐标
     /// @param location viewport 坐标系
@@ -154,6 +180,27 @@ class SeatCanvasCoreRenderer {
     /// @param contentOffset 位移
     /// @param scale 缩放
     tgfx::Point convertContentToScreen(const tgfx::Point &location, const tgfx::Point &contentOffset, float scale) const;
+
+    /// 将规范化内容坐标转换为原始坐标
+    /// @param normalizedContentLocation 规范化内容坐标
+    tgfx::Point convertNormalizedContentToOriginal(const tgfx::Point &normalizedContentLocation) const;
+
+    /// 将原始坐标转换为规范化内容坐标
+    /// @param originalLocation 原始坐标
+    tgfx::Point convertOriginalToNormalizedContent(const tgfx::Point &originalLocation) const;
+
+    /// 将屏幕坐标转换为原始坐标
+    /// @param screenLocation 屏幕坐标
+    tgfx::Point convertScreenToOriginal(const tgfx::Point &screenLocation) const;
+
+    /// 将原始坐标转换为屏幕坐标
+    /// @param originalLocation 原始坐标
+    tgfx::Point convertOriginalToScreen(const tgfx::Point &originalLocation) const;
+
+    /// 判断屏幕坐标是否在内容区域内
+    /// @param screenLocation 屏幕坐标
+    /// @return 如果在内容区域内返回 true，否则返回 false（例如点击到留白区域）
+    bool isPointInContentArea(const tgfx::Point &screenLocation) const;
 
     /// 获取区域数据
     /// @param x x 坐标
@@ -183,7 +230,7 @@ class SeatCanvasCoreRenderer {
     /// 设置底图
     /// @param layer 底图
     /// @param baseMapSize 底图原始大小
-    void setBaseMapLayer(std::shared_ptr<kk::layer::BaseMapRootLayer> layer, const tgfx::Size &baseMapSize);
+    void setBaseMapLayer(const tgfx::Size &baseMapSize);
 
     /// 设置minimap
     /// @param layer minimap
@@ -193,8 +240,8 @@ class SeatCanvasCoreRenderer {
     /// @param regionId 区域ID
     std::shared_ptr<kk::layer::BaseMapRootLayer> buildVirtualBaseMapLayerForRegion(const std::string &regionId);
 
-    /// 内部方法，更新SVG缩放比例
-    void updateSvgScale();
+    /// 内部方法，根据原始尺寸更新内容缩放比例（用于规范化内容尺寸）
+    void updateContentScale();
 
     /// 内部方法，更新内容尺寸
     void updateContentSize();
@@ -211,7 +258,7 @@ class SeatCanvasCoreRenderer {
     void hideMinimapWithoutAnimation();
     void animateMinimapToAlpha(float targetAlpha, double durationMs);
 
-    void drawSeatIfNeeded(tgfx::Canvas *canvas);
+    void prepareSeatIfNeeded();
 
     void handleZoomBack();
 
@@ -231,21 +278,32 @@ class SeatCanvasCoreRenderer {
 
     void zoomToPoint(const tgfx::Point &location, float scale, bool animated = true, float padding = 0.0f, double durationMs = 300.0);
 
-    void applyBaseMapColorState(const kk::BaseMapLayerManager *layerManager, BaseMapColorState toState);
+    void applyBaseMapColorState(BaseMapColorState toState);
 
     void drawFPS(tgfx::Canvas *canvas);
+
+    bool executeCustomRenderPass(tgfx::Context *context, const SeatCanvasCoreRendererState *state);
+
+    /// 判断是否应该自动绘制座位
+    /// @return 如果当前缩放级别大于 zoomScale50 返回 true，否则返回 false
+    bool shouldAutoDrawSeat() const;
+
+    std::shared_ptr<SeatRegionMesh> buildSeatRegionMesh(tgfx::Context *context, const std::string &regionId);
 
   private:
     uint32_t _coreID;
     std::shared_ptr<SeatCanvasCoreRendererDelegate> _delegate;
-    std::unique_ptr<RendererBackend> _backend;
+    std::unique_ptr<PlatformView> _platformView;
     std::unique_ptr<kk::gesture::ElasticZoomPanController> _zoomPanController;
     std::unique_ptr<SeatCanvasCoreRendererState> _state;
-    std::unique_ptr<kk::drawers::SeatLayerTree> _seatLayer;
+    std::unique_ptr<CustomBaseMapPass> customBaseMapPass;
+    std::unique_ptr<CustomSeatPass> customSeatPass;
+    std::unique_ptr<SeatRegionMeshManager> _seatRegionMeshManager;
+    std::unique_ptr<SeatStyleAtlasManager> _seatAtlasManager;
+    std::unique_ptr<kk::drawers::SeatRegionNameLayerTree> _seatRegionNameLayer;
     std::unique_ptr<kk::drawers::SeatOverlayLayerTree> _overlayLayer;
     std::unique_ptr<kk::animation::Animator> _animator;
     std::unique_ptr<RenderFrameMetrics> _frameMetrics;
-    std::unique_ptr<SeatItemImageProvider> _seatImageProvider = {nullptr};
     std::shared_ptr<tgfx::TextShaper> _textShaper = {nullptr};
     std::unique_ptr<tgfx::Recording> _lastRecording = {nullptr};
     std::shared_ptr<kk::DisplayLink> _displayLink = {nullptr};
@@ -256,11 +314,10 @@ class SeatCanvasCoreRenderer {
     tgfx::Color _backgroundColor = {tgfx::Color::White()};
     BaseMapColorState _baseMapColorState = {BaseMapColorState::Original};
     bool _autoChangeBaseMapColorState = {true};
-    bool _autoDrawSeat = {true};
+    bool _disableAutoDrawSeat;
     bool _firstFrameSubmitted = {false};
     bool _invalidate = {true};
     float _maxWidth = {1000.f};
-    float _svgScale = {1.0f};
     float _svgModelScale = {1.0f};
     kk::SeatRenderMode _renderMode = {kk::SeatRenderMode::ZoomBased};
     kk::ZoomLevelConfig _zoomLevelConfig = {};

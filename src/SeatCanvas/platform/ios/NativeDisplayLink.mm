@@ -15,7 +15,7 @@
 
 namespace kk {
 NativeDisplayLink::NativeDisplayLink(std::function<void()> callback) {
-    _animationCallback = [[InternalAnimationCallback alloc] initWithCallback:callback];
+    animationCallback = [[InternalAnimationCallback alloc] initWithCallback:callback];
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
 }
 
@@ -25,25 +25,25 @@ NativeDisplayLink::~NativeDisplayLink() {
 }
 
 void NativeDisplayLink::start() {
-    if (_displayLink != nullptr) {
+    if (displayLink != nullptr) {
         return;
     }
-    _displayLink = [CADisplayLink displayLinkWithTarget:_animationCallback selector:@selector(update:)];
+    displayLink = [CADisplayLink displayLinkWithTarget:animationCallback selector:@selector(update:)];
     // The default mode was previously set here. However, rendering is not possible when the UI is in
     // drag mode. Therefore, it has been changed to common modes.
-    [_displayLink addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
+    [displayLink addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
     if (@available(iOS 15.0, *)) {
-        _displayLink.preferredFrameRateRange = CAFrameRateRangeMake(60, 120, 120);
+        displayLink.preferredFrameRateRange = CAFrameRateRangeMake(60, 120, 120);
     } else {
-        _displayLink.preferredFrameRateRange = CAFrameRateRangeDefault;
+        displayLink.preferredFrameRateRange = CAFrameRateRangeDefault;
     }
 }
 
 void NativeDisplayLink::stop() {
-    if (_displayLink == nullptr) {
+    if (displayLink == nullptr) {
         return;
     }
-    [_displayLink invalidate];
-    _displayLink = nullptr;
+    [displayLink invalidate];
+    displayLink = nullptr;
 }
 };  // namespace kk

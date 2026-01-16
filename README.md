@@ -8,8 +8,7 @@ SeatCanvas 是一个跨平台的座位图渲染库，支持 iOS、Android 和 OH
 - **高性能渲染**: 基于 tgfx 图形库的 GPU 加速渲染
 - **SVG 底图支持**: 支持 SVG 格式的场馆底图
 - **手势交互**: 支持点击、平移、缩放等手势操作，采用 iOS 风格的惯性滚动和弹性回弹动画
-- **自定义样式**: 支持圆形和 SVG 两种座位样式配置
-
+- **自定义样式**: 支持圆形和 SVG 两种座位样式配置，支持动态切换
 
 ## 支持的平台
 
@@ -101,10 +100,14 @@ depsync
 SeatCanvas/
 ├── src/SeatCanvas/          # C++ 核心代码
 │   ├── core/                # 核心功能模块
-│   │   ├── renderer/        # 渲染器相关
-│   │   ├── gesture/         # 手势处理
-│   │   ├── style/           # 样式配置
-│   │   └── layers/          # 图层管理
+│   │   ├── renderer/            # 渲染器相关
+│   │   │   ├── pass/            # 自定义渲染通道
+│   │   ├── gesture/             # 手势处理
+│   │   ├── style/               # 样式配置
+│   │   ├── layers/              # 图层管理
+│   │   ├── parser/              # 底图解析器
+│   │   ├── animation/           # 动画系统
+│   │   └── drawers/             # 绘制器
 │   └── platform/            # 平台特定实现
 ├── ios/                     # iOS 示例和资源
 ├── android/                 # Android 示例和资源
@@ -119,32 +122,117 @@ SeatCanvas/
 
 ### iOS
 
+#### 基本使用
+
 ```swift
 let seatCanvasView = SeatCanvasView(frame: view.bounds)
 seatCanvasView.delegate = self
 seatCanvasView.loadBaseMap(svgData)
 ```
 
+#### 应用样式配置
+
+```swift
+let builder = SeatStyleConfigBuilder()
+builder.addCircleStyle(status: 0, selected: false, fill: .red, overlay: .black, checkmark: .white)
+builder.addSVGStyle(status: 0, selected: false, content: svgContent)
+
+seatCanvasView.applySeatStyleJSONConfig(builder.toJSONData())
+```
+
 ### Android
+
+#### 基本使用
 
 ```kotlin
 val seatCanvasView = SeatCanvasView(context)
 seatCanvasView.loadBaseMap(svgData)
 ```
 
+#### 应用样式配置
+
+```kotlin
+val builder = SeatStyleConfigBuilder()
+builder.addCircleStyle(0U, false, Color.RED, Color.BLACK, Color.WHITE)
+builder.addSVGStyle(0U, false, svgContent)
+
+seatCanvasView.applySeatStyleJSONConfig(builder.toJSONData())
+```
+
 ### OHOS
 
+#### 基本使用
+
 ```typescript
-import { SeatCanvasView, SeatCanvasViewController } from 'libseatcanvas';
+import { SeatCanvasView, SeatCanvasViewController, BaseMapFormat } from 'libseatcanvas';
 
 @State controller: SeatCanvasViewController = new SeatCanvasViewController()
 
 SeatCanvasView({ controller: this.controller })
- .width('100%')
- .height('100%')
+  .width('100%')
+  .height('100%')
 
+// 加载底图
 let manager = getContext(this).resourceManager;
-await this.controller.loadFromAssets(manager, `svg/${this.basemapName}.svg`);
+await this.controller.loadFromAssets(manager, `svg/${basemapName}.svg`, BaseMapFormat.SVG);
+```
+
+#### 应用样式配置
+
+SeatCanvas 支持两种座位样式：**圆形样式**和 **SVG 样式**。
+
+**圆形样式配置示例：**
+
+```typescript
+import { SeatStyleConfigBuilder } from 'libseatcanvas';
+
+let builder = new SeatStyleConfigBuilder();
+builder.addCircleStyle(0, false, '#FFFF0000', '#B2000000', '#FFFFFFFF'); // 可选座位，未选中
+builder.addCircleStyle(0, true, '#FFFF0000', '#B2000000', '#FFFFFFFF');   // 可选座位，已选中
+builder.addCircleStyle(1, false, '#FFAAAAAA', '#B2000000', '#FFFFFFFF');   // 已售座位
+builder.addCircleStyle(2, false, '#FF999999', '#B2000000', '#FFFFFFFF');   // 锁定座位
+builder.addCircleStyle(3, false, '#FF666666', '#B2000000', '#FFFFFFFF');   // 禁用座位
+
+let config = builder.toJSONString();
+controller.applySeatStyleJSONConfig(config);
+```
+
+**SVG 样式配置示例：**
+
+```typescript
+import { SeatStyleBuilder } from './SeatStyleBuilder';
+import { resourceManager } from '@kit.LocalizationKit';
+
+// 使用 SeatStyleBuilder 构建 SVG 样式配置
+let manager = getContext(this).resourceManager;
+let config = SeatStyleBuilder.BuildSVGSeatStyleConfig(manager);
+controller.applySeatStyleJSONConfig(config);
+```
+
+`SeatStyleBuilder.BuildSVGSeatStyleConfig()` 会自动从资源文件加载以下 SVG 图标：
+- `svg/icon_chooseSeat_canSelected.svg` - 可选座位
+- `svg/icon_chooseSeat_selected.svg` - 已选座位
+- `svg/icon_chooseSeat_noSelected.svg` - 不可选座位（已售/锁定/禁用）
+
+#### 设置座位选择代理
+
+```typescript
+import { SeatCanvasRendererDelegate } from 'libseatcanvas';
+
+let delegate: SeatCanvasRendererDelegate = {
+  shouldSelectSeat: (regionId: string, seatId: string) => {
+    // 返回 true 表示可以选中，false 表示不能选中
+    return true;
+  },
+  didSelectSeat: (regionId: string, seatId: string) => {
+    console.log(`座位已选中: regionId=${regionId}, seatId=${seatId}`);
+  },
+  didDeselectSeat: (regionId: string, seatId: string) => {
+    console.log(`座位已取消选中: regionId=${regionId}, seatId=${seatId}`);
+  },
+};
+
+controller.setDelegate(delegate);
 ```
 
 ### Web (计划中)

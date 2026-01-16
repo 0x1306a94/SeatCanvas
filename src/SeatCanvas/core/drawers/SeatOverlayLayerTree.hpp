@@ -76,7 +76,7 @@ class SeatOverlayLayerTree : public kk::drawers::Drawer {
     tgfx::Size _viewSize = {};
     tgfx::Size _containerSize = {};
     tgfx::Size _baseMapSize = {};
-    kk::EdgeInsets _inset = {20.0f, 20.0f, 20.0f, 20.0f};
+    kk::EdgeInsets _inset = {};
     bool _rebuildAreaCacheImage = {true};
     std::shared_ptr<tgfx::Layer> _root = {nullptr};
     std::shared_ptr<kk::layer::BaseMapRootLayer> _baseMapLayer = {nullptr};

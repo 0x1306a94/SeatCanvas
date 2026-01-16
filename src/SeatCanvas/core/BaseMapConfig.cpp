@@ -7,19 +7,22 @@
 
 #include "BaseMapConfig.hpp"
 
-#include "core/BaseMapLayerManager.hpp"
 #include "core/layers/BaseMapRootLayer.hpp"
+#include "core/renderer/BaseMapMeshBuilder.hpp"
 
 namespace kk {
-BaseMapConfig::BaseMapConfig(std::shared_ptr<kk::BaseMapLayerManager> layerManager, std::shared_ptr<kk::layer::BaseMapRootLayer> baseMapLayer, std::shared_ptr<kk::layer::BaseMapRootLayer> minimapLayer, const tgfx::Size &baseMapSize)
-    : _layerManager(std::move(layerManager))
-    , _baseMapLayer(std::move(baseMapLayer))
+BaseMapConfig::BaseMapConfig(std::shared_ptr<kk::renderer::BaseMapMeshBuilder> meshBuilder,
+                             std::shared_ptr<tgfx::Layer> textLayer,
+                             std::shared_ptr<kk::layer::BaseMapRootLayer> minimapLayer,
+                             const tgfx::Size &baseMapSize)
+    : _meshBuilder(std::move(meshBuilder))
+    , _textLayer(std::move(textLayer))
     , _minimapLayer(std::move(minimapLayer))
     , _baseMapSize(baseMapSize) {
 }
 
-std::shared_ptr<kk::layer::BaseMapRootLayer> BaseMapConfig::baseMapLayer() const {
-    return _baseMapLayer;
+std::shared_ptr<tgfx::Layer> BaseMapConfig::textLayer() const {
+    return _textLayer;
 }
 
 std::shared_ptr<kk::layer::BaseMapRootLayer> BaseMapConfig::minimapLayer() const {
@@ -30,8 +33,8 @@ const tgfx::Size &BaseMapConfig::baseMapSize() const {
     return _baseMapSize;
 }
 
-const kk::BaseMapLayerManager *BaseMapConfig::layerManager() const {
-    return _layerManager.get();
+std::shared_ptr<kk::renderer::BaseMapMeshBuilder> BaseMapConfig::meshBuilder() const {
+    return _meshBuilder;
 }
 
 };  // namespace kk

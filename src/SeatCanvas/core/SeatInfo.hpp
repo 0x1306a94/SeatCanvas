@@ -8,18 +8,19 @@
 #ifndef SeatInfo_hpp
 #define SeatInfo_hpp
 
+#include <cstdint>
 #include <string>
 
 #include <tgfx/core/Rect.h>
 
-#include "core/SeatShapeStyle.h"
-#include "core/SeatStatus.h"
-
 namespace kk {
+/**
+ * 座位信息
+ * 状态值由业务层定义，可以使用 SeatStatus 枚举或自定义的 uint32_t 值
+ */
 struct SeatInfo {
-    std::string seatId{""};
-    SeatStatus status{SeatStatus::Available};
-    SeatShapeStyle style{SeatShapeStyle::Circle};
+    std::string seatId = {};
+    uint32_t status = 0;
     bool selected{false};
     tgfx::Rect rect{0, 0, 0, 0};
 

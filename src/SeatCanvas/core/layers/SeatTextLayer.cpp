@@ -98,22 +98,17 @@ void SeatTextLayer::onUpdateContent(tgfx::LayerRecorder *recorder) {
         return;
     }
 
-    //    auto bounds = _textBlob->getTightBounds();
-    //    auto tx = getAlignmentFactor() * bounds.width();
-    //
-    //    auto shape = tgfx::Shape::MakeFrom(_textBlob);
-    //    shape = tgfx::Shape::ApplyMatrix(std::move(shape), tgfx::Matrix::MakeTrans(tx, 0));
+    auto bounds = _textBlob->getTightBounds();
+    auto tx = getAlignmentFactor() * bounds.width();
 
     tgfx::LayerPaint paint{_textColor};
-    recorder->addTextBlob(_textBlob, paint);
-    //    recorder->addShape(shape, paint);
+    recorder->addTextBlob(_textBlob, paint, tx, 0);
 
     if (_stroke.width > 0.0f && _strokeColor) {
         tgfx::LayerPaint paint{_strokeColor.value()};
         paint.style = tgfx::PaintStyle::Stroke;
         paint.stroke = _stroke;
-        recorder->addTextBlob(_textBlob, paint);
-        //        recorder->addShape(shape, paint);
+        recorder->addTextBlob(_textBlob, paint, tx, 0);
     }
 }
 

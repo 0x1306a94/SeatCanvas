@@ -1,5 +1,11 @@
+export { BaseMapFormat } from './src/main/ets/utils/BaseMapFormat';
+
+export { SeatCanvasRendererDelegate } from './src/main/ets/controller/SeatCanvasRendererDelegate';
+
 export { SeatCanvasViewController } from './src/main/ets/controller/SeatCanvasViewController';
 
 export { SeatCanvasView } from './src/main/ets/components/SeatCanvasView';
 
 export { SeatCanvasViewV2 } from './src/main/ets/components/SeatCanvasViewV2';
+
+export { SeatStyleConfigBuilder } from './src/main/ets/style/SeatStyleConfigBuilder';

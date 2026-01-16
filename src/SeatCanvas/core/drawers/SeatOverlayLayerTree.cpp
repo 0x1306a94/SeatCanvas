@@ -11,6 +11,7 @@
 #include "core/layers/BaseMapRootLayer.hpp"
 #include "core/layers/SeatTextLayer.hpp"
 #include "core/renderer/SeatCanvasCoreRendererState.hpp"
+#include "core/utils/UnitConverter.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -27,10 +28,15 @@
 namespace kk::drawers {
 SeatOverlayLayerTree::SeatOverlayLayerTree()
     : kk::drawers::Drawer("SeatOverlayLayerTree")
-    , _inset(kk::EdgeInsets{20.f, 20.f, 20.f, 20.f})
     , _root(nullptr)
     , _lineBox(nullptr)
     , _areaCacheImage(nullptr) {
+
+    _inset = kk::EdgeInsets{
+        kk::utils::vp2px(10.0f),
+        kk::utils::vp2px(10.0f),
+        kk::utils::vp2px(10.0f),
+        kk::utils::vp2px(10.0f)};
 
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
     _displayList.setRenderMode(tgfx::RenderMode::Direct);
@@ -178,8 +184,8 @@ void SeatOverlayLayerTree::updateLineBox(const kk::renderer::SeatCanvasCoreRende
         return;
     }
     auto viewSize = state->getBoundsSize();
-    auto contentSize = state->getContentSize();
-    if (viewSize.isEmpty() || contentSize.isEmpty()) {
+    auto normalizedContentSize = state->getNormalizedContentSize();
+    if (viewSize.isEmpty() || normalizedContentSize.isEmpty()) {
         return;
     }
 
@@ -189,22 +195,22 @@ void SeatOverlayLayerTree::updateLineBox(const kk::renderer::SeatCanvasCoreRende
         _containerSize.height - _inset.top - _inset.bottom,
     };
 
-    auto zoomScale = state->zoomScale();
-    auto contentOffset = state->contentOffset();
+    auto zoomScale = state->getZoomScale();
+    auto contentOffset = state->getContentOffset();
 
-    float rectWidth = viewSize.width / contentSize.width / zoomScale * minimapSize.width;
-    float rectHeight = viewSize.height / contentSize.height / zoomScale * minimapSize.height;
+    float rectWidth = viewSize.width / normalizedContentSize.width / zoomScale * minimapSize.width;
+    float rectHeight = viewSize.height / normalizedContentSize.height / zoomScale * minimapSize.height;
 
     // 计算指示框在 minimap 中的位置（考虑 _inset）
-    float rectX = -contentOffset.x / contentSize.width / zoomScale * minimapSize.width + _inset.left;
-    float rectY = -contentOffset.y / contentSize.height / zoomScale * minimapSize.height + _inset.top;
+    float rectX = -contentOffset.x / normalizedContentSize.width / zoomScale * minimapSize.width + _inset.left;
+    float rectY = -contentOffset.y / normalizedContentSize.height / zoomScale * minimapSize.height + _inset.top;
 
     // 边界处理
     if (rectWidth > minimapSize.width) {
         rectWidth = minimapSize.width;
         rectX = _inset.left;
     } else {
-        rectWidth = std::max(16.0f, rectWidth);
+        rectWidth = std::max(kk::utils::vp2px(6.0f), rectWidth);
         rectX = std::max(_inset.left, std::min(rectX, minimapSize.width - rectWidth + _inset.left));
     }
 
@@ -212,7 +218,7 @@ void SeatOverlayLayerTree::updateLineBox(const kk::renderer::SeatCanvasCoreRende
         rectHeight = minimapSize.height;
         rectY = _inset.top;
     } else {
-        rectHeight = std::max(16.0f, rectHeight);
+        rectHeight = std::max(kk::utils::vp2px(6.0f), rectHeight);
         rectY = std::max(_inset.top, std::min(rectY, minimapSize.height - rectHeight + _inset.top));
     }
 
@@ -223,12 +229,11 @@ void SeatOverlayLayerTree::updateLineBox(const kk::renderer::SeatCanvasCoreRende
 }
 
 bool SeatOverlayLayerTree::updateContainerSize(const kk::renderer::SeatCanvasCoreRendererState *state) {
-    auto density = state->density();
-    auto contentSize = state->getContentSize();
-    float width = std::ceil(160.0f * density);
+    auto normalizedContentSize = state->getNormalizedContentSize();
+    float width = std::ceil(kk::utils::vp2px(160.0));
     tgfx::Size newSize{width, width};
-    if (!contentSize.isEmpty()) {
-        newSize.height = std::ceil(contentSize.height / contentSize.width * newSize.width);
+    if (!normalizedContentSize.isEmpty()) {
+        newSize.height = std::ceil(normalizedContentSize.height / normalizedContentSize.width * newSize.width);
     }
 
     if (_containerSize == newSize) {
@@ -276,7 +281,8 @@ std::shared_ptr<tgfx::Layer> SeatOverlayLayerTree::buildLayerTree(const kk::rend
 
     _minimapContainer = tgfx::ShapeLayer::Make();
     tgfx::Path mimimapPath{};
-    mimimapPath.addRoundRect(tgfx::Rect::MakeSize(_containerSize), 12, 12);
+    auto radius = kk::utils::vp2px(6);
+    mimimapPath.addRoundRect(tgfx::Rect::MakeSize(_containerSize), radius, radius);
     _minimapContainer->setPath(mimimapPath);
     _minimapContainer->setFillStyle(tgfx::ShapeStyle::Make(tgfx::Color{0.0f, 0.0f, 0.0f, 0.45f}));
     _minimapContainer->setVisible(_minimapVisible);
@@ -301,7 +307,7 @@ std::shared_ptr<tgfx::Layer> SeatOverlayLayerTree::buildLayerTree(const kk::rend
 
     _lineBox->setStrokeAlign(tgfx::StrokeAlign::Inside);
     _lineBox->setStrokeStyle(tgfx::ShapeStyle::Make(tgfx::Color::Red()));
-    _lineBox->setLineWidth(4);
+    _lineBox->setLineWidth(kk::utils::vp2px(2.0f));
 
     updateLineBox(state);
     _minimapContainer->addChild(_imageLayer);
@@ -328,7 +334,7 @@ std::shared_ptr<tgfx::ShapeLayer> SeatOverlayLayerTree::buildBackLayer(const kk:
         return nullptr;
     }
 
-    auto textBlob = shaper->shape("返回全局", nullptr, 40);
+    auto textBlob = shaper->shape("返回全局", nullptr, kk::utils::fp2px(12));
     if (!textBlob) {
         return nullptr;
     }
@@ -337,7 +343,11 @@ std::shared_ptr<tgfx::ShapeLayer> SeatOverlayLayerTree::buildBackLayer(const kk:
     auto container = tgfx::ShapeLayer::Make();
     auto layer = tgfx::ShapeLayer::Make();
 
-    kk::EdgeInsets textInset{20.0f, 30.0f, 20.0f, 30.0f};
+    kk::EdgeInsets textInset{
+        kk::utils::vp2px(6.0f),
+        kk::utils::vp2px(10.0f),
+        kk::utils::vp2px(6.0f),
+        kk::utils::vp2px(10.0f)};
 
     auto textBounds = textBlob->getTightBounds();
     auto backWidth = std::ceil(textInset.horizontal() + textBounds.width());

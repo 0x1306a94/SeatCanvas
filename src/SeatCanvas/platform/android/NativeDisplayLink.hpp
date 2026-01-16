@@ -29,9 +29,9 @@ class NativeDisplayLink : public DisplayLink {
   private:
     explicit NativeDisplayLink(std::function<void()> callback);
 
-    kk::jni::Global<jobject> _animator = nullptr;
-    std::function<void()> _callback = nullptr;
-    std::atomic<bool> _started = false;
+    kk::jni::Global<jobject> animator = nullptr;
+    std::function<void()> callback = nullptr;
+    std::atomic<bool> started = false;
 };
 };  // namespace kk
 

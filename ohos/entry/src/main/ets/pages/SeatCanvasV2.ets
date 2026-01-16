@@ -1,19 +1,46 @@
-import { SeatCanvasViewV2, SeatCanvasViewController } from 'libseatcanvas';
+import { SeatCanvasViewV2, SeatCanvasViewController, BaseMapFormat, SeatCanvasRendererDelegate } from 'libseatcanvas';
+import { SeatStyleBuilder } from './SeatStyleBuilder';
+import { resourceManager } from '@kit.LocalizationKit';
 
 @ComponentV2
 export struct SeatCanvasV2 {
   private navPathStack: NavPathStack = new NavPathStack();
   @Local private basemapName: string = '';
   @Local private controller: SeatCanvasViewController = new SeatCanvasViewController();
-  @Local enableTiled: boolean = false;
-  @Local enableZoomBlur: boolean = false;
+  @Local useCircleSeatStyle: boolean = false;
+  @Local useSVGSeatStyle: boolean = true;
+  private delegate: SeatCanvasRendererDelegate | null = null;
 
   aboutToAppear(): void {
+    this.delegate = {
+      shouldSelectSeat: (regionId: string, seatId: string) => {
+        console.log(`tgfx shouldSelectSeat: ${regionId} ${seatId}`)
+        return true;
+      },
+      didSelectSeat: (regionId: string, seatId: string) => {
+        console.log(`tgfx didSelectSeat: ${regionId} ${seatId}`)
+      },
+      didDeselectSeat: (regionId: string, seatId: string) => {
+        console.log(`tgfx didDeselectSeat: ${regionId} ${seatId}`)
+      },
+    };
 
+    this.controller.setDelegate(this.delegate);
   }
 
   aboutToDisappear(): void {
     this.controller.release();
+  }
+
+  applyCircleSeatStyleConfig(): void {
+    let config = SeatStyleBuilder.BuildCircleSeatStyleConfig();
+    this.controller.applySeatStyleJSONConfig(config);
+  }
+
+  applySVGSeatStyleConfig(): void {
+    let manager = getContext(this).resourceManager;
+    let config = SeatStyleBuilder.BuildSVGSeatStyleConfig(manager);
+    this.controller.applySeatStyleJSONConfig(config);
   }
 
   build() {
@@ -25,24 +52,28 @@ export struct SeatCanvasV2 {
 
         Row({ space: 20 }) {
           Row() {
-            Text("Tiled")
+            Text("圆形座位")
               .fontSize(18)
 
-            Toggle({ type: ToggleType.Switch, isOn: this.enableTiled })
+            Toggle({ type: ToggleType.Switch, isOn: $$this.useCircleSeatStyle })
               .onChange((isOn) => {
-                this.enableTiled = isOn;
-                this.controller.enableTiled(isOn);
+                if (isOn) {
+                  this.useSVGSeatStyle = false
+                  this.applyCircleSeatStyleConfig()
+                }
               })
           }
 
           Row() {
-            Text("ZoomBlur")
+            Text("SVG座位")
               .fontSize(18)
 
-            Toggle({ type: ToggleType.Switch, isOn: this.enableZoomBlur })
-              .onChange((isOn) => {
-                this.enableZoomBlur = isOn;
-                this.controller.enableZoomBlur(isOn);
+            Toggle({ type: ToggleType.Switch, isOn: $$this.useSVGSeatStyle })
+              .onChange(async (isOn) => {
+                if (isOn) {
+                  this.useCircleSeatStyle = false
+                  this.applySVGSeatStyleConfig();
+                }
               })
           }
         }
@@ -60,7 +91,8 @@ export struct SeatCanvasV2 {
       this.basemapName = ctx.pathInfo.param as string
 
       let manager = getContext(this).resourceManager;
-      await this.controller.loadFromAssets(manager, `svg/${this.basemapName}.svg`);
+      this.applySVGSeatStyleConfig();
+      await this.controller.loadFromAssets(manager, `svg/${this.basemapName}.svg`, BaseMapFormat.SVG);
       console.log(`底图: svg/${this.basemapName}.svg 加载成功`);
     })
   }

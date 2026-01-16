@@ -15,6 +15,7 @@
 #import <string>
 
 #import "core/gesture/GestureState.hpp"
+#import "core/parser/BaseMapFormat.hpp"
 
 // #ifdef __cplusplus
 // extern "C" {
@@ -55,10 +56,25 @@ struct ZoomLevel {
 
 void SeatCanvasReleaseCPPObject(CPPObject *_Nonnull obj);
 
+/// 初始化系统属性
+/// - Parameters:
+///   - density: 屏幕像素密度
+///   - fontScale: 字体缩放比例
+void SeatCanvasInitSystemProperties(CGFloat density, CGFloat fontScale);
+
 /// 注册回退字体
 void SeatCanvasRegisterFallbackFonts();
 
-/// 加载 SVG 底图
+/// 加载底图（统一接口，支持多种格式）
+/// - Parameters:
+///   - bytes: 底图二进制数据
+///   - len: 数据长度
+///   - format: 格式
+///   - miniMapImage: 生成的minimap 图片（可选）
+/// - Returns: 加载成功则返回不透明数据指针，失败时返回 nullptr
+void *_Nullable SeatCanvasLoadBaseMap(const void *_Nullable __sized_by_or_null(len) bytes, size_t len, kk::parser::BaseMapFormat format, UIImage *_Nullable *_Nullable miniMapImage);
+
+/// 加载 SVG 底图（向后兼容接口）
 /// - Parameters:
 ///   - bytes: svg 二进制数据
 ///   - len: 数据长度
@@ -76,11 +92,18 @@ CPPObject *_Nonnull CreateSeatCanvasCoreRenderer(CAEAGLLayer *_Nullable eagLayer
 /// - Returns: 渲染器ID
 uint32_t SeatCanvasCoreRendererGetCoreID(CPPObject *_Nonnull cppObject);
 
-/// 替换C++渲染器输出目标
+/// 设置座位样式
+/// - Parameters:
+///   - cppObject: C++渲染器实例
+///   - bytes: json字节数据
+///   - len: json字节大小
+void SeatCanvasCoreRendererSetSeatStyleJSONConfig(CPPObject *_Nonnull cppObject, const void *_Nullable __sized_by_or_null(len) bytes, size_t len);
+
+/// 替换C++渲染器平台视图
 /// - Parameters:
 ///   - cppObject: C++渲染器实例
 ///   - eagLayer: 负责渲染输出的 OpenGL ES 目标
-bool SeatCanvasCoreRendererReplaceBackend(CPPObject *_Nonnull cppObject, CAEAGLLayer *_Nullable eagLayer);
+bool SeatCanvasCoreRendererReplacePlatformView(CPPObject *_Nonnull cppObject, CAEAGLLayer *_Nullable eagLayer);
 
 /// 让渲染内容失效
 /// - Parameter cppObject: C++渲染器实例
@@ -223,18 +246,6 @@ CGRect SeatCanvasCoreRendererGetVisibleContentRect(CPPObject *_Nonnull cppObject
 ///   - outResult: 结果
 /// - Returns: 返回目标点对应的座位区域
 bool SeatCanvasCoreRendererGetSeatRegionByPoint(CPPObject *_Nonnull cppObject, CGPoint targetPoint, HitTestSeatRegionResult &outResult);
-
-/// 设置是否启用 Tiled 渲染模式
-/// - Parameters:
-///   - cppObject: C++渲染器实例
-///   - enable: true or false
-void SeatCanvasCoreRendererEnableTiled(CPPObject *_Nonnull cppObject, bool enable);
-
-/// 设置是否启用 临时模糊 渲染优化
-/// - Parameters:
-///   - cppObject: C++渲染器实例
-///   - enable: true or false
-void SeatCanvasCoreRendererEnableZoomBlur(CPPObject *_Nonnull cppObject, bool enable);
 
 /// 缩放到指定区域并居中显示
 /// - Parameters:

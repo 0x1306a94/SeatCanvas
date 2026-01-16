@@ -25,8 +25,8 @@ class NativeDisplayLink : public DisplayLink {
     void stop() override;
 
   private:
-    CADisplayLink *_displayLink = nullptr;
-    InternalAnimationCallback *_animationCallback = nullptr;
+    CADisplayLink *displayLink = nullptr;
+    InternalAnimationCallback *animationCallback = nullptr;
 };
 };  // namespace kk
 

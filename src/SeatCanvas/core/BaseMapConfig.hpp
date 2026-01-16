@@ -12,26 +12,36 @@
 
 #include <tgfx/core/Size.h>
 
+namespace tgfx {
+class Layer;
+};
+
 namespace kk::layer {
 class BaseMapRootLayer;
 };
 
+namespace kk::renderer {
+class BaseMapMeshBuilder;
+};
+
 namespace kk {
-class BaseMapLayerManager;
 class BaseMapConfig {
   public:
-    explicit BaseMapConfig(std::shared_ptr<kk::BaseMapLayerManager> layerManager, std::shared_ptr<kk::layer::BaseMapRootLayer> baseMapLayer, std::shared_ptr<kk::layer::BaseMapRootLayer> minimapLayer, const tgfx::Size &baseMapSize);
+    explicit BaseMapConfig(std::shared_ptr<kk::renderer::BaseMapMeshBuilder> meshBuilder,
+                           std::shared_ptr<tgfx::Layer> textLayer,
+                           std::shared_ptr<kk::layer::BaseMapRootLayer> minimapLayer,
+                           const tgfx::Size &baseMapSize);
     ~BaseMapConfig() = default;
-    std::shared_ptr<kk::layer::BaseMapRootLayer> baseMapLayer() const;
+    std::shared_ptr<tgfx::Layer> textLayer() const;
     std::shared_ptr<kk::layer::BaseMapRootLayer> minimapLayer() const;
     const tgfx::Size &baseMapSize() const;
 
-    const kk::BaseMapLayerManager *layerManager() const;
+    std::shared_ptr<kk::renderer::BaseMapMeshBuilder> meshBuilder() const;
 
   private:
-    std::shared_ptr<kk::layer::BaseMapRootLayer> _baseMapLayer;
+    std::shared_ptr<tgfx::Layer> _textLayer;
     std::shared_ptr<kk::layer::BaseMapRootLayer> _minimapLayer;
-    std::shared_ptr<kk::BaseMapLayerManager> _layerManager;
+    std::shared_ptr<kk::renderer::BaseMapMeshBuilder> _meshBuilder;
     tgfx::Size _baseMapSize;
 };
 };  // namespace kk

@@ -8,7 +8,9 @@
 #include "JRendererCore.h"
 
 #include "JsHelper.h"
-#include "OHOSRendererBackend.h"
+#include "NapiEnvHolder.hpp"
+#include "OHOSPlatformView.h"
+#include "OHOSSeatCanvasCoreRendererDelegate.hpp"
 #include "core/BaseMapConfig.hpp"
 #include "core/Platform.hpp"
 #include "core/RegionInfo.hpp"
@@ -16,9 +18,13 @@
 #include "core/gesture/ElasticZoomPanController.hpp"
 #include "core/gesture/GestureState.hpp"
 #include "core/layers/BaseMapRootLayer.hpp"
+#include "core/parser/BaseMapFormat.hpp"
+#include "core/parser/BaseMapParserFactory.hpp"
 #include "core/renderer/SeatCanvasCoreRenderer.hpp"
 #include "core/renderer/SeatCanvasCoreRendererState.hpp"
 #include "core/svg/ConvertSVGLayer.hpp"
+#include "core/svg/SVGMeshParser.hpp"
+#include "core/utils/SystemProperties.hpp"
 #include "core/utils/TimeProfiler.hpp"
 
 #include <cstdint>
@@ -33,71 +39,59 @@ namespace kk::js {
 
 static std::unordered_map<std::string, std::shared_ptr<JRendererCore>> ViewMap = {};
 
-struct LoadSVGBaseMapResult {
-    std::shared_ptr<kk::layer::BaseMapRootLayer> rootLayer;
+struct LoadBaseMapResult {
+    std::shared_ptr<tgfx::Layer> textLayer;
     tgfx::Size baseMapSize;
     std::shared_ptr<kk::layer::BaseMapRootLayer> miniLayer;
-    std::shared_ptr<kk::BaseMapLayerManager> layerManager;
+    std::shared_ptr<kk::renderer::BaseMapMeshBuilder> meshBuilder;
+
+    // 从统一解析结果构造
+    explicit LoadBaseMapResult(std::unique_ptr<kk::parser::BaseMapParseResult> parseResult) {
+        if (parseResult) {
+            textLayer = std::move(parseResult->textLayer);
+            baseMapSize = parseResult->size;
+            miniLayer = std::move(parseResult->miniLayer);
+            meshBuilder = std::move(parseResult->meshBuilder);
+        }
+    }
 };
 
-struct LoadSVGBaseMapTaskData {
+struct LoadBaseMapTaskData {
     napi_async_work asyncWork{nullptr};
     napi_deferred deferred{nullptr};
     napi_ref callback{nullptr};
     NativeResourceManager *mNativeResMgr{nullptr};
     std::string filename{""};
-    LoadSVGBaseMapResult *result{nullptr};
+    kk::parser::BaseMapFormat format{kk::parser::BaseMapFormat::Unknown};
+    LoadBaseMapResult *result{nullptr};
 };
 
-static void LoadSVGBaseMapTaskExecute(napi_env env, void *userdata) {
-    auto taskData = static_cast<LoadSVGBaseMapTaskData *>(userdata);
+static void LoadBaseMapTaskExecute(napi_env env, void *userdata) {
+    auto taskData = static_cast<LoadBaseMapTaskData *>(userdata);
 
     auto data = LoadDataFromAsset(taskData->mNativeResMgr, taskData->filename.c_str());
     if (data == nullptr) {
+        tgfx::PrintError("data is null");
+        return;
+    }
+    if (taskData->format == kk::parser::BaseMapFormat::Unknown) {
+        tgfx::PrintError("format is Unknown");
         return;
     }
 
-    PROFILE_GROUP_START(group, "LoadBaseMapFromSVG");
-
-    PROFILE_STAGE_START(group, dom, "ParseSVG");
-    auto stream = tgfx::Stream::MakeFromData(data);
-    auto dom = tgfx::SVGDOM::Make(*stream);
-
-    if (!dom) {
+    PROFILE_TIME(std::string("LoadBaseMapFrom") + kk::parser::formatNameToString(taskData->format));
+    auto result = kk::parser::BaseMapParserFactory::parse(data, taskData->format);
+    if (!result) {
+        tgfx::PrintError("parse result is null");
         return;
     }
 
-    PROFILE_STAGE_END(group, dom);
-
-    PROFILE_STAGE_START(group, basemap, "ConvertSVGDomToLayer BaseMap");
-    kk::svg::ConvertSVGLayerOptions options{};
-    options.collectRegionInfo = true;
-    options.supportText = true;
-    auto baseMapResult = kk::svg::convertSVGDomToLayer(dom, options);
-    if (!baseMapResult) {
-        return;
-    }
-
-    PROFILE_STAGE_END(group, basemap);
-
-    PROFILE_STAGE_START(group, mini, "ConvertSVGDomToLayer MiniMap")
-    auto minimapResult = kk::svg::convertSVGDomToLayer(dom);
-    if (!minimapResult) {
-        return;
-    }
-    PROFILE_STAGE_END(group, mini);
-
-    auto taskResult = new LoadSVGBaseMapResult();
-    taskResult->rootLayer = std::move(baseMapResult->layer);
-    taskResult->baseMapSize = baseMapResult->size;
-    taskResult->miniLayer = std::move(minimapResult->layer);
-    taskResult->layerManager = std::move(baseMapResult->layerManager);
-
+    auto taskResult = new LoadBaseMapResult(std::move(result));
     taskData->result = taskResult;
 }
 
-static void LoadSVGBaseMapTaskComplete(napi_env env, napi_status status, void *userdata) {
-    auto taskData = static_cast<LoadSVGBaseMapTaskData *>(userdata);
+static void LoadBaseMapTaskComplete(napi_env env, napi_status status, void *userdata) {
+    auto taskData = static_cast<LoadBaseMapTaskData *>(userdata);
     napi_value result = nullptr;
     napi_create_int64(env, reinterpret_cast<int64_t>(taskData->result), &result);
     if (taskData->result != nullptr) {
@@ -110,20 +104,26 @@ static void LoadSVGBaseMapTaskComplete(napi_env env, napi_status status, void *u
     delete taskData;
 }
 
-static napi_value UpdateDensity(napi_env env, napi_callback_info info) {
-    size_t argc = 1;
-    napi_value args[1] = {nullptr};
+static napi_value InitSystemProperties(napi_env env, napi_callback_info info) {
+    size_t argc = 2;
+    napi_value args[2] = {nullptr};
     napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
-    double value;
-    napi_get_value_double(env, args[0], &value);
-    kk::renderer::OHOSRendererBackend::UpdateDensity(static_cast<float>(value));
+    double density;
+    napi_get_value_double(env, args[0], &density);
+    double fontScale;
+    napi_get_value_double(env, args[1], &fontScale);
+    kk::renderer::OHOSPlatformView::UpdateDensity(static_cast<float>(density));
+
+    auto &properties = kk::utils::SystemProperties::Instance();
+    properties.updateDensity(static_cast<float>(density));
+    properties.updateFontScale(static_cast<float>(fontScale));
     return nullptr;
 }
 
 static napi_value ParseBaseMapFromAssets(napi_env env, napi_callback_info info) {
     napi_value jsView = nullptr;
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
+    size_t argc = 3;
+    napi_value args[3] = {nullptr};
     napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
 
     NativeResourceManager *mNativeResMgr = OH_ResourceManager_InitNativeResourceManager(env, args[0]);
@@ -135,19 +135,24 @@ static napi_value ParseBaseMapFromAssets(napi_env env, napi_callback_info info) 
     char name[1024];
     napi_get_value_string_utf8(env, args[1], name, sizeof(name), &nameLength);
 
+    size_t formatLength;
+    char format[128];
+    napi_get_value_string_utf8(env, args[2], format, sizeof(format), &formatLength);
+
     napi_value promise = nullptr;
     napi_deferred deferred = nullptr;
     napi_create_promise(env, &deferred, &promise);
 
-    auto taskData = new LoadSVGBaseMapTaskData();
+    auto taskData = new LoadBaseMapTaskData();
     taskData->deferred = deferred;
     taskData->mNativeResMgr = mNativeResMgr;
     taskData->filename = std::string(name);
+    taskData->format = kk::parser::parseFormatName(format);
 
     napi_value resourceName = nullptr;
-    napi_create_string_utf8(env, "LoadSVGBaseMapTask", NAPI_AUTO_LENGTH, &resourceName);
+    napi_create_string_utf8(env, "LoadBaseMapTask", NAPI_AUTO_LENGTH, &resourceName);
     // 创建异步任务
-    napi_create_async_work(env, nullptr, resourceName, LoadSVGBaseMapTaskExecute, LoadSVGBaseMapTaskComplete, taskData, &taskData->asyncWork);
+    napi_create_async_work(env, nullptr, resourceName, LoadBaseMapTaskExecute, LoadBaseMapTaskComplete, taskData, &taskData->asyncWork);
     // 将异步任务加入队列
     napi_queue_async_work(env, taskData->asyncWork);
 
@@ -155,6 +160,7 @@ static napi_value ParseBaseMapFromAssets(napi_env env, napi_callback_info info) 
 }
 
 static napi_value UniqueID(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
     napi_value jsView = nullptr;
     size_t argc = 0;
     napi_value args[1] = {0};
@@ -167,6 +173,7 @@ static napi_value UniqueID(napi_env env, napi_callback_info info) {
 }
 
 static napi_value LoadBaseMap(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
     napi_value jsView = nullptr;
     size_t argc = 1;
     napi_value args[1] = {0};
@@ -181,13 +188,13 @@ static napi_value LoadBaseMap(napi_env env, napi_callback_info info) {
     napi_get_value_int64(env, args[0], &nativePtr);
 
     auto renderer = view->internalRenderer();
-    auto map = reinterpret_cast<LoadSVGBaseMapResult *>(nativePtr);
+    auto map = reinterpret_cast<LoadBaseMapResult *>(nativePtr);
     if (map == nullptr) {
         renderer->setBaseMapConfig(nullptr, kk::SeatRenderMode::ZoomBased);
         return nullptr;
     }
 
-    auto baseMapConfig = std::make_shared<kk::BaseMapConfig>(map->layerManager, map->rootLayer, map->miniLayer, map->baseMapSize);
+    auto baseMapConfig = std::make_shared<kk::BaseMapConfig>(map->meshBuilder, map->textLayer, map->miniLayer, map->baseMapSize);
     renderer->setBaseMapConfig(std::move(baseMapConfig), kk::SeatRenderMode::ZoomBased);
 
     delete map;
@@ -195,7 +202,8 @@ static napi_value LoadBaseMap(napi_env env, napi_callback_info info) {
     return nullptr;
 }
 
-static napi_value EnableTiled(napi_env env, napi_callback_info info) {
+static napi_value ApplySeatStyleJSONConfig(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
     napi_value jsView = nullptr;
     size_t argc = 1;
     napi_value args[1] = {0};
@@ -205,29 +213,34 @@ static napi_value EnableTiled(napi_env env, napi_callback_info info) {
     if (view == nullptr) {
         return nullptr;
     }
-    bool enable = false;
-    napi_get_value_bool(env, args[0], &enable);
-    view->internalRenderer()->enableTiled(enable);
-    return nullptr;
-}
 
-static napi_value EnableZoomBlur(napi_env env, napi_callback_info info) {
-    napi_value jsView = nullptr;
-    size_t argc = 1;
-    napi_value args[1] = {0};
-    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
-    JRendererCore *view = nullptr;
-    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
-    if (view == nullptr) {
+    auto renderer = view->internalRenderer();
+    if (argc == 0 || args[0] == nullptr) {
+        renderer->setStyleKeyToConfigFromJSON(nullptr, 0);
         return nullptr;
     }
-    bool enable = false;
-    napi_get_value_bool(env, args[0], &enable);
-    view->internalRenderer()->enableZoomBlur(enable);
+
+    size_t len = 0;
+    napi_status status = napi_get_value_string_utf8(env, args[0], nullptr, 0, &len);
+    if (status != napi_ok || len == 0) {
+        renderer->setStyleKeyToConfigFromJSON(nullptr, 0);
+        return nullptr;
+    }
+
+    std::vector<char> buffer(len + 1);
+    size_t actualLen = 0;
+    status = napi_get_value_string_utf8(env, args[0], buffer.data(), len + 1, &actualLen);
+    if (status != napi_ok) {
+        renderer->setStyleKeyToConfigFromJSON(nullptr, 0);
+        return nullptr;
+    }
+
+    renderer->setStyleKeyToConfigFromJSON(buffer.data(), actualLen);
     return nullptr;
 }
 
 static napi_value Start(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
     napi_value jsView = nullptr;
     size_t argc = 1;
     napi_value args[1] = {0};
@@ -242,6 +255,7 @@ static napi_value Start(napi_env env, napi_callback_info info) {
 }
 
 static napi_value Stop(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
     napi_value jsView = nullptr;
     size_t argc = 1;
     napi_value args[1] = {0};
@@ -256,6 +270,7 @@ static napi_value Stop(napi_env env, napi_callback_info info) {
 }
 
 static napi_value Release(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
     napi_value jsView = nullptr;
     size_t argc = 1;
     napi_value args[1] = {0};
@@ -272,6 +287,7 @@ static napi_value Release(napi_env env, napi_callback_info info) {
 }
 
 static napi_value HandleTap(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
     napi_value jsView = nullptr;
     size_t argc = 2;
     napi_value args[2] = {0};
@@ -302,6 +318,7 @@ static napi_value HandleTap(napi_env env, napi_callback_info info) {
 }
 
 static napi_value HandlePan(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
     napi_value jsView = nullptr;
     size_t argc = 3;
     napi_value args[3] = {0};
@@ -335,6 +352,7 @@ static napi_value HandlePan(napi_env env, napi_callback_info info) {
 }
 
 static napi_value HandlePinch(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
     napi_value jsView = nullptr;
     size_t argc = 4;
     napi_value args[4] = {0};
@@ -368,7 +386,89 @@ static napi_value HandlePinch(napi_env env, napi_callback_info info) {
     return nullptr;
 }
 
+static napi_value SetShouldSelectSeatCallback(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+    napi_value jsView = nullptr;
+    size_t argc = 1;
+    napi_value args[1] = {0};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr) {
+        return nullptr;
+    }
+
+    auto delegate = view->getDelegate();
+    if (delegate == nullptr) {
+        return nullptr;
+    }
+
+    napi_value callback = nullptr;
+    if (argc > 0 && args[0] != nullptr) {
+        callback = args[0];
+    }
+
+    delegate->setShouldSelectSeatCallback(env, callback);
+
+    return nullptr;
+}
+
+static napi_value SetDidSelectSeatCallback(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+    napi_value jsView = nullptr;
+    size_t argc = 1;
+    napi_value args[1] = {0};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr) {
+        return nullptr;
+    }
+
+    auto delegate = view->getDelegate();
+    if (delegate == nullptr) {
+        return nullptr;
+    }
+
+    napi_value callback = nullptr;
+    if (argc > 0 && args[0] != nullptr) {
+        callback = args[0];
+    }
+
+    delegate->setDidSelectSeatCallback(env, callback);
+
+    return nullptr;
+}
+
+static napi_value SetDidDeselectSeatCallback(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+    napi_value jsView = nullptr;
+    size_t argc = 1;
+    napi_value args[1] = {0};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr) {
+        return nullptr;
+    }
+
+    auto delegate = view->getDelegate();
+    if (delegate == nullptr) {
+        return nullptr;
+    }
+
+    napi_value callback = nullptr;
+    if (argc > 0 && args[0] != nullptr) {
+        callback = args[0];
+    }
+
+    delegate->setDidDeselectSeatCallback(env, callback);
+
+    return nullptr;
+}
+
 static napi_value SeatRegionByPoint(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
     napi_value undefined = nullptr;
     napi_get_undefined(env, &undefined);
 
@@ -410,6 +510,7 @@ static napi_value SeatRegionByPoint(napi_env env, napi_callback_info info) {
 }
 
 static napi_value ZoomToRect(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
 
     napi_value jsView = nullptr;
     size_t argc = 4;
@@ -470,12 +571,11 @@ napi_value JRendererCore::Constructor(napi_env env, napi_callback_info info) {
 
 bool JRendererCore::Init(napi_env env, napi_value exports) {
     napi_property_descriptor classProp[] = {
-        JS_STATIC_METHOD_ENTRY(UpdateDensity, UpdateDensity),
+        JS_STATIC_METHOD_ENTRY(InitSystemProperties, InitSystemProperties),
         JS_STATIC_METHOD_ENTRY(ParseBaseMapFromAssets, ParseBaseMapFromAssets),
         JS_DEFAULT_METHOD_ENTRY(uniqueID, UniqueID),
         JS_DEFAULT_METHOD_ENTRY(loadBaseMap, LoadBaseMap),
-        JS_DEFAULT_METHOD_ENTRY(enableTiled, EnableTiled),
-        JS_DEFAULT_METHOD_ENTRY(enableZoomBlur, EnableZoomBlur),
+        JS_DEFAULT_METHOD_ENTRY(applySeatStyleJSONConfig, ApplySeatStyleJSONConfig),
         JS_DEFAULT_METHOD_ENTRY(start, Start),
         JS_DEFAULT_METHOD_ENTRY(stop, Stop),
         JS_DEFAULT_METHOD_ENTRY(release, Release),
@@ -484,6 +584,9 @@ bool JRendererCore::Init(napi_env env, napi_value exports) {
         JS_DEFAULT_METHOD_ENTRY(handlePinch, HandlePinch),
         JS_DEFAULT_METHOD_ENTRY(seatRegionByPoint, SeatRegionByPoint),
         JS_DEFAULT_METHOD_ENTRY(zoomToRect, ZoomToRect),
+        JS_DEFAULT_METHOD_ENTRY(setShouldSelectSeatCallback, SetShouldSelectSeatCallback),
+        JS_DEFAULT_METHOD_ENTRY(setDidSelectSeatCallback, SetDidSelectSeatCallback),
+        JS_DEFAULT_METHOD_ENTRY(setDidDeselectSeatCallback, SetDidDeselectSeatCallback),
     };
 
     auto status = DefineClass(env, exports, ClassName(), sizeof(classProp) / sizeof(classProp[0]), classProp, Constructor, "");
@@ -495,22 +598,26 @@ bool JRendererCore::Init(napi_env env, napi_value exports) {
 
 JRendererCore::JRendererCore(const std::string &id)
     : id(std::move(id))
-    , renderer(std::make_unique<kk::renderer::SeatCanvasCoreRenderer>(nullptr, std::make_unique<kk::gesture::ElasticZoomPanController>())) {
+    , renderer(std::make_unique<kk::renderer::SeatCanvasCoreRenderer>(nullptr, std::make_unique<kk::gesture::ElasticZoomPanController>()))
+    , delegate(std::make_shared<OHOSSeatCanvasCoreRendererDelegate>()) {
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+
+    renderer->setDelegate(delegate);
 }
 
 JRendererCore::~JRendererCore() {
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    // delegate 会在析构时自动清理 threadsafe function
     //    release();
 }
 
 void JRendererCore::onSurfaceCreated(OH_NativeXComponent *component, NativeWindow *window) {
     if (component == nullptr || window == nullptr) {
-        renderer->replaceBackend(nullptr);
+        renderer->replacePlatformView(nullptr);
         return;
     }
-    auto backend = std::make_unique<kk::renderer::OHOSRendererBackend>(component, window);
-    renderer->replaceBackend(std::move(backend));
+    auto platformView = std::make_unique<kk::renderer::OHOSPlatformView>(component, window);
+    renderer->replacePlatformView(std::move(platformView));
     renderer->updateSize();
 }
 
@@ -519,7 +626,7 @@ void JRendererCore::onSurfaceSizeChanged() {
 }
 
 void JRendererCore::onSurfaceDestroyed() {
-    renderer->replaceBackend(nullptr);
+    renderer->replacePlatformView(nullptr);
 }
 
 void JRendererCore::release() {

@@ -11,6 +11,9 @@ import UIKit
 class SeatCanvasViewController: UIViewController {
     @IBOutlet weak var containerView: UIView!
 
+    @IBOutlet weak var circleStyleSwitch: UISwitch!
+    @IBOutlet weak var svgStyleSwitch: UISwitch!
+
     var seatCanvasView: SeatCanvasView!
 
     var basemapName: String?
@@ -44,7 +47,19 @@ class SeatCanvasViewController: UIViewController {
 
         ])
 
+        seatCanvasView.applySeatStyleJSONConfig(buildSVGSeatStyleConfig())
+
         loadBaseMap()
+    }
+
+    @IBAction func handleCircleSeatStyle(_: UISwitch) {
+        svgStyleSwitch.isOn = false
+        seatCanvasView.applySeatStyleJSONConfig(buildCircleSeatStyleConfig())
+    }
+
+    @IBAction func handleSVGSeatStyle(_: UISwitch) {
+        circleStyleSwitch.isOn = false
+        seatCanvasView.applySeatStyleJSONConfig(buildSVGSeatStyleConfig())
     }
 
     func loadBaseMap() {
@@ -57,15 +72,68 @@ class SeatCanvasViewController: UIViewController {
             return
         }
 
-        seatCanvasView.loadBaseMap(data)
+        seatCanvasView.loadBaseMap(data, format: .svg)
     }
 
-    @IBAction func handleTiled(_ sender: UISwitch) {
-        seatCanvasView.enableTiled = sender.isOn
+    func buildCircleSeatStyleConfig() -> Data? {
+        let builder = SeatStyleConfigBuilder()
+        let availabe = UIColor(named: "seat_available")!
+        let sold = UIColor(named: "seat_sold")!
+        let locked = UIColor(named: "seat_locked")!
+        let disabled = UIColor(named: "seat_disableed")!
+        let overlay = UIColor.black.withAlphaComponent(0.7)
+        let checkmark = UIColor.white
+        builder.addCircleStyle(status: 0, selected: false, fill: availabe, overlay: overlay, checkmark: checkmark)
+        builder.addCircleStyle(status: 0, selected: true, fill: availabe, overlay: overlay, checkmark: checkmark)
+
+        builder.addCircleStyle(status: 1, selected: false, fill: sold, overlay: overlay, checkmark: checkmark)
+        builder.addCircleStyle(status: 1, selected: true, fill: sold, overlay: overlay, checkmark: checkmark)
+
+        builder.addCircleStyle(status: 2, selected: false, fill: locked, overlay: overlay, checkmark: checkmark)
+        builder.addCircleStyle(status: 2, selected: true, fill: locked, overlay: overlay, checkmark: checkmark)
+
+        builder.addCircleStyle(status: 3, selected: false, fill: disabled, overlay: overlay, checkmark: checkmark)
+        builder.addCircleStyle(status: 3, selected: true, fill: disabled, overlay: overlay, checkmark: checkmark)
+
+        return builder.toJSONData()
     }
 
-    @IBAction func handleZoomBlur(_ sender: UISwitch) {
-        seatCanvasView.enableZoomBlur = sender.isOn
+    func buildSVGSeatStyleConfig() -> Data? {
+        let builder = SeatStyleConfigBuilder()
+
+        guard let availabe = loadSVGContent(name: "icon_seat_selectable"),
+              let selected = loadSVGContent(name: "icon_seat_selected"),
+              let disabled = loadSVGContent(name: "icon_seat_nonselectable")
+        else {
+            return nil
+        }
+
+        builder.addSVGStyle(status: 0, selected: false, content: availabe)
+        builder.addSVGStyle(status: 0, selected: true, content: selected)
+
+        builder.addSVGStyle(status: 1, selected: false, content: disabled)
+        builder.addSVGStyle(status: 1, selected: true, content: disabled)
+
+        builder.addSVGStyle(status: 2, selected: false, content: disabled)
+        builder.addSVGStyle(status: 2, selected: true, content: disabled)
+
+        builder.addSVGStyle(status: 3, selected: false, content: disabled)
+        builder.addSVGStyle(status: 3, selected: true, content: disabled)
+
+        return builder.toJSONData()
+    }
+
+    func loadSVGContent(name: String) -> String? {
+        guard let svgPath = baseMapBundle.path(forResource: name, ofType: "svg") else {
+            return nil
+        }
+
+        guard let data = try? Data(contentsOf: URL(fileURLWithPath: svgPath)) else {
+            return nil
+        }
+
+        let content = String(data: data, encoding: .utf8)
+        return content
     }
 }
 
@@ -73,24 +141,27 @@ extension SeatCanvasViewController: SeatCanvasViewDelegate {
     /// 是否可以选中座位
     /// - Parameters:
     ///   - view: SeatCanvasView 实例
+    ///   - regionId: 区域ID
     ///   - seatId: 座位ID
-    func seatCanvasView(_: SeatCanvasView, shouldSelectSeat _: String) -> Bool {
+    func seatCanvasView(_: SeatCanvasView, shouldSelectSeat _: String, seatId _: String) -> Bool {
         true
     }
 
     /// 选中某个座位
     /// - Parameters:
     ///   - view: SeatCanvasView 实例
+    ///   - regionId: 区域ID
     ///   - seatId: 座位ID
-    func seatCanvasView(_: SeatCanvasView, didSelectSeat seatId: String) {
-        print(#function, seatId)
+    func seatCanvasView(_: SeatCanvasView, didSelectSeat regionId: String, seatId: String) {
+        print(#function, regionId, seatId)
     }
 
     /// 取消选中某个座位
     /// - Parameters:
     ///   - view: SeatCanvasView 实例
+    ///   - regionId: 区域ID
     ///   - seatId: 座位ID
-    func seatCanvasView(_: SeatCanvasView, didDeselectSeat seatId: String) {
-        print(#function, seatId)
+    func seatCanvasView(_: SeatCanvasView, didDeselectSeat regionId: String, seatId: String) {
+        print(#function, regionId, seatId)
     }
 }

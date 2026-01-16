@@ -2,4 +2,10 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    
+    <!-- 座位样式颜色 -->
+    <color name="seat_available">#FFFF0000</color>
+    <color name="seat_sold">#FFAAAAAA</color>
+    <color name="seat_locked">#FF999999</color>
+    <color name="seat_disableed">#FF666666</color>
 </resources>

@@ -34,20 +34,20 @@ std::shared_ptr<DisplayLink> NativeDisplayLink::Make(std::function<void()> callb
         return nullptr;
     }
     auto displayLink = std::shared_ptr<NativeDisplayLink>(new NativeDisplayLink(std::move(callback)));
-    displayLink->_animator = env->CallStaticObjectMethod(DisplayLinkClass.get(), DisplayLink_Create, reinterpret_cast<jlong>(displayLink.get()));
-    if (displayLink->_animator.isEmpty()) {
+    displayLink->animator = env->CallStaticObjectMethod(DisplayLinkClass.get(), DisplayLink_Create, reinterpret_cast<jlong>(displayLink.get()));
+    if (displayLink->animator.isEmpty()) {
         return nullptr;
     }
     return displayLink;
 }
 
 NativeDisplayLink::NativeDisplayLink(std::function<void()> callback)
-    : _callback(std::move(callback)) {
+    : callback(std::move(callback)) {
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
 }
 
 NativeDisplayLink::~NativeDisplayLink() {
-    _started = false;
+    started = false;
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
 }
 
@@ -55,27 +55,27 @@ void NativeDisplayLink::start() {
 
     kk::jni::JNIEnvironment environment;
     auto env = environment.current();
-    if (env == nullptr || _animator.isEmpty()) {
+    if (env == nullptr || animator.isEmpty()) {
         return;
     }
-    _started = true;
-    env->CallVoidMethod(_animator.get(), DisplayLink_start);
+    started = true;
+    env->CallVoidMethod(animator.get(), DisplayLink_start);
 }
 
 void NativeDisplayLink::stop() {
 
     kk::jni::JNIEnvironment environment;
     auto env = environment.current();
-    if (env == nullptr || _animator.isEmpty()) {
+    if (env == nullptr || animator.isEmpty()) {
         return;
     }
-    _started = false;
-    env->CallVoidMethod(_animator.get(), DisplayLink_stop);
+    started = false;
+    env->CallVoidMethod(animator.get(), DisplayLink_stop);
 }
 
 void NativeDisplayLink::update() {
-    if (_callback && _started) {
-        _callback();
+    if (callback && started) {
+        callback();
     }
 }
 

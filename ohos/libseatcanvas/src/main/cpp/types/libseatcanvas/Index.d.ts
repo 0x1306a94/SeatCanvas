@@ -46,15 +46,17 @@ export declare namespace seatcanvas {
   }
 
   export class JRendererCore {
-    static UpdateDensity(density: number): void;
+    static InitSystemProperties(density: number, fontScale: number): void;
 
     /**
      * 从 Assets 中异步的解析底图
      * @param manager 资源管理器
      * @param name 资源名称
+     * @param format 格式
      * @returns 解析结果 C++ 对象地址
      */
-    static ParseBaseMapFromAssets(manager: resourceManager.ResourceManager, name: string): Promise<number>;
+    static ParseBaseMapFromAssets(manager: resourceManager.ResourceManager, name: string,
+      format: string): Promise<number>;
 
     /**
      * 当前实例唯一标识符，用于绑定 XComponent
@@ -69,16 +71,10 @@ export declare namespace seatcanvas {
     loadBaseMap(nativePtr: number);
 
     /**
-     * 启用Tiled 渲染模式
-     * @param enable
+     *  应用座位样式
+     * @param config 座位样式配置
      */
-    enableTiled(enable: boolean);
-
-    /**
-     *  启用模糊优化，在缩放时
-     * @param enable
-     */
-    enableZoomBlur(enable: boolean);
+    applySeatStyleJSONConfig(config: string | null);
 
     /**
      * 启动渲染loop
@@ -135,6 +131,10 @@ export declare namespace seatcanvas {
      * @param duration 动画持续时间（毫秒），仅在 animated 为 true 时有效，默认 300ms
      */
     zoomToRect(bounds: Rect, animated: boolean, padding: number, duration: number);
+
+    setShouldSelectSeatCallback(callback: (regionId: string, seatId: string) => boolean)
+    setDidSelectSeatCallback(callback: (regionId: string, seatId: string) => void)
+    setDidDeselectSeatCallback(callback: (regionId: string, seatId: string) => void)
   }
 
 }

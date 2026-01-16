@@ -5,6 +5,7 @@
 //  Created by king on 2025/11/11.
 //
 
+import Foundation
 import UIKit
 
 internal import SeatCanvas_Private
@@ -12,12 +13,12 @@ internal import SeatCanvas_Private
 @MainActor
 @objc(KKSeatCanvasView)
 public class SeatCanvasView: UIView {
-    var backendView: SeatCanvasBackendView!
+    var renderView: SeatCanvasRenderView!
     var zoomLevel: kk.ZoomLevel = .init(zoomScale9: 1.0, zoomScale18: 1.0, zoomScale30: 1.0, zoomScale50: 1.0)
     var isSmallVenue = false
     var minimapImage: UIImage?
 
-    nonisolated(unsafe) let rendererCore: UnsafeMutablePointer<kk.CPPObject> = kk.CreateSeatCanvasCoreRenderer(nil)
+    nonisolated(unsafe) var rendererCore: UnsafeMutablePointer<kk.CPPObject>!
     nonisolated(unsafe) var coreID: UInt32 = 0
 
     /// 座位选中事件代理
@@ -28,22 +29,11 @@ public class SeatCanvasView: UIView {
     var panGestureRecognizer: UIPanGestureRecognizer!
     var pinchGestureRecognizer: UIPinchGestureRecognizer!
 
-    @objc
-    public var enableTiled: Bool = false {
-        didSet {
-            kk.SeatCanvasCoreRendererEnableTiled(rendererCore, enableTiled)
-        }
-    }
-
-    @objc
-    public var enableZoomBlur: Bool = false {
-        didSet {
-            kk.SeatCanvasCoreRendererEnableZoomBlur(rendererCore, enableZoomBlur)
-        }
-    }
-
     override public var backgroundColor: UIColor? {
         didSet {
+            guard let rendererCore else {
+                return
+            }
             kk.SeatCanvasCoreRendererSetBackgroundColor(rendererCore, backgroundColor)
         }
     }
@@ -68,16 +58,27 @@ public class SeatCanvasView: UIView {
         }
     }
 
-    public func loadBaseMap(_ data: Data?) {
+    /// 加载底图（指定格式）
+    /// - Parameters:
+    ///   - data: 底图数据
+    ///   - format: 格式
+    @objc
+    public func loadBaseMap(_ data: Data?, format: BaseMapFormat) {
         guard let data else {
             kk.SeatCanvasCoreRendererLoadBaseMap(rendererCore, nil)
+            return
+        }
+
+        let cppFormat = format.cppFormat
+        guard cppFormat != .Unknown else {
             return
         }
 
         DispatchQueue.global(qos: .userInteractive).async {
             var minimapImage: UIImage? = nil
             var loadResult = data.withUnsafeBytes { buffer in
-                let result = kk.SeatCanvasLoadBaseMapFromSVG(buffer.baseAddress, buffer.count, &minimapImage)
+                // 使用统一接口
+                let result = kk.SeatCanvasLoadBaseMap(buffer.baseAddress, buffer.count, cppFormat, &minimapImage)
                 return result
             }
 
@@ -86,6 +87,23 @@ public class SeatCanvasView: UIView {
                 self.minimapImage = minimapImage
                 kk.SeatCanvasCoreRendererLoadBaseMap(self.rendererCore, &loadResult)
             }
+        }
+    }
+
+    /// 应用样式配置（使用 SeatStyleConfigBuilder 构建）
+    /// - Parameter data: json 样式数据
+    @objc
+    public func applySeatStyleJSONConfig(_ data: Data?) {
+        guard let data, !data.isEmpty else {
+            kk.SeatCanvasCoreRendererSetSeatStyleJSONConfig(rendererCore, nil, 0)
+            return
+        }
+
+        #if DEBUG
+            print("coreID: \(coreID) SeatStyleJSON: \n\(String(data: data, encoding: .utf8)!)")
+        #endif
+        data.withUnsafeBytes { buffer in
+            kk.SeatCanvasCoreRendererSetSeatStyleJSONConfig(rendererCore, buffer.baseAddress, buffer.count)
         }
     }
 
@@ -108,33 +126,40 @@ public class SeatCanvasView: UIView {
 
 extension SeatCanvasView {
     func commonInit() {
-        backgroundColor = .white
+        setupSystemProperties()
 
         setupViews()
         setupGestureRecognizer()
-        setupRenderer()
         setupNotification()
+
+        setupRenderer()
 
         #if DEBUG
             print("[SeatCanvasView] 初始化完成, coreID: \(coreID)")
         #endif
     }
 
+    func setupSystemProperties() {
+        let density = UIScreen.main.scale
+        let fontScale = UIScreen.main.scale
+        kk.SeatCanvasInitSystemProperties(density, fontScale)
+    }
+
     func setupViews() {
-        backendView = SeatCanvasBackendView(frame: bounds)
-        backendView.translatesAutoresizingMaskIntoConstraints = false
-        backendView.contentScaleFactor = UIScreen.main.scale
-        backendView.didUpdateSize = { [weak self] _ in
+        renderView = SeatCanvasRenderView(frame: bounds)
+        renderView.translatesAutoresizingMaskIntoConstraints = false
+        renderView.contentScaleFactor = UIScreen.main.scale
+        renderView.didUpdateSize = { [weak self] _ in
             self?.handleUpdateSize()
         }
 
-        addSubview(backendView)
+        addSubview(renderView)
 
         NSLayoutConstraint.activate([
-            backendView.leadingAnchor.constraint(equalTo: leadingAnchor),
-            backendView.topAnchor.constraint(equalTo: topAnchor),
-            backendView.trailingAnchor.constraint(equalTo: trailingAnchor),
-            backendView.bottomAnchor.constraint(equalTo: bottomAnchor),
+            renderView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            renderView.topAnchor.constraint(equalTo: topAnchor),
+            renderView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            renderView.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
     }
 
@@ -144,20 +169,21 @@ extension SeatCanvasView {
         panGestureRecognizer = UIPanGestureRecognizer(target: self, action: #selector(handlePanGestureRecognizer(gesture:)))
         pinchGestureRecognizer = UIPinchGestureRecognizer(target: self, action: #selector(handlePinchGestureRecognizer(gesture:)))
 
-        backendView.addGestureRecognizer(panGestureRecognizer)
-        backendView.addGestureRecognizer(pinchGestureRecognizer)
+        renderView.addGestureRecognizer(panGestureRecognizer)
+        renderView.addGestureRecognizer(pinchGestureRecognizer)
 
         tapGestureRecognizer.require(toFail: panGestureRecognizer)
 
-        backendView.addGestureRecognizer(tapGestureRecognizer)
+        renderView.addGestureRecognizer(tapGestureRecognizer)
     }
 
     func setupRenderer() {
-        kk.SeatCanvasCoreRendererReplaceBackend(rendererCore, backendView.layer as? CAEAGLLayer)
+        rendererCore = kk.CreateSeatCanvasCoreRenderer(renderView.layer as? CAEAGLLayer)
         coreID = kk.SeatCanvasCoreRendererGetCoreID(rendererCore)
         if coreID != 0 {
             SeatCanvasRendererDelegateRegistry.shared.register(coreID: coreID, delegate: self)
         }
+        backgroundColor = .white
     }
 
     func setupNotification() {
@@ -188,12 +214,12 @@ extension SeatCanvasView {
             return
         }
 
-        var location = gesture.location(in: backendView)
-        let contentScaleFactor = backendView.contentScaleFactor
+        var location = gesture.location(in: renderView)
+        let contentScaleFactor = renderView.contentScaleFactor
         location.x *= contentScaleFactor
         location.y *= contentScaleFactor
         kk.SeatCanvasCoreRendererHandTap(rendererCore, location)
-//        let location = gesture.location(in: backendView)
+//        let location = gesture.location(in: renderView)
 //        let locationPx = convertToCanvas(location)
 //        var hitTest: kk.HitTestSeatRegionResult = .init()
 //        guard kk.SeatCanvasCoreRendererGetSeatRegionByPoint(rendererCore, locationPx, &hitTest), hitTest.valid() else {
@@ -210,8 +236,8 @@ extension SeatCanvasView {
             return
         }
 
-        var translation = gesture.translation(in: backendView)
-        let contentScaleFactor = -backendView.contentScaleFactor
+        var translation = gesture.translation(in: renderView)
+        let contentScaleFactor = -renderView.contentScaleFactor
         translation.x *= contentScaleFactor
         translation.y *= contentScaleFactor
 
@@ -224,7 +250,7 @@ extension SeatCanvasView {
             kk.SeatCanvasCoreRendererHandPan(rendererCore, kk.gesture.GestureState.CHANGED, translation, timestampMs)
         case .ended, .cancelled:
             kk.SeatCanvasCoreRendererHandPan(rendererCore, (state == .ended) ? kk.gesture.GestureState.ENDED : kk.gesture.GestureState.CANCELLED, translation, timestampMs)
-            gesture.setTranslation(.zero, in: backendView)
+            gesture.setTranslation(.zero, in: renderView)
         default:
             break
         }
@@ -236,8 +262,8 @@ extension SeatCanvasView {
             return
         }
 
-        var center = gesture.location(in: backendView)
-        let contentScaleFactor = backendView.contentScaleFactor
+        var center = gesture.location(in: renderView)
+        let contentScaleFactor = renderView.contentScaleFactor
         center.x *= contentScaleFactor
         center.y *= contentScaleFactor
 
@@ -294,15 +320,15 @@ extension SeatCanvasView {
 // MARK: - C++ 回调处理
 
 extension SeatCanvasView: SeatCanvasRendererDelegate {
-    func seatCanvasRendererShouldSelectSeat(seatId: String) -> Bool {
-        delegate?.seatCanvasView(self, shouldSelectSeat: seatId) ?? false
+    func seatCanvasRendererShouldSelectSeat(regionId: String, seatId: String) -> Bool {
+        delegate?.seatCanvasView(self, shouldSelectSeat: regionId, seatId: seatId) ?? false
     }
 
-    func seatCanvasRendererDidSelectSeat(seatId: String) {
-        delegate?.seatCanvasView(self, didSelectSeat: seatId)
+    func seatCanvasRendererDidSelectSeat(regionId: String, seatId: String) {
+        delegate?.seatCanvasView(self, didSelectSeat: regionId, seatId: seatId)
     }
 
-    func seatCanvasRendererDidDeselectSeat(seatId: String) {
-        delegate?.seatCanvasView(self, didDeselectSeat: seatId)
+    func seatCanvasRendererDidDeselectSeat(regionId: String, seatId: String) {
+        delegate?.seatCanvasView(self, didDeselectSeat: regionId, seatId: seatId)
     }
 }

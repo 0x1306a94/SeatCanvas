@@ -30,14 +30,14 @@
             android:gravity="center_vertical">
 
             <TextView
-                android:id="@+id/tiled_label"
+                android:id="@+id/circle_seat_style_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Tiled"
+                android:text="圆形座位"
                 android:textSize="16sp" />
 
             <Switch
-                android:id="@+id/tiled_switch"
+                android:id="@+id/circle_seat_style_switch"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp" 
@@ -55,17 +55,18 @@
             android:gravity="center_vertical">
 
             <TextView
-                android:id="@+id/zoom_blur_label"
+                android:id="@+id/svg_seat_style_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="ZoomBlur"
+                android:text="SVG座位"
                 android:textSize="16sp" />
 
             <Switch
-                android:id="@+id/zoom_blur_switch"
+                android:id="@+id/svg_seat_style_switch"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp" />
+                android:layout_marginStart="8dp"
+                android:checked="true"/>
         </LinearLayout>
     </LinearLayout>
 

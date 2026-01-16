@@ -14,6 +14,7 @@
 #include <tgfx/platform/android/JNIEnvironment.h>
 #include <tgfx/svg/SVGDOM.h>
 
+#include "AndroidSeatCanvasCoreRendererDelegate.hpp"
 #include "JHitTestSeatRegionResult.h"
 #include "JNIHelper.hpp"
 #include "JRect.h"
@@ -22,11 +23,15 @@
 #include "core/FontManager.hpp"
 #include "core/gesture/ElasticZoomPanController.hpp"
 #include "core/layers/BaseMapRootLayer.hpp"
+#include "core/parser/BaseMapFormat.hpp"
+#include "core/parser/BaseMapParserFactory.hpp"
 #include "core/renderer/SeatCanvasCoreRenderer.hpp"
 #include "core/svg/ConvertSVGLayer.hpp"
+#include "core/svg/SVGMeshParser.hpp"
+#include "core/utils/SystemProperties.hpp"
 #include "core/utils/TimeProfiler.hpp"
 #include "platform/android/NativePlatform.hpp"
-#include "platform/android/renderer/AndroidRendererBackend.hpp"
+#include "platform/android/renderer/AndroidPlatformView.hpp"
 
 #define __GetCPPObjectOrReturn(env, thiz, typedObjName, action) \
     if (env == nullptr || thiz == nullptr) {                    \
@@ -48,11 +53,21 @@ namespace kk::jni {
 static kk::jni::Global<jclass> SeatCanvasViewClass;
 static jfieldID SeatCanvasView_NativePtr;
 
-struct LoadSVGBaseMapResult {
-    std::shared_ptr<kk::layer::BaseMapRootLayer> rootLayer;
+struct LoadBaseMapResult {
+    std::shared_ptr<tgfx::Layer> textLayer;
     tgfx::Size baseMapSize;
     std::shared_ptr<kk::layer::BaseMapRootLayer> miniLayer;
-    std::shared_ptr<kk::BaseMapLayerManager> layerManager;
+    std::shared_ptr<kk::renderer::BaseMapMeshBuilder> meshBuilder;
+
+    // 从统一解析结果构造
+    explicit LoadBaseMapResult(std::unique_ptr<kk::parser::BaseMapParseResult> parseResult) {
+        if (parseResult) {
+            textLayer = std::move(parseResult->textLayer);
+            baseMapSize = parseResult->size;
+            miniLayer = std::move(parseResult->miniLayer);
+            meshBuilder = std::move(parseResult->meshBuilder);
+        }
+    }
 };
 
 static kk::renderer::SeatCanvasCoreRenderer *GetSeatCanvasCoreRenderer(JNIEnv *env, jobject thiz) {
@@ -77,56 +92,37 @@ static void DeleteSeatCanvasCoreRenderer(JNIEnv *env, jobject thiz) {
 
 extern "C" {
 
-JNIEXPORT jlong JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeLoadBaseMapFromSVG(JNIEnv *env, jobject thiz, jbyteArray srcData) {
+JNIEXPORT jlong JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeLoadBaseMapFromFormat(JNIEnv *env, jobject thiz, jbyteArray srcData, jstring jformatName) {
     if (srcData == nullptr) {
+        tgfx::PrintError("data is null");
         return 0;
     }
+
     auto bytes = env->GetByteArrayElements(srcData, nullptr);
     auto len = env->GetArrayLength(srcData);
     if (len == 0) {
+        tgfx::PrintError("data length is zero");
         return 0;
     }
 
-    PROFILE_GROUP_START(group, "LoadBaseMapFromSVG");
+    auto formatName = kk::jni::SafeConvertToStdString(env, jformatName);
+    auto format = kk::parser::parseFormatName(formatName);
+    if (format == kk::parser::BaseMapFormat::Unknown) {
+        tgfx::PrintError("format is Unknown");
+        return 0;
+    }
 
-    PROFILE_STAGE_START(group, dom, "ParseSVG");
+    PROFILE_TIME(std::string("LoadBaseMapFrom") + kk::parser::formatNameToString(format));
+
     auto data = tgfx::Data::MakeWithoutCopy(bytes, len);
-    auto stream = tgfx::Stream::MakeFromData(data);
-    auto dom = tgfx::SVGDOM::Make(*stream);
-
+    auto result = kk::parser::BaseMapParserFactory::parse(data, format);
     env->ReleaseByteArrayElements(srcData, bytes, 0);
-    if (!dom) {
+    if (!result) {
+        tgfx::PrintError("parse result is null");
         return 0;
     }
 
-    PROFILE_STAGE_END(group, dom);
-
-    PROFILE_STAGE_START(group, basemap, "ConvertSVGDomToLayer BaseMap")
-    kk::svg::ConvertSVGLayerOptions options{};
-    options.collectRegionInfo = true;
-    options.supportText = true;
-    auto baseMapResult = kk::svg::convertSVGDomToLayer(dom, options);
-    if (!baseMapResult) {
-        return 0;
-    }
-
-    PROFILE_STAGE_END(group, basemap);
-
-    PROFILE_STAGE_START(group, mini, "ConvertSVGDomToLayer MiniMap")
-    auto minimapResult = kk::svg::convertSVGDomToLayer(dom);
-    if (!minimapResult) {
-        return 0;
-    }
-    PROFILE_STAGE_END(group, mini);
-
-    auto outResult = new kk::jni::LoadSVGBaseMapResult();
-    outResult->rootLayer = std::move(baseMapResult->layer);
-    outResult->baseMapSize = baseMapResult->size;
-    outResult->miniLayer = std::move(minimapResult->layer);
-    outResult->layerManager = std::move(baseMapResult->layerManager);
-
-    PROFILE_GROUP_END(group)
-
+    auto outResult = new kk::jni::LoadBaseMapResult(std::move(result));
     return reinterpret_cast<jlong>(outResult);
 }
 
@@ -137,12 +133,24 @@ JNIEXPORT jboolean JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeLoadBaseM
         return false;
     }
 
-    auto map = reinterpret_cast<kk::jni::LoadSVGBaseMapResult *>(dataPtr);
-    auto baseMapConfig = std::make_shared<kk::BaseMapConfig>(map->layerManager, map->rootLayer, map->miniLayer, map->baseMapSize);
+    auto map = reinterpret_cast<kk::jni::LoadBaseMapResult *>(dataPtr);
+    auto baseMapConfig = std::make_shared<kk::BaseMapConfig>(map->meshBuilder, map->textLayer, map->miniLayer, map->baseMapSize);
     renderer->setBaseMapConfig(std::move(baseMapConfig), kk::SeatRenderMode::ZoomBased);
     delete map;
 
     return true;
+}
+
+JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeSetSeatStyleJSONConfig(JNIEnv *env, jobject thiz, jbyteArray data, jint len) {
+    GetCPPObjectOrReturn(env, thiz, renderer);
+    if (data == nullptr || len == 0) {
+        renderer->setStyleKeyToConfigFromJSON(nullptr, 0);
+        return;
+    }
+
+    auto bytes = env->GetByteArrayElements(data, nullptr);
+    renderer->setStyleKeyToConfigFromJSON(bytes, len);
+    env->ReleaseByteArrayElements(data, bytes, 0);
 }
 
 JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeHandleTap(JNIEnv *env, jobject thiz, jfloat x, jfloat y) {
@@ -158,16 +166,6 @@ JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeHandlePan(JNI
 JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeHandlePinch(JNIEnv *env, jobject thiz, jint state, jfloat scale, jfloat cx, jfloat cy) {
     GetCPPObjectOrReturn(env, thiz, renderer);
     renderer->handlePinch(static_cast<kk::gesture::GestureState>(state), scale, tgfx::Point{cx, cy});
-}
-
-JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeEnableTiled(JNIEnv *env, jobject thiz, jboolean enable) {
-    GetCPPObjectOrReturn(env, thiz, renderer);
-    renderer->enableTiled(enable);
-}
-
-JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeEnableZoomBlur(JNIEnv *env, jobject thiz, jboolean enable) {
-    GetCPPObjectOrReturn(env, thiz, renderer);
-    renderer->enableZoomBlur(enable);
 }
 
 JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeStartDrawLoop(JNIEnv *env, jobject thiz) {
@@ -190,27 +188,32 @@ JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeUpdateSize(JN
     renderer->updateSize();
 }
 
-JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeUpdateSurface(JNIEnv *env, jobject thiz, jobject surface, jfloat density) {
+JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeUpdateSurface(JNIEnv *env, jobject thiz, jobject surface) {
     GetCPPObjectOrReturn(env, thiz, renderer);
     if (surface == nullptr) {
-        renderer->replaceBackend(nullptr);
+        renderer->replacePlatformView(nullptr);
         return;
     }
 
     auto nativeWindow = ANativeWindow_fromSurface(env, surface);
     if (nativeWindow == nullptr) {
-        renderer->replaceBackend(nullptr);
+        renderer->replacePlatformView(nullptr);
         return;
     }
-
-    auto backend = std::make_unique<kk::renderer::AndroidRendererBackend>(nativeWindow, density);
-    renderer->replaceBackend(std::move(backend));
+    auto &properties = kk::utils::SystemProperties::Instance();
+    auto platformView = std::make_unique<kk::renderer::AndroidPlatformView>(nativeWindow, properties.density);
+    renderer->replacePlatformView(std::move(platformView));
     renderer->updateSize();
 }
 
 JNIEXPORT jlong JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeCreate(JNIEnv *env, jobject thiz) {
     auto zoomPanController = std::make_unique<kk::gesture::ElasticZoomPanController>();
     auto renderer = new kk::renderer::SeatCanvasCoreRenderer(nullptr, std::move(zoomPanController));
+
+    // 创建并设置 Android delegate，传入 SeatCanvasView 的 jobject
+    auto delegate = std::make_shared<kk::renderer::AndroidSeatCanvasCoreRendererDelegate>(thiz);
+    renderer->setDelegate(std::move(delegate));
+
     auto ptr = reinterpret_cast<jlong>(renderer);
     return ptr;
 }
@@ -253,6 +256,12 @@ JNIEXPORT jfloatArray JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeGetCon
         env->SetFloatArrayRegion(result, 0, 2, values);
     }
     return result;
+}
+
+JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_00024Companion_nativeInitSystemProperties(JNIEnv *env, jobject thiz, jfloat density, jfloat fontScale) {
+    auto &properties = kk::utils::SystemProperties::Instance();
+    properties.updateDensity(density);
+    properties.updateFontScale(fontScale);
 }
 
 JNIEXPORT void JNICALL Java_com_libseatcanvas_Font_00024Companion_nativeSetFallbackFontPaths(JNIEnv *env, jobject thiz, jobjectArray fontNameList, jintArray ttcIndices) {

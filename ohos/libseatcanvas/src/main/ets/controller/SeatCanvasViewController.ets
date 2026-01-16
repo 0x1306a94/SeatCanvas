@@ -1,18 +1,21 @@
 import { seatcanvas } from 'libseatcanvas.so';
-import { SeatCanvasView } from '../components/SeatCanvasView';
 import { resourceManager } from '@kit.LocalizationKit';
 import { display } from '@kit.ArkUI';
 import { SeatCanvasInit } from '../utils/SeatCanvasInit';
+import { BaseMapFormat } from '../utils/BaseMapFormat';
+import { SeatCanvasRendererDelegate } from './SeatCanvasRendererDelegate';
 
 export class SeatCanvasViewController {
   private jView!: seatcanvas.JRendererCore;
   private view: WeakRef<ESObject> | null = null;
+  private delegate: WeakRef<SeatCanvasRendererDelegate> | null = null;
 
   constructor() {
     SeatCanvasInit.Init();
     let displayInfo = display.getDefaultDisplaySync();
     let density = displayInfo.densityPixels
-    seatcanvas.JRendererCore.UpdateDensity(density);
+    let scaledDensity = displayInfo.scaledDensity
+    seatcanvas.JRendererCore.InitSystemProperties(density, scaledDensity);
 
     this.jView = new seatcanvas.JRendererCore();
   }
@@ -31,13 +34,42 @@ export class SeatCanvasViewController {
     this.jView.stop();
   }
 
+  setDelegate(delegate: SeatCanvasRendererDelegate | null) {
+    if (delegate) {
+      this.delegate = new WeakRef(delegate);
+      // 设置 native 回调
+      if (delegate.shouldSelectSeat) {
+        this.jView.setShouldSelectSeatCallback(this.onShouldSelectSeat);
+      } else {
+        this.jView.setShouldSelectSeatCallback(null);
+      }
+      if (delegate.didSelectSeat) {
+        this.jView.setDidSelectSeatCallback(this.onDidSelectSeat);
+      } else {
+        this.jView.setDidSelectSeatCallback(null);
+      }
+      if (delegate.didDeselectSeat) {
+        this.jView.setDidDeselectSeatCallback(this.onDidDeselectSeat);
+      } else {
+        this.jView.setDidDeselectSeatCallback(null);
+      }
+    } else {
+      this.delegate = null;
+      // 清除 native 回调
+      this.jView.setShouldSelectSeatCallback(null);
+      this.jView.setDidSelectSeatCallback(null);
+      this.jView.setDidDeselectSeatCallback(null);
+    }
+  }
+
   /**
    * 从 Assets 中加载底图
    * @param manager 资源管理器
    * @param name 资源名称
+   * @param format 格式
    */
-  async loadFromAssets(manager: resourceManager.ResourceManager, name: string) {
-    let nativePtr = await seatcanvas.JRendererCore.ParseBaseMapFromAssets(manager, name)
+  async loadFromAssets(manager: resourceManager.ResourceManager, name: string, format: BaseMapFormat) {
+    let nativePtr = await seatcanvas.JRendererCore.ParseBaseMapFromAssets(manager, name, format)
     this.jView.loadBaseMap(nativePtr);
   }
 
@@ -47,22 +79,6 @@ export class SeatCanvasViewController {
    */
   uniqueID() {
     return this.jView.uniqueID();
-  }
-
-  /**
-   * 启用Tiled 渲染模式
-   * @param enable
-   */
-  enableTiled(enable: boolean) {
-    this.jView.enableTiled(enable);
-  }
-
-  /**
-   *  启用模糊优化，在缩放时
-   * @param enable
-   */
-  enableZoomBlur(enable: boolean) {
-    this.jView.enableZoomBlur(enable);
   }
 
   /**
@@ -135,5 +151,33 @@ export class SeatCanvasViewController {
    */
   zoomToRect(bounds: seatcanvas.Rect, animated: boolean = true, padding: number = 0, duration: number = 300) {
     this.jView.zoomToRect(bounds, animated, padding, duration)
+  }
+
+  /**
+   * 应用样式配置（使用 SeatStyleConfigBuilder 构建）
+   * @param config JSON 样式数据
+   */
+  applySeatStyleJSONConfig(config: string | null) {
+    this.jView.applySeatStyleJSONConfig(config);
+  }
+
+  readonly onShouldSelectSeat = (regionId: string, seatId: string): boolean => {
+    const delegate = this.delegate?.deref();
+    if (delegate && delegate.shouldSelectSeat) {
+      return delegate.shouldSelectSeat(regionId, seatId);
+    }
+    return false
+  }
+  readonly onDidSelectSeat = (regionId: string, seatId: string) => {
+    const delegate = this.delegate?.deref();
+    if (delegate && delegate.didSelectSeat) {
+      delegate.didSelectSeat(regionId, seatId);
+    }
+  }
+  readonly onDidDeselectSeat = (regionId: string, seatId: string) => {
+    const delegate = this.delegate?.deref();
+    if (delegate && delegate.didDeselectSeat) {
+      delegate.didDeselectSeat(regionId, seatId);
+    }
   }
 }

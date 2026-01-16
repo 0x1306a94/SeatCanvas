@@ -9,7 +9,6 @@
 
 #include "core/UniqueID.h"
 
-#include <cstring>
 #include <mutex>
 #include <unordered_map>
 
@@ -20,11 +19,10 @@ namespace kk {
 static std::unordered_map<uint32_t, std::weak_ptr<NativeDisplayLink>> VSyncCallbacks = {};
 static std::once_flag init_flag;
 static napi_threadsafe_function js_threadsafe_function = nullptr;
-void NativeDisplayLink::VSyncCallback(long long, void *data) {
+void NativeDisplayLink::DisplaySoloistCallback(long long timestamp, long long targetTimestamp, void *data) {
     if (js_threadsafe_function == nullptr) {
         return;
     }
-
     napi_call_threadsafe_function(js_threadsafe_function, data, napi_tsfn_blocking);
 }
 
@@ -52,46 +50,49 @@ bool NativeDisplayLink::Init(napi_env env, napi_value exports) {
 }
 
 NativeDisplayLink::NativeDisplayLink(std::function<void()> callback)
-    : _callback(std::move(callback))
+    : callback(std::move(callback))
     , id(kk::UniqueID::Next()) {
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
 
-    char name[] = "seatcanvas_vsync";
-    vSync = OH_NativeVSync_Create(name, strlen(name));
+    displaySoloist = OH_DisplaySoloist_Create(true);
+    DisplaySoloist_ExpectedRateRange expectedRateRange{60, 120, 120};
+    OH_DisplaySoloist_SetExpectedFrameRateRange(displaySoloist, &expectedRateRange);
 }
 
 NativeDisplayLink::~NativeDisplayLink() {
     VSyncCallbacks.erase(id);
-    _started = false;
-    if (vSync != nullptr) {
-        OH_NativeVSync_Destroy(vSync);
-        vSync = nullptr;
+    started = false;
+    if (displaySoloist != nullptr) {
+        OH_DisplaySoloist_Destroy(displaySoloist);
+        displaySoloist = nullptr;
     }
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
 }
 
 void NativeDisplayLink::start() {
-    if (_started) {
+    if (started) {
         return;
     }
 
-    if (vSync == nullptr) {
+    if (displaySoloist == nullptr) {
         return;
     }
     VSyncCallbacks.insert_or_assign(id, shared_from_this());
-    OH_NativeVSync_RequestFrame(vSync, &VSyncCallback, &id);
-    _started = true;
+    OH_DisplaySoloist_Start(displaySoloist, &DisplaySoloistCallback, &id);
+    started = true;
 }
 
 void NativeDisplayLink::stop() {
-    _started = false;
+    started = false;
     VSyncCallbacks.erase(id);
+    if (displaySoloist) {
+        OH_DisplaySoloist_Stop(displaySoloist);
+    }
 }
 
 void NativeDisplayLink::update() {
-    if (_started) {
-        _callback();
-        OH_NativeVSync_RequestFrame(vSync, &VSyncCallback, &id);
+    if (started) {
+        callback();
     }
 }
 

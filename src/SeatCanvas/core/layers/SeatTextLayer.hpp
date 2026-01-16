@@ -79,10 +79,10 @@ class SeatTextLayer : public tgfx::Layer {
 
     void setLineWidth(float width);
 
-    float getAlignmentFactor() const;
-
   protected:
     SeatTextLayer() = default;
+
+    float getAlignmentFactor() const;
 
     void onUpdateContent(tgfx::LayerRecorder *recorder) override;
 

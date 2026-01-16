@@ -7,19 +7,15 @@
 
 #include "ConvertSVGLayer.hpp"
 
-#include "core/BaseMapLayerManager.hpp"
 #include "core/FontManager.hpp"
-#include "core/RegionInfo.hpp"
 #include "core/layers/BaseMapRootLayer.hpp"
 #include "core/layers/SeatRegionLayer.hpp"
 #include "core/layers/SeatTextLayer.hpp"
 
 #include <tgfx/core/Path.h>
 #include <tgfx/core/Rect.h>
-#include <tgfx/layers/DisplayList.h>
-#include <tgfx/layers/ImageLayer.h>
+#include <tgfx/layers/Layer.h>
 #include <tgfx/layers/ShapeLayer.h>
-#include <tgfx/layers/TextLayer.h>
 #include <tgfx/svg/SVGDOM.h>
 #include <tgfx/svg/SVGLengthContext.h>
 #include <tgfx/svg/node/SVGCircle.h>
@@ -31,10 +27,9 @@
 #include <tgfx/svg/node/SVGRect.h>
 #include <tgfx/svg/node/SVGText.h>
 
-#include <unordered_map>
-#include <unordered_set>
-
 namespace kk::svg {
+
+// ========== 辅助函数 ==========
 
 static std::shared_ptr<tgfx::Typeface> resolveTypeface(const tgfx::SVGText *node, const tgfx::SVGLengthContext &lengthContext) {
     using namespace tgfx;
@@ -66,9 +61,8 @@ static std::shared_ptr<tgfx::Typeface> resolveTypeface(const tgfx::SVGText *node
                 return FontWeight::ExtraBold;
             case SVGFontWeight::Type::Lighter:
                 return FontWeight::Light;
-            case SVGFontWeight::Type::Inherit: {
+            case SVGFontWeight::Type::Inherit:
                 return FontWeight::Normal;
-            }
         }
     };
 
@@ -80,9 +74,8 @@ static std::shared_ptr<tgfx::Typeface> resolveTypeface(const tgfx::SVGText *node
                 return FontSlant::Italic;
             case SVGFontStyle::Type::Oblique:
                 return FontSlant::Oblique;
-            case SVGFontStyle::Type::Inherit: {
+            case SVGFontStyle::Type::Inherit:
                 return FontSlant::Upright;
-            }
         }
     };
 
@@ -98,7 +91,10 @@ static std::shared_ptr<tgfx::Typeface> resolveTypeface(const tgfx::SVGText *node
     return Typeface::MakeFromName(family, style);
 }
 
-static std::vector<float> resolveTextLengths(const tgfx::SVGLengthContext &lengthContext, const std::vector<tgfx::SVGLength> &lengths, tgfx::SVGLengthContext::LengthType lengthType, const tgfx::SVGFontSize &fontSize) {
+static std::vector<float> resolveTextLengths(const tgfx::SVGLengthContext &lengthContext,
+                                             const std::vector<tgfx::SVGLength> &lengths,
+                                             tgfx::SVGLengthContext::LengthType lengthType,
+                                             const tgfx::SVGFontSize &fontSize) {
     std::vector<float> resolved;
     resolved.reserve(lengths.size());
 
@@ -116,47 +112,7 @@ static std::vector<float> resolveTextLengths(const tgfx::SVGLengthContext &lengt
     return resolved;
 }
 
-static void resolveNodeRegionInfo(const tgfx::SVGNode *node, std::shared_ptr<kk::layer::SeatRegionLayer> shape, kk::BaseMapLayerManager *layerManager) {
-    if (node == nullptr || shape == nullptr || layerManager == nullptr) {
-        return;
-    }
-
-    kk::RegionInfo regionInfo;
-
-    const auto &customAttributes = node->getCustomAttributes();
-    for (const auto &item : customAttributes) {
-        if (item.value.empty()) {
-            continue;
-        }
-
-        // 收集区域信息
-        if (item.name == "zoneId") {
-            regionInfo.regionId = item.value;
-        }
-        regionInfo.attributes[item.name] = item.value;
-    }
-
-    if (const auto &id = node->getID().get(); id) {
-        regionInfo.attributes["id"] = id.value();
-    }
-    if (regionInfo.regionId.empty()) {
-        return;
-    }
-
-    shape->setName(regionInfo.regionId);
-
-    // Layer 的 getBounds 会考虑边框，所以这里用 path.getBounds
-    // 这样就是和 SVG 文件中保持一致的
-    const auto &path = shape->path();
-    //    auto bounds = shape->getBounds();
-    auto bounds = path.getBounds();
-    regionInfo.bounds = bounds;
-    layerManager->addRegion(regionInfo);
-    layerManager->addRegionLayer(regionInfo.regionId, shape);
-}
-
 static void applyShapeLayerStyle(tgfx::ShapeLayer *shape, tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext) {
-
     auto hasStroke = false;
     if (const auto &attribute = node->getStroke().get(); attribute && attribute->type() == tgfx::SVGPaint::Type::Color) {
         auto color = attribute->color().color();
@@ -227,7 +183,6 @@ static void applyShapeLayerStyle(tgfx::ShapeLayer *shape, tgfx::SVGNode *node, c
 }
 
 static void applyTextLayerStyle(kk::layer::SeatTextLayer *textLayer, tgfx::SVGText *node, const tgfx::SVGLengthContext &lengthContext) {
-
     auto hasStroke = false;
     if (const auto &attribute = node->getStroke().get(); attribute && attribute->type() == tgfx::SVGPaint::Type::Color) {
         auto color = attribute->color().color();
@@ -245,7 +200,6 @@ static void applyTextLayerStyle(kk::layer::SeatTextLayer *textLayer, tgfx::SVGTe
         auto color = attribute->color().color();
         textLayer->setTextColor(color);
     } else if (!hasStroke) {
-        // 默认黑色
         textLayer->setTextColor(tgfx::Color::Black());
     }
 
@@ -303,6 +257,8 @@ static void applyTextLayerStyle(kk::layer::SeatTextLayer *textLayer, tgfx::SVGTe
     }
 }
 
+// ========== 公开函数实现 ==========
+
 std::unique_ptr<ConvertSVGLayerResult> convertSVGDomToLayer(std::shared_ptr<tgfx::SVGDOM> dom, const ConvertSVGLayerOptions &options) {
     if (dom == nullptr) {
         return nullptr;
@@ -317,7 +273,6 @@ std::unique_ptr<ConvertSVGLayerResult> convertSVGDomToLayer(std::shared_ptr<tgfx
     auto rootHeight = rootNode->getHeight();
 
     tgfx::SVGLengthContext viewportLengthContext(tgfx::Size::Make(100, 100));
-
     tgfx::Size containerSize{};
 
     if (rootNode->getViewBox().has_value()) {
@@ -337,56 +292,107 @@ std::unique_ptr<ConvertSVGLayerResult> convertSVGDomToLayer(std::shared_ptr<tgfx
     auto container = kk::layer::BaseMapRootLayer::Make();
     container->setPath(path);
 
-    auto layerManager = std::make_shared<kk::BaseMapLayerManager>();
     auto &childrens = rootNode->getChildren();
     for (const auto &child : childrens) {
-        auto layer = convertSVGNodeToLayer(child.get(), viewportLengthContext, layerManager.get(), options);
+        auto layer = convertSVGNodeToLayer(child.get(), viewportLengthContext, options);
         if (layer) {
             container->addChild(layer);
         }
     }
 
-    return std::make_unique<ConvertSVGLayerResult>(std::move(container), containerSize, std::move(layerManager));
+    return std::make_unique<ConvertSVGLayerResult>(std::move(container), containerSize);
 }
 
-std::shared_ptr<tgfx::Layer> convertSVGNodeToLayer(tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext, kk::BaseMapLayerManager *layerManager, const ConvertSVGLayerOptions &options) {
+std::shared_ptr<tgfx::Layer> convertSVGDomTextNodeToLayer(std::shared_ptr<tgfx::SVGDOM> dom) {
+    if (dom == nullptr) {
+        return nullptr;
+    }
 
+    auto &rootNode = dom->getRoot();
+    if (!rootNode->hasChildren()) {
+        return nullptr;
+    }
+
+    auto rootWidth = rootNode->getWidth();
+    auto rootHeight = rootNode->getHeight();
+
+    tgfx::SVGLengthContext viewportLengthContext(tgfx::Size::Make(100, 100));
+    tgfx::Size containerSize{};
+
+    if (rootNode->getViewBox().has_value()) {
+        viewportLengthContext = tgfx::SVGLengthContext(rootNode->getViewBox()->size());
+        containerSize = tgfx::Size::Make(
+            viewportLengthContext.resolve(rootWidth, tgfx::SVGLengthContext::LengthType::Horizontal),
+            viewportLengthContext.resolve(rootHeight, tgfx::SVGLengthContext::LengthType::Vertical));
+    } else {
+        containerSize = tgfx::Size::Make(
+            viewportLengthContext.resolve(rootWidth, tgfx::SVGLengthContext::LengthType::Horizontal),
+            viewportLengthContext.resolve(rootHeight, tgfx::SVGLengthContext::LengthType::Vertical));
+    }
+
+    tgfx::Path path;
+    path.addRect(tgfx::Rect::MakeWH(containerSize.width, containerSize.height));
+
+    auto container = kk::layer::BaseMapRootLayer::Make();
+    container->setPath(path);
+
+    ConvertSVGLayerOptions options;
+    options.supportText = true;
+
+    auto &childrens = rootNode->getChildren();
+    for (const auto &child : childrens) {
+        auto layer = convertSVGNodeToLayer(child.get(), viewportLengthContext, options);
+        if (!layer) {
+            continue;
+        }
+
+        auto type = static_cast<kk::layer::CustomLayerType>(layer->type());
+        if (type != kk::layer::CustomLayerType::RegionName) {
+            continue;
+        }
+
+        container->addChild(layer);
+    }
+
+    return container;
+}
+
+std::shared_ptr<tgfx::Layer> convertSVGNodeToLayer(tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext, const ConvertSVGLayerOptions &options) {
     auto tag = node->tag();
     switch (tag) {
         case tgfx::SVGTag::G:
-            return convertGroup(options, static_cast<tgfx::SVGGroup *>(node), lengthContext, layerManager);
+            return convertGroup(options, static_cast<tgfx::SVGGroup *>(node), lengthContext);
         case tgfx::SVGTag::Line:
-            return convertLine(static_cast<tgfx::SVGLine *>(node), lengthContext, layerManager);
+            return convertLine(static_cast<tgfx::SVGLine *>(node), lengthContext);
         case tgfx::SVGTag::Circle:
-            return convertCircle(static_cast<tgfx::SVGCircle *>(node), lengthContext, layerManager);
+            return convertCircle(static_cast<tgfx::SVGCircle *>(node), lengthContext);
         case tgfx::SVGTag::Ellipse:
-            return convertEllipse(static_cast<tgfx::SVGEllipse *>(node), lengthContext, layerManager);
+            return convertEllipse(static_cast<tgfx::SVGEllipse *>(node), lengthContext);
         case tgfx::SVGTag::Rect:
-            return convertRect(static_cast<tgfx::SVGRect *>(node), lengthContext, layerManager);
+            return convertRect(static_cast<tgfx::SVGRect *>(node), lengthContext);
         case tgfx::SVGTag::Path:
-            return convertPath(static_cast<tgfx::SVGPath *>(node), lengthContext, layerManager);
+            return convertPath(static_cast<tgfx::SVGPath *>(node), lengthContext);
         case tgfx::SVGTag::Polygon:
         case tgfx::SVGTag::Polyline:
-            return convertPoly(static_cast<tgfx::SVGPoly *>(node), lengthContext, layerManager);
+            return convertPoly(static_cast<tgfx::SVGPoly *>(node), lengthContext);
         case tgfx::SVGTag::Text:
             if (!options.supportText) {
                 return nullptr;
             }
-            return convertText(static_cast<tgfx::SVGText *>(node), lengthContext, layerManager);
+            return convertText(static_cast<tgfx::SVGText *>(node), lengthContext);
         default:
             break;
     }
-
     return nullptr;
 }
 
-std::shared_ptr<tgfx::Layer> convertGroup(const ConvertSVGLayerOptions &options, tgfx::SVGGroup *node, const tgfx::SVGLengthContext &lengthContext, kk::BaseMapLayerManager *layerManager) {
+std::shared_ptr<tgfx::Layer> convertGroup(const ConvertSVGLayerOptions &options, tgfx::SVGGroup *node, const tgfx::SVGLengthContext &lengthContext) {
     if (!node->hasChildren()) {
         return nullptr;
     }
     auto root = tgfx::Layer::Make();
     for (auto const &child : node->getChildren()) {
-        auto layer = convertSVGNodeToLayer(child.get(), lengthContext, layerManager, options);
+        auto layer = convertSVGNodeToLayer(child.get(), lengthContext, options);
         if (layer) {
             root->addChild(layer);
         }
@@ -394,7 +400,7 @@ std::shared_ptr<tgfx::Layer> convertGroup(const ConvertSVGLayerOptions &options,
     return root;
 }
 
-std::shared_ptr<kk::layer::SeatRegionLayer> convertLine(tgfx::SVGLine *node, const tgfx::SVGLengthContext &lengthContext, kk::BaseMapLayerManager *layerManager) {
+std::shared_ptr<kk::layer::SeatRegionLayer> convertLine(tgfx::SVGLine *node, const tgfx::SVGLengthContext &lengthContext) {
     const auto x1 = lengthContext.resolve(node->getX1(), tgfx::SVGLengthContext::LengthType::Horizontal);
     const auto y1 = lengthContext.resolve(node->getY1(), tgfx::SVGLengthContext::LengthType::Vertical);
     const auto x2 = lengthContext.resolve(node->getX2(), tgfx::SVGLengthContext::LengthType::Horizontal);
@@ -407,14 +413,14 @@ std::shared_ptr<kk::layer::SeatRegionLayer> convertLine(tgfx::SVGLine *node, con
     auto shape = kk::layer::SeatRegionLayer::Make();
     shape->setPath(path);
     applyShapeLayerStyle(shape.get(), node, lengthContext);
-    resolveNodeRegionInfo(node, shape, layerManager);
     return shape;
 }
 
-std::shared_ptr<kk::layer::SeatRegionLayer> convertCircle(tgfx::SVGCircle *node, const tgfx::SVGLengthContext &lengthContext, kk::BaseMapLayerManager *layerManager) {
+std::shared_ptr<kk::layer::SeatRegionLayer> convertCircle(tgfx::SVGCircle *node, const tgfx::SVGLengthContext &lengthContext) {
     const auto cx = lengthContext.resolve(node->getCx(), tgfx::SVGLengthContext::LengthType::Horizontal);
     const auto cy = lengthContext.resolve(node->getCy(), tgfx::SVGLengthContext::LengthType::Vertical);
     const auto r = lengthContext.resolve(node->getR(), tgfx::SVGLengthContext::LengthType::Other);
+
     tgfx::Path path;
     path.addOval(tgfx::Rect::MakeXYWH(cx - r, cy - r, 2 * r, 2 * r));
     path.transform(node->getTransform());
@@ -422,11 +428,10 @@ std::shared_ptr<kk::layer::SeatRegionLayer> convertCircle(tgfx::SVGCircle *node,
     auto shape = kk::layer::SeatRegionLayer::Make();
     shape->setPath(path);
     applyShapeLayerStyle(shape.get(), node, lengthContext);
-    resolveNodeRegionInfo(node, shape, layerManager);
     return shape;
 }
 
-std::shared_ptr<kk::layer::SeatRegionLayer> convertEllipse(tgfx::SVGEllipse *node, const tgfx::SVGLengthContext &lengthContext, kk::BaseMapLayerManager *layerManager) {
+std::shared_ptr<kk::layer::SeatRegionLayer> convertEllipse(tgfx::SVGEllipse *node, const tgfx::SVGLengthContext &lengthContext) {
     const auto cx = lengthContext.resolve(node->getCx(), tgfx::SVGLengthContext::LengthType::Horizontal);
     const auto cy = lengthContext.resolve(node->getCy(), tgfx::SVGLengthContext::LengthType::Vertical);
     const auto [rx, ry] = lengthContext.resolveOptionalRadii(node->getRx(), node->getRy());
@@ -435,18 +440,17 @@ std::shared_ptr<kk::layer::SeatRegionLayer> convertEllipse(tgfx::SVGEllipse *nod
         return nullptr;
     }
 
-    tgfx::Path path{};
+    tgfx::Path path;
     path.addOval(tgfx::Rect::MakeXYWH(cx - rx, cy - ry, rx * 2, ry * 2));
     path.transform(node->getTransform());
 
     auto shape = kk::layer::SeatRegionLayer::Make();
     shape->setPath(path);
     applyShapeLayerStyle(shape.get(), node, lengthContext);
-    resolveNodeRegionInfo(node, shape, layerManager);
     return shape;
 }
 
-std::shared_ptr<kk::layer::SeatRegionLayer> convertPath(tgfx::SVGPath *node, const tgfx::SVGLengthContext &lengthContext, kk::BaseMapLayerManager *layerManager) {
+std::shared_ptr<kk::layer::SeatRegionLayer> convertPath(tgfx::SVGPath *node, const tgfx::SVGLengthContext &lengthContext) {
     auto shape = kk::layer::SeatRegionLayer::Make();
 
     auto path = node->getShapePath();
@@ -457,18 +461,16 @@ std::shared_ptr<kk::layer::SeatRegionLayer> convertPath(tgfx::SVGPath *node, con
     shape->setPath(std::move(path));
     shape->setMatrix(node->getTransform());
     applyShapeLayerStyle(shape.get(), node, lengthContext);
-    resolveNodeRegionInfo(node, shape, layerManager);
-
     return shape;
 }
 
-std::shared_ptr<kk::layer::SeatRegionLayer> convertPoly(tgfx::SVGPoly *node, const tgfx::SVGLengthContext &lengthContext, kk::BaseMapLayerManager *layerManager) {
+std::shared_ptr<kk::layer::SeatRegionLayer> convertPoly(tgfx::SVGPoly *node, const tgfx::SVGLengthContext &lengthContext) {
     auto points = node->getPoints();
     if (points.empty()) {
         return nullptr;
     }
-    auto shape = kk::layer::SeatRegionLayer::Make();
-    tgfx::Path path{};
+
+    tgfx::Path path;
     path.moveTo(points[0]);
     for (uint32_t i = 1; i < points.size(); i++) {
         path.lineTo(points[i]);
@@ -481,38 +483,30 @@ std::shared_ptr<kk::layer::SeatRegionLayer> convertPoly(tgfx::SVGPoly *node, con
         path.setFillType(clipRule->asFillType());
     }
 
+    auto shape = kk::layer::SeatRegionLayer::Make();
     shape->setPath(path);
-
     applyShapeLayerStyle(shape.get(), node, lengthContext);
-    resolveNodeRegionInfo(node, shape, layerManager);
-
     return shape;
 }
 
-std::shared_ptr<kk::layer::SeatRegionLayer> convertRect(tgfx::SVGRect *node, const tgfx::SVGLengthContext &lengthContext, kk::BaseMapLayerManager *layerManager) {
-
-    auto shape = kk::layer::SeatRegionLayer::Make();
+std::shared_ptr<kk::layer::SeatRegionLayer> convertRect(tgfx::SVGRect *node, const tgfx::SVGLengthContext &lengthContext) {
     const auto rect = lengthContext.resolveRect(node->getX(), node->getY(), node->getWidth(), node->getHeight());
     const auto [rx, ry] = lengthContext.resolveOptionalRadii(node->getRx(), node->getRy());
 
     tgfx::RRect rrect;
     rrect.setRectXY(rect, std::min(rx, rect.width() / 2), std::min(ry, rect.height() / 2));
 
-    tgfx::Path path{};
+    tgfx::Path path;
     path.addRRect(rrect);
     path.transform(node->getTransform());
 
+    auto shape = kk::layer::SeatRegionLayer::Make();
     shape->setPath(path);
-
     applyShapeLayerStyle(shape.get(), node, lengthContext);
-    resolveNodeRegionInfo(node, shape, layerManager);
-
     return shape;
 }
 
-std::shared_ptr<kk::layer::SeatTextLayer> convertText(tgfx::SVGText *node, const tgfx::SVGLengthContext &lengthContext, kk::BaseMapLayerManager *layerManager) {
-    (void)layerManager;  // 文本层不需要收集区域信息
-
+std::shared_ptr<kk::layer::SeatTextLayer> convertText(tgfx::SVGText *node, const tgfx::SVGLengthContext &lengthContext) {
     // 暂时只支持单个文本节点
     std::shared_ptr<tgfx::SVGTextLiteral> literal = nullptr;
     for (const auto &child : node->getTextChildren()) {
@@ -548,7 +542,6 @@ std::shared_ptr<kk::layer::SeatTextLayer> convertText(tgfx::SVGText *node, const
     }
 
     auto finalFontSize = lengthContext.resolve(fontSize.size(), tgfx::SVGLengthContext::LengthType::Vertical);
-    tgfx::Font font(typeface, finalFontSize);
 
     auto offsetX = x[0] + (dx.empty() ? 0.0f : dx[0]);
     auto offsetY = y[0] + (dy.empty() ? 0.0f : dy[0]);
@@ -573,17 +566,10 @@ std::shared_ptr<kk::layer::SeatTextLayer> convertText(tgfx::SVGText *node, const
 
     applyTextLayerStyle(layer.get(), node, lengthContext);
 
-    auto bounds = textBlob->getTightBounds();
-    auto alignmentOffsetX = layer->getAlignmentFactor() * bounds.width();
-    auto matrix = tgfx::Matrix::MakeTrans(offsetX + alignmentOffsetX, offsetY);
+    auto matrix = tgfx::Matrix::MakeTrans(offsetX, offsetY);
     matrix.postConcat(node->getTransform());
 
     layer->setMatrix(matrix);
-
-    // 收集文本Layer到BaseMapLayerManager
-    if (layerManager != nullptr) {
-        layerManager->addTextLayer(layer);
-    }
 
     return layer;
 }
