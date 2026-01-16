@@ -1,0 +1,18 @@
+//
+//  Config.xcconfig
+//  SeatCanvasSample
+//
+//  Created by king on 2025/11/12.
+//
+
+// Configuration settings file format documentation can be found at:
+// https://developer.apple.com/documentation/xcode/adding-a-build-configuration-file-to-your-project
+
+PRODUCT_BUNDLE_IDENTIFIER = com.libseatcanvas.sample
+DEVELOPMENT_TEAM =
+CODE_SIGN_IDENTITY =
+PROVISIONING_PROFILE_SPECIFIER =
+
+FRAMEWORK_SEARCH_PATHS = $(SRCROOT)/../gen_xcode/Products/$CONFIGURATION
+
+#include? "Developer.xcconfig"

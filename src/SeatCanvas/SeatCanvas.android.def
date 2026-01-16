@@ -1,0 +1,8 @@
+{
+    global:
+        Java_com_libseatcanvas*;
+        JNI_OnLoad;
+        JNI_OnUnload;
+    local:
+        *;
+};

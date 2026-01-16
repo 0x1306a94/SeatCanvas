@@ -1,0 +1,57 @@
+{
+  "apiType": "stageMode",
+  "buildOption": {
+    "externalNativeOptions": {
+      "path": "../../CMakeLists.txt",
+      "arguments": "-DOHOS_STL=c++_static -DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+      "cppFlags": ""
+    },
+  },
+  "buildOptionSet": [
+    {
+      "name": "release",
+      "externalNativeOptions": {
+        "arguments": "-DCMAKE_BUILD_TYPE=Release -DOHOS_STL=c++_static -DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+      },
+      "arkOptions": {
+        "obfuscation": {
+          "ruleOptions": {
+            "enable": false,
+            "files": [
+              "./obfuscation-rules.txt"
+            ]
+          },
+          "consumerFiles": [
+            "./consumer-rules.txt"
+          ]
+        }
+      },
+      "nativeLib": {
+        "debugSymbol": {
+          "strip": true,
+          "exclude": []
+        }
+      }
+    },
+    {
+      "name": "debug",
+      "externalNativeOptions": {
+        "arguments": "-DCMAKE_BUILD_TYPE=RelWithDebInfo -DOHOS_STL=c++_static -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DENABLE_TIME_PROFILER=ON",
+      },
+      "nativeLib": {
+        "debugSymbol": {
+          "strip": false,
+          "exclude": []
+        }
+      }
+    }
+  ],
+  "targets": [
+    {
+      "name": "default"
+    },
+    {
+      "name": "ohosTest"
+    }
+  ]
+}

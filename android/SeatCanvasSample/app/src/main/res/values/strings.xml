@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">SeatCanvasSample</string>
+    <string name="action_settings">Settings</string>
+    <!-- Strings used for fragments for navigation -->
+    <string name="first_fragment_label">底图</string>
+    <string name="second_fragment_label">选座</string>
+    <string name="choose_seat">Choose Seat</string>
+    <string name="previous">Previous</string>
+</resources>

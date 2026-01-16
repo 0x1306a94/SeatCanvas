@@ -1,0 +1,4 @@
+framework module SeatCanvas {
+    requires swift,objc
+    export *
+}

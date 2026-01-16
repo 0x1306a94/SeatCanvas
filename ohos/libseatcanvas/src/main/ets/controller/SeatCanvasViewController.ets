@@ -1,0 +1,139 @@
+import { seatcanvas } from 'libseatcanvas.so';
+import { SeatCanvasView } from '../components/SeatCanvasView';
+import { resourceManager } from '@kit.LocalizationKit';
+import { display } from '@kit.ArkUI';
+import { SeatCanvasInit } from '../utils/SeatCanvasInit';
+
+export class SeatCanvasViewController {
+  private jView!: seatcanvas.JRendererCore;
+  private view: WeakRef<ESObject> | null = null;
+
+  constructor() {
+    SeatCanvasInit.Init();
+    let displayInfo = display.getDefaultDisplaySync();
+    let density = displayInfo.densityPixels
+    seatcanvas.JRendererCore.UpdateDensity(density);
+
+    this.jView = new seatcanvas.JRendererCore();
+  }
+
+  attachToView(view: WeakRef<ESObject>) {
+    if (this.view != null && this.view != view) {
+      console.error("controller has attached to view");
+      return
+    }
+    this.view = view;
+    this.jView.start();
+  }
+
+  detachFromView() {
+    this.view = null;
+    this.jView.stop();
+  }
+
+  /**
+   * 从 Assets 中加载底图
+   * @param manager 资源管理器
+   * @param name 资源名称
+   */
+  async loadFromAssets(manager: resourceManager.ResourceManager, name: string) {
+    let nativePtr = await seatcanvas.JRendererCore.ParseBaseMapFromAssets(manager, name)
+    this.jView.loadBaseMap(nativePtr);
+  }
+
+  /**
+   * 当前实例唯一标识符，用于绑定 XComponent
+   * @returns 唯一标识符
+   */
+  uniqueID() {
+    return this.jView.uniqueID();
+  }
+
+  /**
+   * 启用Tiled 渲染模式
+   * @param enable
+   */
+  enableTiled(enable: boolean) {
+    this.jView.enableTiled(enable);
+  }
+
+  /**
+   *  启用模糊优化，在缩放时
+   * @param enable
+   */
+  enableZoomBlur(enable: boolean) {
+    this.jView.enableZoomBlur(enable);
+  }
+
+  /**
+   * 启动渲染loop
+   */
+  start() {
+    this.jView.start();
+  }
+
+  /**
+   * 停止渲染loop
+   */
+  stop() {
+    this.jView.stop();
+  }
+
+  /**
+   * 释放内部 C++ 资源， 调用后将不能在继续使用当前对象
+   */
+  release() {
+    this.jView.release();
+  }
+
+  /**
+   * 处理点击手势
+   * @param x X 方向移动量（px单位）
+   * @param y Y 方向移动量（px单位）
+   */
+  handleTap(x: number, y: number) {
+    this.jView.handleTap(x, y);
+  }
+
+  /**
+   * 处理滑动手势
+   * @param state 手势状态
+   * @param tx X 方向移动量
+   * @param ty Y 方向移动量
+   */
+  handlePan(state: seatcanvas.GestureState, tx: number, ty: number) {
+    this.jView.handlePan(state, tx, ty);
+  }
+
+  /**
+   * 处理缩放手势
+   * @param state 手势状态
+   * @param scale 缩放比
+   * @param cx 缩放 X 中心
+   * @param cy 缩放 Y 中心
+   */
+  handlePinch(state: seatcanvas.GestureState, scale: number, cx: number, cy: number) {
+    this.jView.handlePinch(state, scale, cx, cy);
+  }
+
+  /**
+   * 根据坐标查找座位区域
+   * @param x X 坐标值（px单位）
+   * @param y Y 坐标值（px单位）
+   * @returns 区域信息
+   */
+  seatRegionByPoint(x: number, y: number): seatcanvas.HitTestSeatRegionResult | undefined {
+    return this.jView.seatRegionByPoint(x, y);
+  }
+
+  /**
+   * 缩放到指定区域
+   * @param bounds 原始内容的区域，应该是由 seatRegionByPoint 获得的 bounds
+   * @param animated 是否需要动画
+   * @param padding 区域周围的边距（在内容坐标系中），默认为 0
+   * @param duration 动画持续时间（毫秒），仅在 animated 为 true 时有效，默认 300ms
+   */
+  zoomToRect(bounds: seatcanvas.Rect, animated: boolean = true, padding: number = 0, duration: number = 300) {
+    this.jView.zoomToRect(bounds, animated, padding, duration)
+  }
+}

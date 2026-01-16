@@ -53,3 +53,4 @@
 /build*
 
 .DS_Store
+ios/SeatCanvasSample/Configuration/Developer.xcconfig

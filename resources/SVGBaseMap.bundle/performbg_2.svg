@@ -1,0 +1,14 @@
+<svg width="800" height="800"
+    xmlns="http://www.w3.org/2000/svg">
+    <rect id="bg" height="800" width="800" fill="#fef"/>
+    <rect id="svg_1" height="203" width="259" y="83" x="63" rx="20" ry="20" stroke="#000" fill="#5fbf00" zoneId="123617"/>
+    <rect id="svg_2" height="329" width="289" y="411" x="33" stroke="#000" fill="#729999" zoneId="37492"/>
+    <rect id="svg_3" height="232" width="332" y="76" x="400" stroke="#000" fill="#c9c92c" zoneId="74148"/>
+    <path id="svg_4" d="m609,604l149,-38l0,202l-245,0l96,-164z" stroke="#000" fill="#32adad" zoneId="89897"/>
+    <text xml:space="preserve" text-anchor="start" font-size="24px" stroke-width="0" id="svg_8" y="364" x="293" stroke="#000" fill="#e01818">成都哈哈哈哈</text>
+    <ellipse stroke-width="4" ry="85" rx="179.00001" id="svg_5" cy="484" cx="530.00001" fill="#d12e71" zoneId="7153471" stroke="#827878"/>
+    <circle cx="100" cy="100" r="50" fill="blue" stroke="black" stroke-width="2" id="svg_6" zoneId="137414781"/>
+    <text fill="#000000" stroke="#000" x="517.38672" y="495" id="svg_7" stroke-width="0" font-size="24px" text-anchor="start" xml:space="preserve">VIP</text>
+    <text fill="#000000" x="147" y="576" id="svg_11" stroke-width="0" font-size="24px" text-anchor="start" xml:space="preserve" stroke="#000">包厢</text>
+    <text fill="#000000" x="539" y="202" id="svg_12" stroke-width="0" font-size="24px" text-anchor="start" xml:space="preserve" stroke="#000">看台</text>
+</svg>
