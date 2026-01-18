@@ -341,21 +341,34 @@ bool CustomBaseMapPass::updateFillVBOBuffer() {
         auto offset = drawRange->vertexOffset;
         auto &fillVertices = regionMesh->fillVertices;
         auto &strokeVertices = regionMesh->strokeVertices;
+        auto fillColorIndex = index * 2;
+        auto strokeColorIndex = fillColorIndex + 1;
         for (auto &vertext : fillVertices) {
-            vertext.colorIndex = (index * 2);
+            vertext.colorIndex = fillColorIndex;
         }
 
         for (auto &vertext : strokeVertices) {
-            vertext.colorIndex = (index * 2) + 1;
+            vertext.colorIndex = strokeColorIndex;
         }
 
-        if (!fillVertices.empty()) {
-            memcpy(static_cast<void *>((ptr + offset)), fillVertices.data(), sizeof(BaseMapRegionVertex) * fillVertices.size());
-            offset += fillVertices.size();
-        }
+        if (regionMesh->strokeOnTop) {
+            if (!fillVertices.empty()) {
+                memcpy(static_cast<void *>((ptr + offset)), fillVertices.data(), sizeof(BaseMapRegionVertex) * fillVertices.size());
+                offset += fillVertices.size();
+            }
 
-        if (!strokeVertices.empty()) {
-            memcpy(static_cast<void *>((ptr + offset)), strokeVertices.data(), sizeof(BaseMapRegionVertex) * strokeVertices.size());
+            if (!strokeVertices.empty()) {
+                memcpy(static_cast<void *>((ptr + offset)), strokeVertices.data(), sizeof(BaseMapRegionVertex) * strokeVertices.size());
+            }
+        } else {
+            if (!strokeVertices.empty()) {
+                memcpy(static_cast<void *>((ptr + offset)), strokeVertices.data(), sizeof(BaseMapRegionVertex) * strokeVertices.size());
+                offset += strokeVertices.size();
+            }
+
+            if (!fillVertices.empty()) {
+                memcpy(static_cast<void *>((ptr + offset)), fillVertices.data(), sizeof(BaseMapRegionVertex) * fillVertices.size());
+            }
         }
     }
 

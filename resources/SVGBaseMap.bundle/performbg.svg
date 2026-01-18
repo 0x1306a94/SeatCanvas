@@ -4,7 +4,7 @@
 <rect id="field_border" fill="#888" x="3200" y="2800" width="5600" height="4400" rx="40"/>
 <rect id="field" fill="#7cb968" x="3320" y="2920" width="5360" height="4160"/>
 <rect fill="none" stroke="#fff" stroke-width="6" x="3400" y="3000" width="5200" height="4000"/>
-<line stroke="#fff" stroke-width="6" x1="6000" y1="3000" x2="6000" y2="7000"/>
+<line stroke="#fff" stroke-width="6" x1="6000" y1="3000" x2="6000" y2="7000" stroke-dasharray="10, 5"/>
 <circle fill="none" stroke="#fff" stroke-width="6" cx="6000" cy="5000" r="300"/>
 <circle fill="#fff" cx="6000" cy="5000" r="12"/>
 <rect fill="none" stroke="#fff" stroke-width="6" x="3400" y="4200" width="560" height="1600"/>

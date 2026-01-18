@@ -29,6 +29,7 @@ class SVGGroup;
 };  // namespace tgfx
 
 namespace kk::renderer {
+class RegionMeshInfo;
 class BaseMapMeshBuilder;
 };  // namespace kk::renderer
 
@@ -70,7 +71,7 @@ class SVGMeshParser {
     void removeInvisible();
 
     /// 处理解析后的 Path，生成 mesh 和区域信息
-    void processPath(const tgfx::Path &path, tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext);
+    std::shared_ptr<kk::renderer::RegionMeshInfo> processPath(const tgfx::Path &path, tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext);
 
   private:
     kk::renderer::BaseMapMeshBuilder *meshBuilder = nullptr;

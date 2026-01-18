@@ -36,6 +36,7 @@ struct RegionMeshInfo {
     std::vector<BaseMapRegionVertex> strokeVertices = {};
     float additionalAlpha = 1.0f;
     float strokeWidth = 1.0f;
+    bool strokeOnTop = true;
 
     RegionMeshInfo() = default;
 

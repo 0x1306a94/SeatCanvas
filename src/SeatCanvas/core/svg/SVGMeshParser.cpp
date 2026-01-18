@@ -14,7 +14,9 @@
 #include <core/PathTriangulator.h>
 
 #include <tgfx/core/Path.h>
+#include <tgfx/core/PathEffect.h>
 #include <tgfx/core/Rect.h>
+#include <tgfx/core/Shape.h>
 #include <tgfx/svg/SVGDOM.h>
 #include <tgfx/svg/SVGLengthContext.h>
 #include <tgfx/svg/node/SVGCircle.h>
@@ -64,20 +66,18 @@ std::unique_ptr<SVGMeshParseResult> SVGMeshParser::parse(std::shared_ptr<tgfx::S
     meshBuilder = result->meshBuilder.get();
     shapeOrders.clear();
 
-    // 解析所有子节点
     auto &children = rootNode->getChildren();
     for (const auto &child : children) {
         parseNode(child.get(), viewportLengthContext);
     }
 
-    //    removeInvisible();
-
-    // 第一步：解析所有路径，创建 RegionMeshInfo
     for (auto &item : shapeOrders) {
-        processPath(item.second, item.first, viewportLengthContext);
+        auto regionMeshInfo = processPath(item.second, item.first, viewportLengthContext);
+        if (regionMeshInfo) {
+            meshBuilder->addRegionMeshInfo(std::move(regionMeshInfo));
+        }
     }
 
-    // 清理
     meshBuilder = nullptr;
     shapeOrders.clear();
 
@@ -227,93 +227,33 @@ void SVGMeshParser::parsePoly(tgfx::SVGPoly *node, const tgfx::SVGLengthContext 
     shapeOrders.push_back(std::make_pair(node, std::move(path)));
 }
 
-void SVGMeshParser::removeInvisible() {
-    if (shapeOrders.empty()) {
-        return;
+std::vector<float> SimplifyLineDashPattern(const std::vector<float> &pattern,
+                                           const tgfx::Stroke &stroke) {
+    // When LineCap is Square, the endpoints extend by half the line width.
+    // If an unpainted dash segment is less than or equal to the line width, the painted segments will
+    // connect seamlessly. Therefore, such a dash segment can be omitted for simplification.
+    if (stroke.cap != tgfx::LineCap::Square) {
+        return pattern;
     }
-
-    /*
-     * 在实际的业务场景中。对于大型场馆通常也不会有太多的区域。大概在 200 左右。
-     * 如果完全不存在覆盖的情况遍历次数为 200 x 200
-     * 一旦存在覆盖的情况，那么这里就会被剔除掉。从而避免的后面渲染执行不必要的
-     */
-    for (int i = static_cast<int>(shapeOrders.size()) - 1; i >= 0; --i) {
-        auto &current = shapeOrders[i];
-        auto *currentNode = current.first;
-        // 复制路径对象，避免在删除元素时引用失效
-        const tgfx::Path currentPath = current.second;
-
-        // 1. fill 检查
-        bool currentHasFill = true;
-        if (const auto &fillAttr = currentNode->getFill().get(); fillAttr) {
-            if (fillAttr->type() == tgfx::SVGPaint::Type::None) {
-                currentHasFill = false;
-            }
-        }
-        if (!currentHasFill) {
-            continue;
-        }
-
-        auto currentBounds = currentPath.getBounds();
-        if (currentBounds.isEmpty()) {
-            shapeOrders.erase(shapeOrders.begin() + i);
-            continue;
-        }
-
-        // 2. 向前检查「所有」元素
-        for (int j = i - 1; j >= 0; --j) {
-            const auto &prevPath = shapeOrders[j].second;
-            auto prevBounds = prevPath.getBounds();
-
-            if (prevBounds.isEmpty()) {
-                shapeOrders.erase(shapeOrders.begin() + j);
-                --i;
-                continue;
-            }
-
-            // 先用 bounds 进行快速过滤（如果 bounds 不包含，肯定不包含）
-            if (!currentBounds.contains(prevBounds)) {
-                continue;
-            }
-
-            // 使用路径采样点进行精确判断，避免相邻异形路径被错误剔除
-            // 检查前一个路径边界框的角点和中心点是否都在当前路径内
-            bool isFullyContained = true;
-            const float left = prevBounds.x();
-            const float top = prevBounds.y();
-            const float right = prevBounds.x() + prevBounds.width();
-            const float bottom = prevBounds.y() + prevBounds.height();
-            const float centerX = prevBounds.centerX();
-            const float centerY = prevBounds.centerY();
-
-            // 检查四个角点和中心点
-            const std::array<tgfx::Point, 5> testPoints = {
-                tgfx::Point::Make(left, top),        // 左上角
-                tgfx::Point::Make(right, top),       // 右上角
-                tgfx::Point::Make(right, bottom),    // 右下角
-                tgfx::Point::Make(left, bottom),     // 左下角
-                tgfx::Point::Make(centerX, centerY)  // 中心点
-            };
-
-            for (const auto &point : testPoints) {
-                if (!currentPath.contains(point.x, point.y)) {
-                    isFullyContained = false;
-                    break;
-                }
-            }
-
-            // 只有当所有采样点都在当前路径内时，才认为完全包含
-            if (isFullyContained) {
-                shapeOrders.erase(shapeOrders.begin() + j);
-                --i;
-            }
+    float addedPaintLength = 0.0f;
+    std::vector<float> simplifiedDashes = {};
+    for (uint32_t i = 0; i < pattern.size(); i += 2) {
+        auto paintedLength = pattern[i];
+        auto unpaintedLength = pattern[i + 1];
+        if (unpaintedLength <= stroke.width) {
+            addedPaintLength += paintedLength + unpaintedLength;
+        } else {
+            simplifiedDashes.push_back(paintedLength + addedPaintLength);
+            simplifiedDashes.push_back(unpaintedLength);
+            addedPaintLength = 0.0f;
         }
     }
+    return simplifiedDashes;
 }
 
-void SVGMeshParser::processPath(const tgfx::Path &path, tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext) {
+std::shared_ptr<kk::renderer::RegionMeshInfo> SVGMeshParser::processPath(const tgfx::Path &path, tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext) {
     if (meshBuilder == nullptr) {
-        return;
+        return nullptr;
     }
 
     auto bounds = path.getBounds();
@@ -337,25 +277,19 @@ void SVGMeshParser::processPath(const tgfx::Path &path, tgfx::SVGNode *node, con
         attributes["id"] = id.value();
     }
 
-    // 创建 RegionMeshInfo
     auto regionMeshInfo = std::make_shared<kk::renderer::RegionMeshInfo>();
     regionMeshInfo->regionId = regionId;
     regionMeshInfo->attributes = attributes;
     regionMeshInfo->fillBounds = bounds;
+    regionMeshInfo->path = std::make_shared<tgfx::Path>(path);
 
-    // 获取填充颜色
     if (const auto &attribute = node->getFill().get(); attribute && attribute->type() == tgfx::SVGPaint::Type::Color) {
         regionMeshInfo->fillColor = attribute->color().color();
     }
 
-    // 使用智能指针保存 Path（避免拷贝）
-    regionMeshInfo->path = std::make_shared<tgfx::Path>(path);
-
-    // 三角化 fill 路径
     std::vector<float> fillTriangleVertices;
     tgfx::PathTriangulator::ToAATriangles(path, bounds, &fillTriangleVertices);
     if (!fillTriangleVertices.empty()) {
-        // 转换为 BaseMapRegionVertex（暂时不设置 regionIndex，在 build 时设置）
         for (size_t idx = 0; idx < fillTriangleVertices.size(); idx += 3) {
             kk::renderer::BaseMapRegionVertex vertex{};
             vertex.x = fillTriangleVertices[idx];
@@ -365,82 +299,108 @@ void SVGMeshParser::processPath(const tgfx::Path &path, tgfx::SVGNode *node, con
         }
     }
 
-    regionMeshInfo->strokeColor = tgfx::Color::Black();
+    tgfx::Stroke stroke{};
 
-    // 获取 stroke 信息
     if (const auto &strokeAttr = node->getStroke().get(); strokeAttr && strokeAttr->type() == tgfx::SVGPaint::Type::Color) {
-        tgfx::Stroke stroke{};
         regionMeshInfo->strokeColor = strokeAttr->color().color();
+    };
 
-        // stroke-width
-        if (const auto &widthAttr = node->getStrokeWidth().get(); widthAttr) {
-            stroke.width = lengthContext.resolve(widthAttr.value(), tgfx::SVGLengthContext::LengthType::Horizontal);
+    bool hasStrokeWidth = false;
+    if (const auto &widthAttr = node->getStrokeWidth().get(); widthAttr) {
+        hasStrokeWidth = true;
+        stroke.width = lengthContext.resolve(widthAttr.value(), tgfx::SVGLengthContext::LengthType::Horizontal);
+    }
+
+    if (!regionMeshInfo->strokeColor && !hasStrokeWidth) {
+        return regionMeshInfo;
+    }
+
+    if (!regionMeshInfo->strokeColor) {
+        // default stroke color
+        regionMeshInfo->strokeColor = tgfx::Color::Black();
+    }
+
+    if (const auto &joinAttr = node->getStrokeLineJoin().get(); joinAttr) {
+        switch (joinAttr.value().type()) {
+            case tgfx::SVGLineJoin::Type::Miter:
+                stroke.join = tgfx::LineJoin::Miter;
+                break;
+            case tgfx::SVGLineJoin::Type::Round:
+                stroke.join = tgfx::LineJoin::Round;
+                break;
+            case tgfx::SVGLineJoin::Type::Bevel:
+                stroke.join = tgfx::LineJoin::Bevel;
+                break;
+            default:
+                break;
         }
+    }
 
-        // stroke-linecap
-        if (const auto &capAttr = node->getStrokeLineCap().get(); capAttr) {
-            switch (capAttr.value()) {
-                case tgfx::SVGLineCap::Butt:
-                    stroke.cap = tgfx::LineCap::Butt;
-                    break;
-                case tgfx::SVGLineCap::Round:
-                    stroke.cap = tgfx::LineCap::Round;
-                    break;
-                case tgfx::SVGLineCap::Square:
-                    stroke.cap = tgfx::LineCap::Square;
-                    break;
-                default:
-                    break;
+    if (const auto &miterAttr = node->getStrokeMiterLimit().get(); miterAttr) {
+        stroke.miterLimit = miterAttr.value();
+    }
+
+    regionMeshInfo->strokeWidth = stroke.width;
+
+    std::vector<float> dashes{};
+    float dashOffset = 0.0f;
+    if (const auto &dashAttr = node->getStrokeDashArray().get(); dashAttr) {
+        for (const auto &item : dashAttr.value().dashArray()) {
+            dashes.push_back(item.value());
+        }
+        dashes = SimplifyLineDashPattern(dashes, stroke);
+    }
+
+    if (const auto &attribute = node->getStrokeDashOffset().get(); attribute) {
+        dashOffset = attribute.value().value();
+    }
+
+    auto strokeShape = tgfx::Shape::MakeFrom(path);
+    if (!dashes.empty()) {
+        auto dash = tgfx::PathEffect::MakeDash(dashes.data(), static_cast<int>(dashes.size()),
+                                               dashOffset, false);
+        strokeShape = tgfx::Shape::ApplyEffect(std::move(strokeShape), std::move(dash));
+    }
+    strokeShape = tgfx::Shape::ApplyStroke(std::move(strokeShape), &stroke);
+    if (!strokeShape) {
+        return regionMeshInfo;
+    }
+
+    if (!dashes.empty() || !regionMeshInfo->fillColor) {
+        auto strokePath = strokeShape->getPath();
+        regionMeshInfo->strokeOnTop = true;
+        regionMeshInfo->strokeBounds = strokePath.getBounds();
+        std::vector<float> strokeTriangleVertices;
+        tgfx::PathTriangulator::ToAATriangles(strokePath, regionMeshInfo->strokeBounds,
+                                              &strokeTriangleVertices);
+        if (!strokeTriangleVertices.empty()) {
+            for (size_t idx = 0; idx < strokeTriangleVertices.size(); idx += 3) {
+                kk::renderer::BaseMapRegionVertex vertex{};
+                vertex.x = strokeTriangleVertices[idx];
+                vertex.y = strokeTriangleVertices[idx + 1];
+                vertex.coverage = strokeTriangleVertices[idx + 2];
+                regionMeshInfo->strokeVertices.push_back(vertex);
             }
         }
-
-        // stroke-linejoin
-        if (const auto &joinAttr = node->getStrokeLineJoin().get(); joinAttr) {
-            switch (joinAttr.value().type()) {
-                case tgfx::SVGLineJoin::Type::Miter:
-                    stroke.join = tgfx::LineJoin::Miter;
-                    break;
-                case tgfx::SVGLineJoin::Type::Round:
-                    stroke.join = tgfx::LineJoin::Round;
-                    break;
-                case tgfx::SVGLineJoin::Type::Bevel:
-                    stroke.join = tgfx::LineJoin::Bevel;
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        // stroke-miterlimit
-        if (const auto &miterAttr = node->getStrokeMiterLimit().get(); miterAttr) {
-            stroke.miterLimit = miterAttr.value();
-        }
-
-        regionMeshInfo->strokeWidth = stroke.width;
-
-        // 只有 width > 0 才处理 stroke
-        if (stroke.width > 0.0f) {
-            // 三角化 stroke 路径
-            tgfx::Path strokePath = path;  // 复制 path，因为 applyToPath 会修改它
-            if (stroke.applyToPath(&strokePath)) {
-                regionMeshInfo->strokeBounds = strokePath.getBounds();
-                std::vector<float> strokeTriangleVertices;
-                tgfx::PathTriangulator::ToAATriangles(strokePath, regionMeshInfo->strokeBounds, &strokeTriangleVertices);
-                if (!strokeTriangleVertices.empty()) {
-                    for (size_t idx = 0; idx < strokeTriangleVertices.size(); idx += 3) {
-                        kk::renderer::BaseMapRegionVertex vertex{};
-                        vertex.x = strokeTriangleVertices[idx];
-                        vertex.y = strokeTriangleVertices[idx + 1];
-                        vertex.coverage = strokeTriangleVertices[idx + 2];
-                        regionMeshInfo->strokeVertices.push_back(vertex);
-                    }
-                }
+    } else {
+        tgfx::Path expandedPath = path;
+        expandedPath.addPath(strokeShape->getPath(), tgfx::PathOp::Union);
+        regionMeshInfo->strokeOnTop = false;
+        regionMeshInfo->strokeBounds = expandedPath.getBounds();
+        std::vector<float> strokeTriangleVertices;
+        tgfx::PathTriangulator::ToAATriangles(expandedPath, regionMeshInfo->strokeBounds,
+                                              &strokeTriangleVertices);
+        if (!strokeTriangleVertices.empty()) {
+            for (size_t idx = 0; idx < strokeTriangleVertices.size(); idx += 3) {
+                kk::renderer::BaseMapRegionVertex vertex{};
+                vertex.x = strokeTriangleVertices[idx];
+                vertex.y = strokeTriangleVertices[idx + 1];
+                vertex.coverage = strokeTriangleVertices[idx + 2];
+                regionMeshInfo->strokeVertices.push_back(vertex);
             }
         }
     }
 
-    // 添加到构建器
-    meshBuilder->addRegionMeshInfo(regionMeshInfo);
+    return regionMeshInfo;
 }
-
 };  // namespace kk::svg
