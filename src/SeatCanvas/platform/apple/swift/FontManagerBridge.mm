@@ -1,5 +1,5 @@
 //
-//  FontManagerBridge.m
+//  FontManagerBridge.mm
 //  SeatCanvas
 //
 //  Created by KK on 2026/1/18.

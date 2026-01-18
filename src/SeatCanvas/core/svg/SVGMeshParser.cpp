@@ -7,7 +7,6 @@
 
 #include "SVGMeshParser.hpp"
 
-#include "core/RegionInfo.hpp"
 #include "core/renderer/BaseMapMeshBuilder.hpp"
 #include "core/renderer/RegionMeshInfo.hpp"
 

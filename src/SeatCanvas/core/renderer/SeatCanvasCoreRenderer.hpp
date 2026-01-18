@@ -11,14 +11,19 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 #include <tgfx/core/Color.h>
 #include <tgfx/core/Point.h>
 #include <tgfx/core/Rect.h>
 #include <tgfx/gpu/RenderPass.h>
 
-#include "core/RegionInfo.hpp"
+#include "core/BaseMapColorState.h"
+#include "core/SeatData.hpp"
 #include "core/SeatRenderMode.hpp"
+#include "core/SeatZoneData.hpp"
 #include "core/ZoomLevelConfig.hpp"
 #include "core/ZoomScaleConfig.hpp"
 #include "core/gesture/GestureState.hpp"
@@ -69,11 +74,6 @@ class SeatRegionMeshManager;
 class SeatStyleAtlasManager;
 class SeatCanvasCoreRendererState;
 class SeatCanvasCoreRenderer {
-  private:
-    enum class BaseMapColorState {
-        Original,
-        Rainbow,
-    };
 
   public:
     explicit SeatCanvasCoreRenderer(
@@ -203,12 +203,6 @@ class SeatCanvasCoreRenderer {
     /// @return 如果在内容区域内返回 true，否则返回 false（例如点击到留白区域）
     bool isPointInContentArea(const tgfx::Point &screenLocation) const;
 
-    /// 获取区域数据
-    /// @param x x 坐标
-    /// @param y y 坐标
-    /// @return 区域数据
-    const kk::RegionInfo *getSeatRegionDataByPoint(float x, float y) const;
-
     /// 缩放到指定区域并居中显示
     /// @param rect 目标区域（在内容坐标系中）
     /// @param animated 是否使用动画
@@ -219,6 +213,25 @@ class SeatCanvasCoreRenderer {
     /// 设置选中的区域ID（仅对 ClickToEnter 模式有效）
     /// @param regionId 区域ID，为空表示取消选择，恢复到全区域视图
     void setSelectedRegionId(const std::string &regionId);
+
+    /// 设置区域数据
+    /// 用于设置区域的显示信息（区域颜色和价格颜色）
+    /// @param regionData 区域数据，包含 regionId, regionColor, priceColor
+    void setRegionData(const kk::SeatZoneData &regionData);
+
+    /// 设置某个区域的座位数据
+    /// @param regionId 区域ID
+    /// @param seats 座位数据列表，每个座位包含 seatId, status, x, y
+    void setSeatData(const std::string &regionId, const std::vector<kk::SeatData> &seats);
+
+    /// 更新座位状态
+    /// @param regionId 区域ID
+    /// @param seatId 座位ID
+    /// @param status 新的座位状态
+    void updateSeatStatus(const std::string &regionId, const std::string &seatId, uint32_t status);
+
+    /// 清除所有区域和座位数据
+    void clearSeatData();
 
   private:
     /// 设置当前的底图配置
@@ -279,7 +292,7 @@ class SeatCanvasCoreRenderer {
 
     void zoomToPoint(const tgfx::Point &location, float scale, bool animated = true, float padding = 0.0f, double durationMs = 300.0);
 
-    void applyBaseMapColorState(BaseMapColorState toState);
+    void applyBaseMapColorState(kk::BaseMapColorState toState);
 
     void drawFPS(tgfx::Canvas *canvas);
 
@@ -323,6 +336,11 @@ class SeatCanvasCoreRenderer {
     kk::SeatRenderMode _renderMode = {kk::SeatRenderMode::ZoomBased};
     kk::ZoomLevelConfig _zoomLevelConfig = {};
     uint32_t _minimapAnimationId = {0};
+
+    // 区域和座位数据存储
+    std::unordered_map<std::string, kk::SeatZoneData> _regionDataMap = {};
+    std::unordered_map<std::string, std::vector<kk::SeatData>> _seatDataMap = {};
+    float _seatSize = {36.0f};  // 座位大小（默认 36x36）
 };
 };  // namespace kk::renderer
 

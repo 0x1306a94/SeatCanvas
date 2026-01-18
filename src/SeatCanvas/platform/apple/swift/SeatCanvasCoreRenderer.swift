@@ -6,7 +6,7 @@
 //
 
 import Foundation
-
+internal import CxxStdlib
 internal import SeatCanvas_Private
 
 @MainActor
@@ -146,5 +146,33 @@ extension SeatCanvasCoreRenderer {
             return
         }
         kk.bridge.SeatCanvasCoreRendererInvalidateContent(cppObject)
+    }
+
+    func updateSeatZoneDatas(zones: [SeatZoneData]) {
+        guard let cppObject = cppObject else {
+            return
+        }
+
+        var builder = kk.bridge.CreateSeatZoneDataBuilder()
+        for zone in zones {
+            kk.bridge.SeatZoneDataBuilderPut(builder, std.string(zone.zoneId), zone.color, zone.pirceColor)
+        }
+
+        kk.bridge.SeatCanvasCoreRendererSetSeatZoneDatas(cppObject, builder)
+        kk.bridge.ReleaseCPPObject(&builder)
+    }
+
+    func updateSeatDatas(zoneId: String, seats: [SeatData]) {
+        guard let cppObject = cppObject else {
+            return
+        }
+
+        var builder = kk.bridge.CreateSeatDataBuilder()
+        for seat in seats {
+            kk.bridge.SeatDataBuilderPut(builder, std.string(seat.seatId), seat.status, seat.selected, seat.position)
+        }
+
+        kk.bridge.SeatCanvasCoreRendererSetSeatDatas(cppObject, std.string(zoneId), builder)
+        kk.bridge.ReleaseCPPObject(&builder)
     }
 }

@@ -21,20 +21,20 @@ class SeatCanvasRenderView: UIView {
     override var bounds: CGRect {
         didSet {
             let old = oldValue.size
-            guard old != self.bounds.size else {
+            guard old != bounds.size else {
                 return
             }
-            self.updateSize()
+            updateSize()
         }
     }
 
     override var frame: CGRect {
         didSet {
             let old = oldValue.size
-            guard old != self.frame.size else {
+            guard old != frame.size else {
                 return
             }
-            self.updateSize()
+            updateSize()
         }
     }
 
@@ -43,17 +43,17 @@ class SeatCanvasRenderView: UIView {
             guard oldValue != contentScaleFactor else {
                 return
             }
-            self.updateSize()
+            updateSize()
         }
     }
 
     func updateSize() {
-        self.didUpdateSize?(self)
+        didUpdateSize?(self)
     }
 
     deinit {
         #if DEBUG
-        print("\(type(of: self)) deinit")
+            print("\(type(of: self)) deinit")
         #endif
     }
 }

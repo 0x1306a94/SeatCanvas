@@ -33,16 +33,18 @@ export declare namespace seatcanvas {
     height: number;
   }
 
-  export interface HitTestSeatRegionResult {
-    /**
-     * 区域ID
-     */
-    regionId: string;
+  export interface SeatZoneData {
+    zoneId: string;
+    color?: string;
+    priceColor?: string
+  }
 
-    /**
-     * 区域包围盒
-     */
-    bounds: Rect;
+  export interface SeatData {
+    seatId: string;
+    status: number;
+    selected: boolean;
+    x: number;
+    y: number;
   }
 
   export class JRendererCore {
@@ -116,14 +118,6 @@ export declare namespace seatcanvas {
     handlePinch(state: GestureState, scale: number, cx: number, cy: number);
 
     /**
-     * 根据坐标查找座位区域
-     * @param x X 坐标值（px单位）
-     * @param y Y 坐标值（px单位）
-     * @returns 区域信息
-     */
-    seatRegionByPoint(x: number, y: number): HitTestSeatRegionResult | undefined;
-
-    /**
      * 缩放到指定区域
      * @param bounds 原始内容的区域，应该是由 seatRegionByPoint 获得的 bounds
      * @param animated 是否需要动画
@@ -132,9 +126,15 @@ export declare namespace seatcanvas {
      */
     zoomToRect(bounds: Rect, animated: boolean, padding: number, duration: number);
 
-    setShouldSelectSeatCallback(callback: (regionId: string, seatId: string) => boolean)
-    setDidSelectSeatCallback(callback: (regionId: string, seatId: string) => void)
-    setDidDeselectSeatCallback(callback: (regionId: string, seatId: string) => void)
+    setShouldSelectSeatCallback(callback: (regionId: string, seatId: string) => boolean);
+
+    setDidSelectSeatCallback(callback: (regionId: string, seatId: string) => void);
+
+    setDidDeselectSeatCallback(callback: (regionId: string, seatId: string) => void);
+
+    updateSeatZones(zones: SeatZoneData[]);
+
+    updateSeats(zoneId: string, seats: SeatData[]);
   }
 
 }

@@ -4,6 +4,8 @@ import { display } from '@kit.ArkUI';
 import { SeatCanvasInit } from '../utils/SeatCanvasInit';
 import { BaseMapFormat } from '../utils/BaseMapFormat';
 import { SeatCanvasRendererDelegate } from './SeatCanvasRendererDelegate';
+import { SeatData } from './SeatData';
+import { SeatZoneData } from './SeatZoneData';
 
 export class SeatCanvasViewController {
   private jView!: seatcanvas.JRendererCore;
@@ -133,16 +135,6 @@ export class SeatCanvasViewController {
   }
 
   /**
-   * 根据坐标查找座位区域
-   * @param x X 坐标值（px单位）
-   * @param y Y 坐标值（px单位）
-   * @returns 区域信息
-   */
-  seatRegionByPoint(x: number, y: number): seatcanvas.HitTestSeatRegionResult | undefined {
-    return this.jView.seatRegionByPoint(x, y);
-  }
-
-  /**
    * 缩放到指定区域
    * @param bounds 原始内容的区域，应该是由 seatRegionByPoint 获得的 bounds
    * @param animated 是否需要动画
@@ -159,6 +151,23 @@ export class SeatCanvasViewController {
    */
   applySeatStyleJSONConfig(config: string | null) {
     this.jView.applySeatStyleJSONConfig(config);
+  }
+
+  /**
+   * 更新区域（zone）样式数据
+   * @param zones 区域数据列表
+   */
+  updateSeatZones(zones: SeatZoneData[]) {
+    this.jView.updateSeatZones(zones);
+  }
+
+  /**
+   * 更新指定区域下的座位数据
+   * @param zoneId 区域 ID
+   * @param seats 座位数据列表
+   */
+  updateSeats(zoneId: string, seats: SeatData[]) {
+    this.jView.updateSeats(zoneId, seats);
   }
 
   readonly onShouldSelectSeat = (regionId: string, seatId: string): boolean => {

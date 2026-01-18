@@ -12,6 +12,9 @@ import com.libseatcanvas.BaseMapFormat
 import com.libseatcanvas.SeatCanvasRendererDelegate
 import com.libseatcanvas.style.SeatStyleConfigBuilder
 import com.seatcanvas.sample.databinding.FragmentSecondBinding
+import com.seatcanvas.sample.generateMockSeatDatas
+import com.seatcanvas.sample.generateMockZoneDatas
+import com.seatcanvas.sample.getMockRegions
 
 /**
  * A simple [Fragment] subclass as the second destination in the navigation.
@@ -62,6 +65,16 @@ class SecondFragment : Fragment() {
                 android.util.Log.d("SecondFragment", "didDeselectSeat: regionId=$regionId, seatId=$seatId")
             }
         })
+
+        // 加载底图后，延迟生成并设置 mock 数据
+        binding.seatCanvasView.postDelayed({ loadMockData() }, 500)
+    }
+
+    private fun loadMockData() {
+        binding.seatCanvasView.updateSeatZones(generateMockZoneDatas())
+        for (region in getMockRegions()) {
+            binding.seatCanvasView.updateSeats(region.zoneId, generateMockSeatDatas(region.rect))
+        }
     }
 
     override fun onPause() {

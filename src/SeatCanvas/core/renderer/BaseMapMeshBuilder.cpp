@@ -7,8 +7,6 @@
 
 #include "BaseMapMeshBuilder.hpp"
 
-#include "RegionLayerBuilder.hpp"
-
 namespace kk::renderer {
 
 void BaseMapMeshBuilder::addRegionMeshInfo(std::shared_ptr<RegionMeshInfo> regionInfo) {
@@ -25,7 +23,6 @@ void BaseMapMeshBuilder::addRegionMeshInfo(std::shared_ptr<RegionMeshInfo> regio
     totalVertexCount += vertexCount;
     vertexOffset = totalVertexCount;
 
-    // 建立 regionId 到 RegionMeshInfo 的映射
     if (!regionInfo->regionId.empty()) {
         regionIdToMeshInfo[regionInfo->regionId] = regionInfo;
         regionIdToIndex[regionInfo->regionId] = regionMeshInfos.size() - 1;

@@ -20,25 +20,6 @@
 
 namespace kk::bridge {
 
-struct HitTestSeatRegionResult {
-    /// 区域ID
-    std::string regionId{""};
-
-    CGRect bounds{CGRectZero};
-
-    HitTestSeatRegionResult() {
-    }
-
-    explicit HitTestSeatRegionResult(const std::string &regionId)
-        : regionId(regionId) {
-    }
-
-    /// 是否有效
-    bool valid() const {
-        return !regionId.empty();
-    }
-};
-
 /// 初始化系统属性
 /// - Parameters:
 ///   - density: 屏幕像素密度

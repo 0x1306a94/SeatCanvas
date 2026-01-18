@@ -13,6 +13,8 @@ namespace kk::bridge {
 enum class ObjectTag {
     CoreRenderer,
     ZoneData,
+    ZoneDataBuilder,
+    SeatData,
 };
 
 using CPPObjectDeleterFunc = void (*_Nullable)(void *_Nonnull);

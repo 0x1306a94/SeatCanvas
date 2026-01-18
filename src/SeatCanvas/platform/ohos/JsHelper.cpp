@@ -7,6 +7,8 @@
 
 #include "JsHelper.h"
 
+#include "core/style/ColorHexParser.hpp"
+
 #include <tgfx/core/Data.h>
 #include <tgfx/platform/Print.h>
 
@@ -113,6 +115,111 @@ napi_value NewInstance(napi_env env, const std::string &name, void *handler) {
     return result;
 }
 
+std::string GetUtf8String(napi_env env, napi_value value) {
+    size_t length = 0;
+    napi_status status = napi_get_value_string_utf8(env, value, nullptr, 0, &length);
+    if (status != napi_ok) {
+        return {};
+    }
+
+    std::string result;
+    result.resize(length);
+    size_t copied = 0;
+    napi_get_value_string_utf8(env, value, result.data(), length + 1, &copied);
+    return result;
+}
+
+std::string ReadString(napi_env env, napi_value obj, const char *key) {
+    auto result = ReadOptionalString(env, obj, key);
+    return result.value_or("");
+}
+
+std::optional<std::string> ReadOptionalString(napi_env env, napi_value obj, const char *key) {
+
+    napi_value v;
+    napi_get_named_property(env, obj, key, &v);
+
+    napi_valuetype type;
+    napi_typeof(env, v, &type);
+
+    if (type == napi_string) {
+        return GetUtf8String(env, v);
+    }
+    return std::nullopt;
+}
+
+std::optional<tgfx::Color> ReadOptionalColorFromARGBHex(napi_env env, napi_value obj, const char *key) {
+    auto hex = ReadOptionalString(env, obj, key);
+    if (!hex || hex->empty()) {
+        return std::nullopt;
+    }
+
+    tgfx::Color color;
+    if (kk::renderer::ParseColorFromARGBHex(hex.value(), color)) {
+        return color;
+    }
+    return std::nullopt;
+}
+
+int32_t ReadInt32(napi_env env, napi_value obj, const char *key) {
+    napi_value v;
+    napi_get_named_property(env, obj, key, &v);
+
+    napi_valuetype type;
+    napi_typeof(env, v, &type);
+
+    if (type == napi_number) {
+        int32_t x = 0.0;
+        napi_get_value_int32(env, v, &x);
+        return x;
+    }
+    return 0.0;
+}
+
+uint32_t ReadUInt32(napi_env env, napi_value obj, const char *key) {
+    napi_value v;
+    napi_get_named_property(env, obj, key, &v);
+
+    napi_valuetype type;
+    napi_typeof(env, v, &type);
+
+    if (type == napi_number) {
+        uint32_t x = 0.0;
+        napi_get_value_uint32(env, v, &x);
+        return x;
+    }
+    return 0.0;
+}
+
+double ReadDouble(napi_env env, napi_value obj, const char *key) {
+    napi_value v;
+    napi_get_named_property(env, obj, key, &v);
+
+    napi_valuetype type;
+    napi_typeof(env, v, &type);
+
+    if (type == napi_number) {
+        double x = 0.0;
+        napi_get_value_double(env, v, &x);
+        return x;
+    }
+    return 0.0;
+}
+
+bool ReadBoolean(napi_env env, napi_value obj, const char *key) {
+    napi_value v;
+    napi_get_named_property(env, obj, key, &v);
+
+    napi_valuetype type;
+    napi_typeof(env, v, &type);
+    if (type == napi_number) {
+        bool x = false;
+        napi_get_value_bool(env, v, &x);
+        return x;
+    }
+    return false;
+}
+
 napi_value CreateRect(napi_env env, const tgfx::Rect &rect) {
     napi_value jsRect;
     napi_create_object(env, &jsRect);
@@ -148,6 +255,34 @@ tgfx::Rect GetRect(napi_env env, napi_value value) {
 
     auto rect = tgfx::Rect::MakeXYWH(static_cast<float>(x), static_cast<float>(y), static_cast<float>(width), static_cast<float>(height));
     return rect;
+}
+
+std::optional<kk::SeatZoneData> GetSeatZoneData(napi_env env, napi_value value) {
+    if (env == nullptr || value == nullptr) {
+        return std::nullopt;
+    }
+    auto zoneId = ReadString(env, value, "zoneId");
+    if (zoneId.empty()) {
+        return std::nullopt;
+    }
+    auto color = ReadOptionalColorFromARGBHex(env, value, "color");
+    auto priceColor = ReadOptionalColorFromARGBHex(env, value, "priceColor");
+    return {kk::SeatZoneData(zoneId, color, priceColor)};
+}
+
+std::optional<kk::SeatData> GetSeatData(napi_env env, napi_value value) {
+    if (env == nullptr || value == nullptr) {
+        return std::nullopt;
+    }
+    auto seatId = ReadString(env, value, "seatId");
+    if (seatId.empty()) {
+        return std::nullopt;
+    }
+    auto status = ReadUInt32(env, value, "status");
+    auto selected = ReadBoolean(env, value, "selected");
+    auto x = ReadDouble(env, value, "x");
+    auto y = ReadDouble(env, value, "y");
+    return {kk::SeatData(seatId, status, selected, static_cast<float>(x), static_cast<float>(y))};
 }
 
 std::shared_ptr<tgfx::Data> LoadDataFromAsset(NativeResourceManager *mNativeResMgr, const char *name) {

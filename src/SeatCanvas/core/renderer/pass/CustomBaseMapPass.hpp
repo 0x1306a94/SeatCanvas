@@ -8,6 +8,7 @@
 #ifndef CustomBaseMapPass_hpp
 #define CustomBaseMapPass_hpp
 
+#include "core/BaseMapColorState.h"
 #include "core/renderer/BaseMapRegionVertex.hpp"
 #include "core/renderer/RegionMeshInfo.hpp"
 #include "core/renderer/pass/CustomRenderPass.hpp"
@@ -32,7 +33,8 @@ class CustomBaseMapPass : public CustomRenderPass {
     virtual ~CustomBaseMapPass();
 
     void updateMeshBuilder(std::shared_ptr<BaseMapMeshBuilder> meshBuilder);
-
+    void updateColorState(kk::BaseMapColorState state);
+    void invalidateColorTable();
     // 颜色模式相关方法已移除
 
     virtual bool onDraw(tgfx::CommandEncoder *encoder, const SeatCanvasCoreRendererState *state) override;
@@ -77,7 +79,7 @@ class CustomBaseMapPass : public CustomRenderPass {
     } bitFields = {};
 
     tgfx::Matrix mvpMatrix = {tgfx::Matrix::I()};
-
+    kk::BaseMapColorState colorState = {kk::BaseMapColorState::Original};
     std::shared_ptr<BaseMapMeshBuilder> meshBuilder = {nullptr};
     std::unique_ptr<UniformData> fillUniformData = {nullptr};
     std::shared_ptr<tgfx::GPUBuffer> fillVBOBuffer = {nullptr};

@@ -15,9 +15,10 @@
 #include <tgfx/svg/SVGDOM.h>
 
 #include "AndroidSeatCanvasCoreRendererDelegate.hpp"
-#include "JHitTestSeatRegionResult.h"
 #include "JNIHelper.hpp"
 #include "JRect.h"
+#include "JSeatData.h"
+#include "JSeatZoneData.h"
 #include "JStringUtil.hpp"
 #include "core/BaseMapConfig.hpp"
 #include "core/FontManager.hpp"
@@ -92,7 +93,10 @@ static void DeleteSeatCanvasCoreRenderer(JNIEnv *env, jobject thiz) {
 
 extern "C" {
 
-JNIEXPORT jlong JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeLoadBaseMapFromFormat(JNIEnv *env, jobject thiz, jbyteArray srcData, jstring jformatName) {
+JNIEXPORT jlong JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeLoadBaseMapFromFormat(JNIEnv *env, jobject thiz,
+                                                                  jbyteArray srcData,
+                                                                  jstring jformatName) {
     if (srcData == nullptr) {
         tgfx::PrintError("data is null");
         return 0;
@@ -126,7 +130,8 @@ JNIEXPORT jlong JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeLoadBaseMapF
     return reinterpret_cast<jlong>(outResult);
 }
 
-JNIEXPORT jboolean JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeLoadBaseMap(JNIEnv *env, jobject thiz, jlong dataPtr) {
+JNIEXPORT jboolean JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeLoadBaseMap(JNIEnv *env, jobject thiz, jlong dataPtr) {
     GetCPPObjectOrReturnValue(env, thiz, renderer, false);
     if (dataPtr == 0) {
         renderer->setBaseMapConfig(nullptr, kk::SeatRenderMode::ZoomBased);
@@ -134,14 +139,17 @@ JNIEXPORT jboolean JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeLoadBaseM
     }
 
     auto map = reinterpret_cast<kk::jni::LoadBaseMapResult *>(dataPtr);
-    auto baseMapConfig = std::make_shared<kk::BaseMapConfig>(map->meshBuilder, map->textLayer, map->miniLayer, map->baseMapSize);
+    auto baseMapConfig = std::make_shared<kk::BaseMapConfig>(map->meshBuilder, map->textLayer,
+                                                             map->miniLayer, map->baseMapSize);
     renderer->setBaseMapConfig(std::move(baseMapConfig), kk::SeatRenderMode::ZoomBased);
     delete map;
 
     return true;
 }
 
-JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeSetSeatStyleJSONConfig(JNIEnv *env, jobject thiz, jbyteArray data, jint len) {
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeSetSeatStyleJSONConfig(JNIEnv *env, jobject thiz,
+                                                                   jbyteArray data, jint len) {
     GetCPPObjectOrReturn(env, thiz, renderer);
     if (data == nullptr || len == 0) {
         renderer->setStyleKeyToConfigFromJSON(nullptr, 0);
@@ -153,42 +161,105 @@ JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeSetSeatStyleJ
     env->ReleaseByteArrayElements(data, bytes, 0);
 }
 
-JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeHandleTap(JNIEnv *env, jobject thiz, jfloat x, jfloat y) {
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeUpdateSeatZones(JNIEnv *env, jobject thiz,
+                                                            jobjectArray jzones) {
+    GetCPPObjectOrReturn(env, thiz, renderer);
+    if (jzones == nullptr) {
+        return;
+    }
+    jsize length = env->GetArrayLength(jzones);
+    for (jsize i = 0; i < length; ++i) {
+        jobject element = env->GetObjectArrayElement(jzones, i);
+        if (element == nullptr) {
+            continue;
+        }
+        auto zoneData = kk::jni::JSeatZoneData::FromJava(env, element);
+        env->DeleteLocalRef(element);
+        if (zoneData) {
+            renderer->setRegionData(*zoneData);
+        }
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeUpdateSeats(JNIEnv *env, jobject thiz,
+                                                        jstring jzoneId, jobjectArray jseats) {
+    GetCPPObjectOrReturn(env, thiz, renderer);
+    auto zoneId = kk::jni::SafeConvertToStdString(env, jzoneId);
+    if (zoneId.empty()) {
+        return;
+    }
+    if (jseats == nullptr) {
+        return;
+    }
+    jsize length = env->GetArrayLength(jseats);
+    std::vector<kk::SeatData> seats;
+    seats.reserve(static_cast<size_t>(length));
+    for (jsize i = 0; i < length; ++i) {
+        jobject element = env->GetObjectArrayElement(jseats, i);
+        if (element == nullptr) {
+            continue;
+        }
+        auto seatData = kk::jni::JSeatData::FromJava(env, element);
+        env->DeleteLocalRef(element);
+        if (seatData) {
+            seats.push_back(*seatData);
+        }
+    }
+    renderer->setSeatData(zoneId, seats);
+}
+
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeHandleTap(JNIEnv *env, jobject thiz, jfloat x,
+                                                      jfloat y) {
     GetCPPObjectOrReturn(env, thiz, renderer);
     renderer->handleTap(tgfx::Point{x, y});
 }
 
-JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeHandlePan(JNIEnv *env, jobject thiz, jint state, jfloat tx, jfloat ty, jdouble timestampMs) {
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeHandlePan(JNIEnv *env, jobject thiz, jint state,
+                                                      jfloat tx, jfloat ty, jdouble timestampMs) {
     GetCPPObjectOrReturn(env, thiz, renderer);
-    renderer->handlePan(static_cast<kk::gesture::GestureState>(state), tgfx::Point{tx, ty}, timestampMs);
+    renderer->handlePan(static_cast<kk::gesture::GestureState>(state), tgfx::Point{tx, ty},
+                        timestampMs);
 }
 
-JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeHandlePinch(JNIEnv *env, jobject thiz, jint state, jfloat scale, jfloat cx, jfloat cy) {
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeHandlePinch(JNIEnv *env, jobject thiz, jint state,
+                                                        jfloat scale, jfloat cx, jfloat cy) {
     GetCPPObjectOrReturn(env, thiz, renderer);
-    renderer->handlePinch(static_cast<kk::gesture::GestureState>(state), scale, tgfx::Point{cx, cy});
+    renderer->handlePinch(static_cast<kk::gesture::GestureState>(state), scale,
+                          tgfx::Point{cx, cy});
 }
 
-JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeStartDrawLoop(JNIEnv *env, jobject thiz) {
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeStartDrawLoop(JNIEnv *env, jobject thiz) {
     GetCPPObjectOrReturn(env, thiz, renderer);
     renderer->start();
 }
 
-JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeStopDrawLoop(JNIEnv *env, jobject thiz) {
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeStopDrawLoop(JNIEnv *env, jobject thiz) {
     GetCPPObjectOrReturn(env, thiz, renderer);
     renderer->stop();
 }
 
-JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeInvalidateContent(JNIEnv *env, jobject thiz) {
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeInvalidateContent(JNIEnv *env, jobject thiz) {
     GetCPPObjectOrReturn(env, thiz, renderer);
     renderer->invalidateContent();
 }
 
-JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeUpdateSize(JNIEnv *env, jobject thiz) {
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeUpdateSize(JNIEnv *env, jobject thiz) {
     GetCPPObjectOrReturn(env, thiz, renderer);
     renderer->updateSize();
 }
 
-JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeUpdateSurface(JNIEnv *env, jobject thiz, jobject surface) {
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeUpdateSurface(JNIEnv *env, jobject thiz,
+                                                          jobject surface) {
     GetCPPObjectOrReturn(env, thiz, renderer);
     if (surface == nullptr) {
         renderer->replacePlatformView(nullptr);
@@ -201,12 +272,14 @@ JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeUpdateSurface
         return;
     }
     auto &properties = kk::utils::SystemProperties::Instance();
-    auto platformView = std::make_unique<kk::renderer::AndroidPlatformView>(nativeWindow, properties.density);
+    auto platformView = std::make_unique<kk::renderer::AndroidPlatformView>(nativeWindow,
+                                                                            properties.density);
     renderer->replacePlatformView(std::move(platformView));
     renderer->updateSize();
 }
 
-JNIEXPORT jlong JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeCreate(JNIEnv *env, jobject thiz) {
+JNIEXPORT jlong JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeCreate(JNIEnv *env, jobject thiz) {
     auto zoomPanController = std::make_unique<kk::gesture::ElasticZoomPanController>();
     auto renderer = new kk::renderer::SeatCanvasCoreRenderer(nullptr, std::move(zoomPanController));
 
@@ -218,22 +291,17 @@ JNIEXPORT jlong JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeCreate(JNIEn
     return ptr;
 }
 
-JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeRelease(JNIEnv *env, jobject thiz) {
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeRelease(JNIEnv *env, jobject thiz) {
     GetCPPObjectOrReturn(env, thiz, renderer);
     renderer->stop();
     kk::jni::DeleteSeatCanvasCoreRenderer(env, thiz);
 }
 
-JNIEXPORT jobject JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeSeatRegionByPoint(JNIEnv *env, jobject thiz, jfloat x, jfloat y) {
-    GetCPPObjectOrReturnValue(env, thiz, renderer, nullptr);
-    auto regionInfo = renderer->getSeatRegionDataByPoint(x, y);
-    if (regionInfo == nullptr) {
-        return nullptr;
-    }
-    return kk::jni::JHitTestSeatRegionResult::ToJava(env, regionInfo);
-}
-
-JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeZoomToRect(JNIEnv *env, jobject thiz, jobject bounds, jboolean animated, jfloat padding, jdouble durationMs) {
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeZoomToRect(JNIEnv *env, jobject thiz, jobject bounds,
+                                                       jboolean animated, jfloat padding,
+                                                       jdouble durationMs) {
     GetCPPObjectOrReturn(env, thiz, renderer);
     auto rect = kk::jni::JRect::FromJava(env, bounds);
     if (rect.isEmpty()) {
@@ -242,12 +310,14 @@ JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeZoomToRect(JN
     renderer->zoomToRect(rect, animated, padding, durationMs);
 }
 
-JNIEXPORT jfloat JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeGetZoomScale(JNIEnv *env, jobject thiz) {
+JNIEXPORT jfloat JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeGetZoomScale(JNIEnv *env, jobject thiz) {
     GetCPPObjectOrReturnValue(env, thiz, renderer, 1.0f);
     return renderer->getZoomScale();
 }
 
-JNIEXPORT jfloatArray JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeGetContentOffset(JNIEnv *env, jobject thiz) {
+JNIEXPORT jfloatArray JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeGetContentOffset(JNIEnv *env, jobject thiz) {
     GetCPPObjectOrReturnValue(env, thiz, renderer, nullptr);
     auto offset = renderer->getContentOffset();
     jfloatArray result = env->NewFloatArray(2);
@@ -258,13 +328,20 @@ JNIEXPORT jfloatArray JNICALL Java_com_libseatcanvas_SeatCanvasView_nativeGetCon
     return result;
 }
 
-JNIEXPORT void JNICALL Java_com_libseatcanvas_SeatCanvasView_00024Companion_nativeInitSystemProperties(JNIEnv *env, jobject thiz, jfloat density, jfloat fontScale) {
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_00024Companion_nativeInitSystemProperties(JNIEnv *env,
+                                                                                jobject thiz,
+                                                                                jfloat density,
+                                                                                jfloat fontScale) {
     auto &properties = kk::utils::SystemProperties::Instance();
     properties.updateDensity(density);
     properties.updateFontScale(fontScale);
 }
 
-JNIEXPORT void JNICALL Java_com_libseatcanvas_Font_00024Companion_nativeSetFallbackFontPaths(JNIEnv *env, jobject thiz, jobjectArray fontNameList, jintArray ttcIndices) {
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_Font_00024Companion_nativeSetFallbackFontPaths(JNIEnv *env, jobject thiz,
+                                                                      jobjectArray fontNameList,
+                                                                      jintArray ttcIndices) {
     std::vector<std::string> fallbackList;
     std::vector<int> ttcList;
     auto length = env->GetArrayLength(fontNameList);
@@ -294,14 +371,17 @@ jint JNI_OnLoad(JavaVM *vm, void *) {
     auto env = environment.current();
     kk::jni::SeatCanvasViewClass = env->FindClass("com/libseatcanvas/SeatCanvasView");
     if (kk::jni::SeatCanvasViewClass.get() == nullptr) {
-        tgfx::PrintError("Could not run NativeDisplayLink.InitJNI(), DisplayLinkClass is not found!");
+        tgfx::PrintError(
+            "Could not run NativeDisplayLink.InitJNI(), DisplayLinkClass is not found!");
         return JNI_ERR;
     }
-    kk::jni::SeatCanvasView_NativePtr = env->GetFieldID(kk::jni::SeatCanvasViewClass.get(), "nativePtr", "J");
+    kk::jni::SeatCanvasView_NativePtr = env->GetFieldID(kk::jni::SeatCanvasViewClass.get(),
+                                                        "nativePtr", "J");
 
-    // 初始化 JRect 和 JHitTestSeatRegionResult
+    // 初始化 JRect
     kk::jni::JRect::InitJNI(env);
-    kk::jni::JHitTestSeatRegionResult::InitJNI(env);
+    kk::jni::JSeatData::InitJNI(env);
+    kk::jni::JSeatZoneData::InitJNI(env);
 
     return JNI_VERSION_1_4;
 }

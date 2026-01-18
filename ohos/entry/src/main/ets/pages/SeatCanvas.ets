@@ -1,6 +1,7 @@
 import { BaseMapFormat, SeatCanvasRendererDelegate, SeatCanvasView, SeatCanvasViewController } from 'libseatcanvas';
 import { SeatStyleBuilder } from './SeatStyleBuilder';
 import { resourceManager } from '@kit.LocalizationKit';
+import { generateMockSeatDatas, generateMockZoneDatas, getMockRegions } from './SeatDataMock';
 
 @Component
 export struct SeatCanvas {
@@ -26,6 +27,7 @@ export struct SeatCanvas {
     };
 
     this.controller.setDelegate(this.delegate);
+
   }
 
   aboutToDisappear(): void {
@@ -41,6 +43,15 @@ export struct SeatCanvas {
     let manager = getContext(this).resourceManager;
     let config = SeatStyleBuilder.BuildSVGSeatStyleConfig(manager);
     this.controller.applySeatStyleJSONConfig(config);
+  }
+
+  loadMockData() {
+    const zones = generateMockZoneDatas();
+    this.controller.updateSeatZones(generateMockZoneDatas());
+    const regions = getMockRegions();
+    for (const r of regions) {
+      this.controller.updateSeats(r.zoneId, generateMockSeatDatas(r.rect));
+    }
   }
 
   build() {
@@ -94,6 +105,7 @@ export struct SeatCanvas {
       this.applySVGSeatStyleConfig();
       await this.controller.loadFromAssets(manager, `svg/${this.basemapName}.svg`, BaseMapFormat.SVG);
       console.log(`底图: svg/${this.basemapName}.svg 加载成功`);
+      this.loadMockData();
     })
   }
 }

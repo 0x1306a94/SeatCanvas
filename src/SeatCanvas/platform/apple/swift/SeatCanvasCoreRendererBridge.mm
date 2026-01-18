@@ -1,5 +1,5 @@
 //
-//  SeatCanvasCoreRendererBridge.m
+//  SeatCanvasCoreRendererBridge.mm
 //  SeatCanvas
 //
 //  Created by KK on 2026/1/18.
@@ -10,6 +10,8 @@
 #import "ColorCast.h"
 #import "core/BaseMapConfig.hpp"
 #import "core/Platform.hpp"
+#import "core/SeatData.hpp"
+#import "core/SeatZoneData.hpp"
 #import "core/gesture/ElasticZoomPanController.hpp"
 #import "core/layers/BaseMapRootLayer.hpp"
 #import "core/parser/BaseMapFormat.hpp"
@@ -171,6 +173,26 @@ bool SeatCanvasCoreRendererLoadBaseMap(CPPObject *_Nonnull cppObject, void **_Nu
     *loadResult = nullptr;
 
     return true;
+}
+
+void SeatCanvasCoreRendererSetSeatZoneDatas(CPPObject *_Nonnull cppObject, CPPObject *_Nullable zoneBuilder) {
+    GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
+    if (zoneBuilder == nullptr) {
+        return;
+    }
+    auto zoneMap = static_cast<std::unordered_map<std::string, kk::SeatZoneData> *>(zoneBuilder->realValue);
+    for (const auto &[key, value] : *zoneMap) {
+        renderer->setRegionData(value);
+    }
+}
+
+void SeatCanvasCoreRendererSetSeatDatas(CPPObject *_Nonnull cppObject, const std::string &zoneId, CPPObject *_Nullable seatBuilder) {
+    GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
+    if (seatBuilder == nullptr) {
+        return;
+    }
+    auto seats = static_cast<std::vector<kk::SeatData> *>(seatBuilder->realValue);
+    renderer->setSeatData(zoneId, *seats);
 }
 
 void SeatCanvasCoreRendererSetSeatStyleJSONConfig(CPPObject *_Nonnull cppObject, const void *_Nullable __sized_by_or_null(len) bytes, size_t len) {

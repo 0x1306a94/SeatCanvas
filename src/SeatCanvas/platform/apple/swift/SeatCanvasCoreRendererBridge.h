@@ -6,6 +6,8 @@
 //
 
 #import "CPPObject.hpp"
+#import "SeatDataBuilder.h"
+#import "SeatZoneDataBuilder.h"
 #import "core/gesture/GestureState.hpp"
 #import "core/parser/BaseMapFormat.hpp"
 
@@ -14,6 +16,7 @@
 #import <UIKit/UIColor.h>
 #import <UIKit/UIImage.h>
 #import <string>
+#import <vector>
 
 namespace kk::bridge {
 struct ZoomLevel {
@@ -61,6 +64,19 @@ void *_Nullable SeatCanvasCoreRendererParseBaseMapFromSVG(const void *_Nullable 
 ///   - loadResult: 由 SeatCanvasLoadBaseMapFromSVG 返回的指针，执行完此函数后，loadResult 将不在可用，上层请勿继续保留使用
 /// - Returns: 是否成功
 bool SeatCanvasCoreRendererLoadBaseMap(CPPObject *_Nonnull cppObject, void **_Nullable loadResult);
+
+/// 设置渲染器座位区域数据
+/// - Parameters:
+///   - cppObject: C++渲染器实例
+///   - zoneBuilder: 区域信息
+void SeatCanvasCoreRendererSetSeatZoneDatas(CPPObject *_Nonnull cppObject, CPPObject *_Nullable zoneBuilder);
+
+/// 设置渲染器座位数据
+/// - Parameters:
+///   - cppObject: C++渲染器实例
+///   - zoneId: 区域ID
+///   - seatBuilder: 座位信息
+void SeatCanvasCoreRendererSetSeatDatas(CPPObject *_Nonnull cppObject, const std::string &zoneId, CPPObject *_Nullable seatBuilder);
 
 /// 设置座位样式
 /// - Parameters:

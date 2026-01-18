@@ -1,5 +1,5 @@
 //
-//  ColorCast.m
+//  ColorCast.mm
 //  SeatCanvas
 //
 //  Created by KK on 2026/1/18.
@@ -33,5 +33,13 @@ std::optional<tgfx::Color> UIColorToTGFXOptional(UIColor *color) {
 
 UIColor *UIColorFromTGFX(const tgfx::Color &color) {
     return [UIColor colorWithRed:static_cast<CGFloat>(color.red) green:static_cast<CGFloat>(color.green) blue:static_cast<CGFloat>(color.blue) alpha:static_cast<CGFloat>(color.alpha)];
+}
+
+UIColor *_Nullable UIColorFromTGFXOptional(const std::optional<tgfx::Color> &color) {
+    if (!color) {
+        return nil;
+    }
+
+    return UIColorFromTGFX(color.value());
 }
 };  // namespace kk::bridge

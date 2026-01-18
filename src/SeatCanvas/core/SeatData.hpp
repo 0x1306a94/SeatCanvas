@@ -1,0 +1,40 @@
+//
+//  SeatData.hpp
+//  SeatCanvas
+//
+//  Created by king on 2025/1/XX.
+//
+
+#ifndef SeatData_hpp
+#define SeatData_hpp
+
+#include <cstdint>
+#include <string>
+
+namespace kk {
+
+struct SeatData {
+    std::string seatId = {};
+    uint32_t status = 0;
+    bool selected = false;
+    float x = 0.0f;
+    float y = 0.0f;
+
+    SeatData() = default;
+
+    SeatData(const std::string &seatId, uint32_t status, bool selected, float x, float y)
+        : seatId(seatId)
+        , status(status)
+        , selected(selected)
+        , x(x)
+        , y(y) {
+    }
+
+    bool isValid() const {
+        return !seatId.empty();
+    }
+};
+
+}  // namespace kk
+
+#endif /* SeatData_hpp */

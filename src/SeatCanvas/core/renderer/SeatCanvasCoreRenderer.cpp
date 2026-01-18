@@ -34,8 +34,6 @@
 #include "core/DeviceLockGuard.hpp"
 #include "core/FontManager.hpp"
 #include "core/Platform.hpp"
-#include "core/RegionInfo.hpp"
-#include "core/SeatInfo.hpp"
 #include "core/UniqueID.h"
 #include "core/animation/Animator.hpp"
 #include "core/drawers/SeatOverlayLayerTree.hpp"
@@ -65,88 +63,6 @@ constexpr double MINIMAP_FADE_OUT_DURATION_MS = 240.0;
 }  // namespace
 
 namespace kk::renderer {
-std::vector<kk::SeatInfo> GenMockSeatInfos(const tgfx::Rect &rect) {
-
-    std::vector<kk::SeatInfo> seats;
-    float x = rect.x();
-    float y = rect.y();
-    float w = rect.width();
-    float h = rect.height();
-    float itemSize = 36.0f;
-    float spacing = 10.f;
-
-    // 计算每行和每列能放多少个座位
-    int cols = static_cast<int>((w) / (itemSize + spacing));
-    int rows = static_cast<int>((h) / (itemSize + spacing));
-
-    // 生成网格状的座位数据
-    int seatIndex = 0;
-    for (int row = 0; row < rows; ++row) {
-        for (int col = 0; col < cols; ++col) {
-            float seatX = x + col * (itemSize + spacing);
-            float seatY = y + row * (itemSize + spacing);
-
-            std::string seatId = "seat_" + std::to_string(row) + "_" + std::to_string(col);
-            tgfx::Rect rect = tgfx::Rect::MakeXYWH(seatX, seatY, itemSize, itemSize);
-
-            kk::SeatInfo seat(seatId, rect);
-
-            // 随机设置一些座位的状态，模拟真实场景
-            int randValue = (row * cols + col) % 10;
-            if (randValue < 6) {
-                seat.status = 0;
-            } else if (randValue < 8) {
-                seat.status = 1;
-            } else if (randValue < 9) {
-                seat.status = 2;
-            } else {
-                seat.status = 3;
-            }
-
-            seats.push_back(seat);
-            seatIndex++;
-        }
-    }
-
-    return seats;
-}
-
-std::unordered_map<std::string, std::vector<kk::SeatInfo>> &MockSeatInfos() {
-
-    static std::unordered_map<std::string, std::vector<kk::SeatInfo>> seatInfoMap;
-    static std::once_flag flag;
-    std::call_once(flag, [&] {
-        std::vector<std::pair<std::string, tgfx::Rect>> regions{
-            std::make_pair("20011", tgfx::Rect::MakeXYWH(850, 2800, 550, 320)),
-            std::make_pair("20012", tgfx::Rect::MakeXYWH(850, 3170, 550, 320)),
-            std::make_pair("20013", tgfx::Rect::MakeXYWH(850, 3540, 550, 320)),
-            std::make_pair("20014", tgfx::Rect::MakeXYWH(850, 3910, 550, 320)),
-            std::make_pair("20031", tgfx::Rect::MakeXYWH(2000, 2800, 450, 280)),
-            std::make_pair("20032", tgfx::Rect::MakeXYWH(2000, 3130, 450, 280)),
-            std::make_pair("20034", tgfx::Rect::MakeXYWH(2000, 3790, 450, 280)),
-            std::make_pair("10085", tgfx::Rect::MakeXYWH(1700, 1520, 700, 230)),
-            std::make_pair("10086", tgfx::Rect::MakeXYWH(2450, 1520, 700, 230)),
-            std::make_pair("30031", tgfx::Rect::MakeXYWH(9550, 2800, 450, 280)),
-            std::make_pair("30032", tgfx::Rect::MakeXYWH(9550, 3130, 450, 280)),
-            std::make_pair("30033", tgfx::Rect::MakeXYWH(9550, 3460, 450, 280)),
-            std::make_pair("10096", tgfx::Rect::MakeXYWH(9600, 1800, 700, 220)),
-            std::make_pair("10098", tgfx::Rect::MakeXYWH(11100, 1800, 700, 220)),
-            std::make_pair("40109", tgfx::Rect::MakeXYWH(6950, 9300, 700, 250)),
-            std::make_pair("40110", tgfx::Rect::MakeXYWH(7700, 9300, 700, 250)),
-            std::make_pair("40123", tgfx::Rect::MakeXYWH(6600, 9600, 750, 300)),
-            std::make_pair("40124", tgfx::Rect::MakeXYWH(7400, 9600, 750, 300)),
-            std::make_pair("37492", tgfx::Rect::MakeXYWH(33, 411, 289, 329)),
-            std::make_pair("74148", tgfx::Rect::MakeXYWH(400, 76, 332, 232)),
-        };
-
-        for (const auto &item : regions) {
-            seatInfoMap.insert_or_assign(item.first, GenMockSeatInfos(item.second));
-        }
-    });
-
-    return seatInfoMap;
-}
-
 SeatCanvasCoreRenderer::SeatCanvasCoreRenderer(
     std::unique_ptr<PlatformView> platformView,
     std::unique_ptr<kk::gesture::ElasticZoomPanController> zoomPanController,
@@ -744,24 +660,6 @@ bool SeatCanvasCoreRenderer::isPointInContentArea(const tgfx::Point &screenLocat
     return contentRect.contains(contentLocation.x, contentLocation.y);
 }
 
-const kk::RegionInfo *SeatCanvasCoreRenderer::getSeatRegionDataByPoint(float x, float y) const {
-    auto config = _useBaseMapConfig.lock();
-    if (!config) {
-        return nullptr;
-    }
-    auto meshBuilder = config->meshBuilder();
-    if (!meshBuilder) {
-        return nullptr;
-    }
-    //    auto regionId = _seatLayer->getSeatRegionIdAt(x, y);
-    //    if (!regionId) {
-    //        return nullptr;
-    //    }
-    //    auto info = meshBuilder->findRegionById(regionId.value());
-    //    return info;
-    return nullptr;
-}
-
 void SeatCanvasCoreRenderer::zoomToRect(const tgfx::Rect &rect, bool animated, float padding, double durationMs) {
     if (_zoomPanController == nullptr) {
         return;
@@ -924,7 +822,7 @@ void SeatCanvasCoreRenderer::updateUseBaseMapConfig(std::shared_ptr<kk::BaseMapC
         _seatRegionNameLayer->setTextRootLayer(nullptr, {});
         _useBaseMapConfig.reset();
 
-        applyBaseMapColorState(BaseMapColorState::Original);
+        applyBaseMapColorState(kk::BaseMapColorState::Original);
         customBaseMapPass->updateMeshBuilder(nullptr);
         _seatRegionMeshManager->clearAll();
         customSeatPass->clearRegionMeshes();
@@ -934,7 +832,7 @@ void SeatCanvasCoreRenderer::updateUseBaseMapConfig(std::shared_ptr<kk::BaseMapC
         setMiniMapLayer(config->minimapLayer());
         _useBaseMapConfig = config;
 
-        applyBaseMapColorState(BaseMapColorState::Rainbow);
+        applyBaseMapColorState(kk::BaseMapColorState::Rainbow);
         customBaseMapPass->updateMeshBuilder(config->meshBuilder());
 
         _seatRegionMeshManager->clearAll();
@@ -1182,13 +1080,13 @@ void SeatCanvasCoreRenderer::prepareSeatIfNeeded() {
         // 全部隐藏
         customSeatPass->clearRegionMeshes();
         if (_autoChangeBaseMapColorState) {
-            applyBaseMapColorState(BaseMapColorState::Rainbow);
+            applyBaseMapColorState(kk::BaseMapColorState::Rainbow);
         }
         return;
     }
 
     if (_autoChangeBaseMapColorState) {
-        applyBaseMapColorState(BaseMapColorState::Original);
+        applyBaseMapColorState(kk::BaseMapColorState::Original);
     }
 
     if (!shouldAutoDrawSeat()) {
@@ -1287,7 +1185,7 @@ void SeatCanvasCoreRenderer::handleZoomBack() {
 
     _autoChangeBaseMapColorState = false;
     _disableAutoDrawSeat = true;
-    applyBaseMapColorState(BaseMapColorState::Rainbow);
+    applyBaseMapColorState(kk::BaseMapColorState::Rainbow);
     _overlayLayer->setBackVisible(false);
 
     invalidateContent();
@@ -1353,14 +1251,14 @@ void SeatCanvasCoreRenderer::handleSeatSelectionAtLocation(const tgfx::Point &lo
         return;
     }
 
-    auto &mockSeatInfos = MockSeatInfos();
-    auto iter = mockSeatInfos.find(regionInfo->regionId);
-    if (iter == mockSeatInfos.end()) {
+    auto iter = _seatDataMap.find(regionInfo->regionId);
+    if (iter == _seatDataMap.end()) {
         return;
     }
 
     for (auto &seatInfo : iter->second) {
-        if (!seatInfo.rect.contains(originalLocation.x, originalLocation.y)) {
+        auto rect = tgfx::Rect::MakeXYWH(seatInfo.x, seatInfo.y, _seatSize, _seatSize);
+        if (!rect.contains(originalLocation.x, originalLocation.y)) {
             continue;
         }
 
@@ -1647,14 +1545,14 @@ void SeatCanvasCoreRenderer::scrollViewWithRegion(const std::string &regionId) {
     _disableAutoDrawSeat = currentZoomScale <= _zoomLevelConfig.zoomScale50;
     auto showBack = targetZoomScale >= showBackZoomThreshold();
     if (showBack) {
-        applyBaseMapColorState(BaseMapColorState::Original);
+        applyBaseMapColorState(kk::BaseMapColorState::Original);
         if (_overlayLayer->backVisible()) {
             showBack = false;
         } else {
             _overlayLayer->setBackVisible(true);
         }
     } else {
-        applyBaseMapColorState(BaseMapColorState::Rainbow);
+        applyBaseMapColorState(kk::BaseMapColorState::Rainbow);
         _overlayLayer->setBackVisible(false);
     }
 
@@ -1748,14 +1646,14 @@ void SeatCanvasCoreRenderer::zoomToPoint(const tgfx::Point &location, float scal
     _disableAutoDrawSeat = currentZoomScale <= _zoomLevelConfig.zoomScale50;
     auto showBack = targetZoomScale >= showBackZoomThreshold();
     if (showBack) {
-        applyBaseMapColorState(BaseMapColorState::Original);
+        applyBaseMapColorState(kk::BaseMapColorState::Original);
         if (_overlayLayer->backVisible()) {
             showBack = false;
         } else {
             _overlayLayer->setBackVisible(true);
         }
     } else {
-        applyBaseMapColorState(BaseMapColorState::Rainbow);
+        applyBaseMapColorState(kk::BaseMapColorState::Rainbow);
         _overlayLayer->setBackVisible(false);
     }
 
@@ -1832,16 +1730,17 @@ void SeatCanvasCoreRenderer::applyBaseMapColorState(BaseMapColorState toState) {
 
     auto textLayer = config->textLayer();
     // 设置文本图层透明度
-    if (toState == BaseMapColorState::Original) {
+    if (toState == kk::BaseMapColorState::Original) {
         if (textLayer) {
             textLayer->setAlpha(0.35f);
         }
-    } else if (toState == BaseMapColorState::Rainbow) {
+    } else if (toState == kk::BaseMapColorState::Rainbow) {
         if (textLayer) {
             textLayer->setAlpha(1.0f);
         }
     }
 
+    customBaseMapPass->updateColorState(toState);
     _baseMapColorState = toState;
 }
 
@@ -1855,9 +1754,8 @@ std::shared_ptr<SeatRegionMesh> SeatCanvasCoreRenderer::buildSeatRegionMesh(tgfx
         return nullptr;
     }
 
-    const auto &mockSeatInfos = MockSeatInfos();
-    auto iter = mockSeatInfos.find(regionId);
-    if (iter == mockSeatInfos.end()) {
+    auto iter = _seatDataMap.find(regionId);
+    if (iter == _seatDataMap.end()) {
         return nullptr;
     }
 
@@ -1895,12 +1793,11 @@ std::shared_ptr<SeatRegionMesh> SeatCanvasCoreRenderer::buildSeatRegionMesh(tgfx
     int32_t idx = 0;
     for (const auto &seat : seats) {
 
-        // 使用业务层定义的状态值（已经是 uint32_t）
         auto styleIndex = _seatAtlasManager->getUVOffsetIndex(seat.status, seat.selected);
 
         auto base = idx * 4;
         // 原始坐标。后面通过顶点着色器 MVP 矩阵转换为屏幕坐标。
-        const auto &rect = seat.rect;
+        const auto &rect = tgfx::Rect::MakeXYWH(seat.x, seat.y, _seatSize, _seatSize);
         // 左上角
         (vertexPtr + base)->pos[0] = rect.x();
         (vertexPtr + base)->pos[1] = rect.y();
@@ -1943,5 +1840,84 @@ std::shared_ptr<SeatRegionMesh> SeatCanvasCoreRenderer::buildSeatRegionMesh(tgfx
     ibo->unmap();
 
     return std::make_shared<SeatRegionMesh>(vertexCount, std::move(vbo), indexCount, std::move(ibo));
+}
+
+void SeatCanvasCoreRenderer::setRegionData(const kk::SeatZoneData &regionData) {
+    if (!regionData.isValid()) {
+        return;
+    }
+
+    _regionDataMap[regionData.zoneId] = regionData;
+
+    auto config = _useBaseMapConfig.lock();
+    if (config) {
+        auto meshBuilder = config->meshBuilder();
+        if (meshBuilder) {
+            auto regionMeshInfo = meshBuilder->findRegionById(regionData.zoneId);
+            if (regionMeshInfo) {
+                if (regionData.color.has_value()) {
+                    regionMeshInfo->fillColor = regionData.color;
+                }
+                if (regionData.priceColor.has_value()) {
+                    regionMeshInfo->priceColor = regionData.priceColor;
+                }
+                customBaseMapPass->invalidateColorTable();
+                invalidateContent();
+            }
+        }
+    }
+}
+
+void SeatCanvasCoreRenderer::setSeatData(const std::string &regionId, const std::vector<kk::SeatData> &seats) {
+    if (regionId.empty()) {
+        return;
+    }
+
+    _seatDataMap[regionId] = seats;
+
+    if (_seatRegionMeshManager) {
+        _seatRegionMeshManager->clear({regionId});
+    }
+
+    invalidateContent();
+}
+
+void SeatCanvasCoreRenderer::updateSeatStatus(const std::string &regionId, const std::string &seatId, uint32_t status) {
+    if (regionId.empty() || seatId.empty()) {
+        return;
+    }
+
+    auto iter = _seatDataMap.find(regionId);
+    if (iter == _seatDataMap.end()) {
+        return;
+    }
+
+    for (auto &seatInfo : iter->second) {
+        if (seatInfo.seatId == seatId) {
+            seatInfo.status = status;
+            if (_seatRegionMeshManager) {
+                _seatRegionMeshManager->clear({regionId});
+            }
+            invalidateContent();
+            return;
+        }
+    }
+}
+
+void SeatCanvasCoreRenderer::clearSeatData() {
+    std::unordered_set<std::string> allRegionIds;
+    allRegionIds.reserve(_seatDataMap.size());
+    for (const auto &[regionId, _] : _seatDataMap) {
+        allRegionIds.insert(regionId);
+    }
+
+    _regionDataMap.clear();
+    _seatDataMap.clear();
+
+    if (_seatRegionMeshManager && !allRegionIds.empty()) {
+        _seatRegionMeshManager->clear(allRegionIds);
+    }
+
+    invalidateContent();
 }
 };  // namespace kk::renderer

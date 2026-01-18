@@ -98,7 +98,20 @@ void CustomBaseMapPass::updateMeshBuilder(std::shared_ptr<BaseMapMeshBuilder> me
 
     this->meshBuilder = meshBuilder;
     this->fillVBOBuffer = nullptr;
+    bitFields.dirtyFillColor = true;
     bitFields.dirtyFillVBO = true;
+}
+
+void CustomBaseMapPass::updateColorState(kk::BaseMapColorState state) {
+    if (colorState == state) {
+        return;
+    }
+    colorState = state;
+    bitFields.dirtyFillColor = true;
+}
+
+void CustomBaseMapPass::invalidateColorTable() {
+    bitFields.dirtyFillColor = true;
 }
 
 bool CustomBaseMapPass::onDraw(tgfx::CommandEncoder *encoder, const SeatCanvasCoreRendererState *state) {
@@ -444,6 +457,11 @@ bool CustomBaseMapPass::updateColorTexture(tgfx::GPU *gpu, const SeatCanvasCoreR
         if (!colorTexture) {
             return false;
         }
+        bitFields.dirtyFillColor = true;
+    }
+
+    if (!bitFields.dirtyFillColor) {
+        return true;
     }
 
     auto rowBytes = static_cast<size_t>(textureWidth * 4);
@@ -452,14 +470,21 @@ bool CustomBaseMapPass::updateColorTexture(tgfx::GPU *gpu, const SeatCanvasCoreR
     // 初始化未使用的像素为透明黑色
     std::fill(pixelData.begin(), pixelData.end(), 0);
 
-    for (size_t i = 0; i < regionMeshInfos.size(); i++) {
-        const auto &regionMesh = regionMeshInfos[i];
-        auto &fillColor = regionMesh->priceColor.has_value() ? regionMesh->priceColor : regionMesh->fillColor;
-        if (fillColor) {
-            int row = static_cast<int>(i * 2) / textureWidth;
-            int col = static_cast<int>(i * 2) % textureWidth;
+    for (size_t index = 0; index < regionMeshInfos.size(); index++) {
+        const auto &regionMesh = regionMeshInfos[index];
+        auto fillColorToUse = regionMesh->fillColor;
+        if (colorState == kk::BaseMapColorState::Rainbow && regionMesh->priceColor) {
+            fillColorToUse = regionMesh->priceColor;
+        }
+
+        auto fillColorIndex = index * 2;
+        auto strokeColorIndex = fillColorIndex + 1;
+
+        if (fillColorToUse) {
+            int row = static_cast<int>(fillColorIndex / textureWidth);
+            int col = static_cast<int>(fillColorIndex % textureWidth);
             size_t pixelIndex = (row * textureWidth + col) * 4;
-            auto &color = regionMesh->fillColor.value();
+            auto &color = fillColorToUse.value();
             auto additionalAlpha = regionMesh->additionalAlpha;
             pixelData[pixelIndex + 0] = static_cast<uint8_t>(color.red * 255.0f * additionalAlpha);
             pixelData[pixelIndex + 1] = static_cast<uint8_t>(color.green * 255.0f * additionalAlpha);
@@ -473,8 +498,8 @@ bool CustomBaseMapPass::updateColorTexture(tgfx::GPU *gpu, const SeatCanvasCoreR
                 continue;
             }
 
-            int row = static_cast<int>(i * 2 + 1) / textureWidth;
-            int col = static_cast<int>(i * 2 + 1) % textureWidth;
+            int row = static_cast<int>(strokeColorIndex / textureWidth);
+            int col = static_cast<int>(strokeColorIndex % textureWidth);
             size_t pixelIndex = (row * textureWidth + col) * 4;
             auto &color = regionMesh->strokeColor.value();
 

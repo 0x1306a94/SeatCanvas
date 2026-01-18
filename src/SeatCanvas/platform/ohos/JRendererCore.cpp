@@ -13,7 +13,8 @@
 #include "OHOSSeatCanvasCoreRendererDelegate.hpp"
 #include "core/BaseMapConfig.hpp"
 #include "core/Platform.hpp"
-#include "core/RegionInfo.hpp"
+#include "core/SeatData.hpp"
+#include "core/SeatZoneData.hpp"
 #include "core/UniqueID.h"
 #include "core/gesture/ElasticZoomPanController.hpp"
 #include "core/gesture/GestureState.hpp"
@@ -467,48 +468,6 @@ static napi_value SetDidDeselectSeatCallback(napi_env env, napi_callback_info in
     return nullptr;
 }
 
-static napi_value SeatRegionByPoint(napi_env env, napi_callback_info info) {
-    kk::js::NapiEnvHolder::setEnv(env);
-    napi_value undefined = nullptr;
-    napi_get_undefined(env, &undefined);
-
-    napi_value jsView = nullptr;
-    size_t argc = 2;
-    napi_value args[2] = {0};
-    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
-    JRendererCore *view = nullptr;
-    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
-    if (view == nullptr || argc < 2) {
-        return undefined;
-    }
-    double x, y;
-    napi_get_value_double(env, args[0], &x);
-    napi_get_value_double(env, args[1], &y);
-
-    auto renderer = view->internalRenderer();
-    auto currentZoom = renderer->getZoomScale();
-    auto contentOffset = renderer->getContentOffset();
-
-    auto finalX = (static_cast<float>(x) - contentOffset.x) / currentZoom;
-    auto finalY = (static_cast<float>(y) - contentOffset.y) / currentZoom;
-
-    auto regionInfo = renderer->getSeatRegionDataByPoint(finalX, finalY);
-    if (!regionInfo || regionInfo->regionId.empty()) {
-        return undefined;
-    }
-
-    napi_value jsRect = kk::js::CreateRect(env, regionInfo->bounds);
-
-    napi_value jsRegionInfo;
-    napi_create_object(env, &jsRegionInfo);
-    napi_value v;
-    napi_create_string_utf8(env, regionInfo->regionId.c_str(), regionInfo->regionId.length(), &v);
-    napi_set_named_property(env, jsRegionInfo, "regionId", v);
-    napi_set_named_property(env, jsRegionInfo, "bounds", jsRect);
-
-    return jsRegionInfo;
-}
-
 static napi_value ZoomToRect(napi_env env, napi_callback_info info) {
     kk::js::NapiEnvHolder::setEnv(env);
 
@@ -549,6 +508,92 @@ static napi_value ZoomToRect(napi_env env, napi_callback_info info) {
     return nullptr;
 }
 
+static napi_value UpdateSeatZones(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+
+    napi_value jsView = nullptr;
+    size_t argc = 1;
+    napi_value args[1] = {0};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr || argc == 0) {
+        return nullptr;
+    }
+
+    auto renderer = view->internalRenderer();
+    if (renderer == nullptr) {
+        return nullptr;
+    }
+
+    bool isArray = false;
+    napi_is_array(env, args[0], &isArray);
+    if (!isArray) {
+        return nullptr;
+    }
+
+    uint32_t length = 0;
+    napi_get_array_length(env, args[0], &length);
+    for (uint32_t i = 0; i < length; ++i) {
+        napi_value element;
+        napi_get_element(env, args[0], i, &element);
+        auto zoneData = GetSeatZoneData(env, element);
+        if (zoneData) {
+            renderer->setRegionData(zoneData.value());
+        }
+    }
+    return nullptr;
+}
+
+static napi_value UpdateSeats(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+
+    napi_value jsView = nullptr;
+    size_t argc = 2;
+    napi_value args[2] = {0};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr || argc < 2) {
+        return nullptr;
+    }
+
+    auto renderer = view->internalRenderer();
+    if (renderer == nullptr) {
+        return nullptr;
+    }
+
+    auto zoneId = GetUtf8String(env, args[0]);
+    if (zoneId.empty()) {
+        return nullptr;
+    }
+
+    bool isArray = false;
+    napi_is_array(env, args[1], &isArray);
+    if (!isArray) {
+        return nullptr;
+    }
+
+    uint32_t length = 0;
+    napi_get_array_length(env, args[1], &length);
+    if (length == 0) {
+        return nullptr;
+    }
+    std::vector<kk::SeatData> seats{};
+    seats.reserve(static_cast<size_t>(length));
+    for (uint32_t i = 0; i < length; ++i) {
+        napi_value element;
+        napi_get_element(env, args[1], i, &element);
+        auto seatData = GetSeatData(env, element);
+        if (seatData) {
+            seats.push_back(seatData.value());
+        }
+    }
+
+    renderer->setSeatData(zoneId, seats);
+    return nullptr;
+}
+
 napi_value JRendererCore::Constructor(napi_env env, napi_callback_info info) {
     napi_value jsView = nullptr;
     size_t argc = 0;
@@ -582,11 +627,12 @@ bool JRendererCore::Init(napi_env env, napi_value exports) {
         JS_DEFAULT_METHOD_ENTRY(handleTap, HandleTap),
         JS_DEFAULT_METHOD_ENTRY(handlePan, HandlePan),
         JS_DEFAULT_METHOD_ENTRY(handlePinch, HandlePinch),
-        JS_DEFAULT_METHOD_ENTRY(seatRegionByPoint, SeatRegionByPoint),
         JS_DEFAULT_METHOD_ENTRY(zoomToRect, ZoomToRect),
         JS_DEFAULT_METHOD_ENTRY(setShouldSelectSeatCallback, SetShouldSelectSeatCallback),
         JS_DEFAULT_METHOD_ENTRY(setDidSelectSeatCallback, SetDidSelectSeatCallback),
         JS_DEFAULT_METHOD_ENTRY(setDidDeselectSeatCallback, SetDidDeselectSeatCallback),
+        JS_DEFAULT_METHOD_ENTRY(updateSeatZones, UpdateSeatZones),
+        JS_DEFAULT_METHOD_ENTRY(updateSeats, UpdateSeats),
     };
 
     auto status = DefineClass(env, exports, ClassName(), sizeof(classProp) / sizeof(classProp[0]), classProp, Constructor, "");

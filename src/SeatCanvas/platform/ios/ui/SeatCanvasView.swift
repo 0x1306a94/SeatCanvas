@@ -72,6 +72,24 @@ public class SeatCanvasView: UIView {
         renderer?.applySeatStyleJSONConfig(data)
     }
 
+    /// 更新座位区域信息
+    /// - Parameter zones: 区域集合
+    @objc
+    public func updateSeatZoneDatas(zones: [SeatZoneData]) {
+        renderer?.updateSeatZoneDatas(zones: zones)
+        renderer?.invalidateContent()
+    }
+
+    /// 更新区域座位信息
+    /// - Parameters:
+    ///   - zoneId: 区域ID
+    ///   - seats: 座位集合
+    @objc
+    public func updateSeatDatas(zoneId: String, seats: [SeatData]) {
+        renderer?.updateSeatDatas(zoneId: zoneId, seats: seats)
+        renderer?.invalidateContent()
+    }
+
     deinit {
         NotificationCenter.default.removeObserver(self, name: UIApplication.didEnterBackgroundNotification, object: nil)
         NotificationCenter.default.removeObserver(self, name: UIApplication.willEnterForegroundNotification, object: nil)
