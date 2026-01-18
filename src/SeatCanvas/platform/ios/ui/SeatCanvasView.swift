@@ -14,14 +14,12 @@ internal import SeatCanvas_Private
 @objc(KKSeatCanvasView)
 public class SeatCanvasView: UIView {
     var renderView: SeatCanvasRenderView!
-    var zoomLevel: kk.ZoomLevel = .init(zoomScale9: 1.0, zoomScale18: 1.0, zoomScale30: 1.0, zoomScale50: 1.0)
+    var zoomLevel: kk.bridge.ZoomLevel = .init(zoomScale9: 1.0, zoomScale18: 1.0, zoomScale30: 1.0, zoomScale50: 1.0)
     var isSmallVenue = false
     var minimapImage: UIImage?
 
-    nonisolated(unsafe) var rendererCore: UnsafeMutablePointer<kk.CPPObject>!
-    nonisolated(unsafe) var coreID: UInt32 = 0
+    nonisolated(unsafe) var renderer: SeatCanvasCoreRenderer?
 
-    /// 座位选中事件代理
     @objc
     public weak var delegate: SeatCanvasViewDelegate?
 
@@ -29,12 +27,12 @@ public class SeatCanvasView: UIView {
     var panGestureRecognizer: UIPanGestureRecognizer!
     var pinchGestureRecognizer: UIPinchGestureRecognizer!
 
-    override public var backgroundColor: UIColor? {
-        didSet {
-            guard let rendererCore else {
-                return
-            }
-            kk.SeatCanvasCoreRendererSetBackgroundColor(rendererCore, backgroundColor)
+    public var canvasColor: UIColor {
+        set {
+            renderer?.backgroundColor = newValue
+        }
+        get {
+            renderer?.backgroundColor ?? .clear
         }
     }
 
@@ -51,10 +49,10 @@ public class SeatCanvasView: UIView {
     override public func didMoveToWindow() {
         super.didMoveToWindow()
         if let _ = window {
-            rendererInvalidateContent()
-            startDrawLoop()
+            renderer?.invalidateContent()
+            renderer?.startDrawLoop()
         } else {
-            stopDrawLoop()
+            renderer?.stopDrawLoop()
         }
     }
 
@@ -64,59 +62,26 @@ public class SeatCanvasView: UIView {
     ///   - format: 格式
     @objc
     public func loadBaseMap(_ data: Data?, format: BaseMapFormat) {
-        guard let data else {
-            kk.SeatCanvasCoreRendererLoadBaseMap(rendererCore, nil)
-            return
-        }
-
-        let cppFormat = format.cppFormat
-        guard cppFormat != .Unknown else {
-            return
-        }
-
-        DispatchQueue.global(qos: .userInteractive).async {
-            var minimapImage: UIImage? = nil
-            var loadResult = data.withUnsafeBytes { buffer in
-                // 使用统一接口
-                let result = kk.SeatCanvasLoadBaseMap(buffer.baseAddress, buffer.count, cppFormat, &minimapImage)
-                return result
-            }
-
-            DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
-                self.minimapImage = minimapImage
-                kk.SeatCanvasCoreRendererLoadBaseMap(self.rendererCore, &loadResult)
-            }
-        }
+        renderer?.loadBaseMap(data, format: format)
     }
 
     /// 应用样式配置（使用 SeatStyleConfigBuilder 构建）
     /// - Parameter data: json 样式数据
     @objc
     public func applySeatStyleJSONConfig(_ data: Data?) {
-        guard let data, !data.isEmpty else {
-            kk.SeatCanvasCoreRendererSetSeatStyleJSONConfig(rendererCore, nil, 0)
-            return
-        }
-
-        #if DEBUG
-            print("coreID: \(coreID) SeatStyleJSON: \n\(String(data: data, encoding: .utf8)!)")
-        #endif
-        data.withUnsafeBytes { buffer in
-            kk.SeatCanvasCoreRendererSetSeatStyleJSONConfig(rendererCore, buffer.baseAddress, buffer.count)
-        }
+        renderer?.applySeatStyleJSONConfig(data)
     }
 
     deinit {
         NotificationCenter.default.removeObserver(self, name: UIApplication.didEnterBackgroundNotification, object: nil)
         NotificationCenter.default.removeObserver(self, name: UIApplication.willEnterForegroundNotification, object: nil)
 
-        let coreID = self.coreID
-        Task { @MainActor in
-            SeatCanvasRendererDelegateRegistry.shared.unregister(coreID: coreID)
+        let coreID = self.renderer?.coreID ?? 0
+        if coreID != 0 {
+            Task { @MainActor in
+                SeatCanvasRendererDelegateRegistry.shared.unregister(coreID: coreID)
+            }
         }
-
-        kk.SeatCanvasReleaseCPPObject(self.rendererCore)
 
         #if DEBUG
             print("\(type(of: self)) deinit, coreID: \(coreID)")
@@ -135,14 +100,14 @@ extension SeatCanvasView {
         setupRenderer()
 
         #if DEBUG
-            print("[SeatCanvasView] 初始化完成, coreID: \(coreID)")
+            print("[SeatCanvasView] 初始化完成, coreID: \(renderer?.coreID ?? 0)")
         #endif
     }
 
     func setupSystemProperties() {
         let density = UIScreen.main.scale
         let fontScale = UIScreen.main.scale
-        kk.SeatCanvasInitSystemProperties(density, fontScale)
+        kk.bridge.SeatCanvasInitSystemProperties(density, fontScale)
     }
 
     func setupViews() {
@@ -178,12 +143,11 @@ extension SeatCanvasView {
     }
 
     func setupRenderer() {
-        rendererCore = kk.CreateSeatCanvasCoreRenderer(renderView.layer as? CAEAGLLayer)
-        coreID = kk.SeatCanvasCoreRendererGetCoreID(rendererCore)
-        if coreID != 0 {
+        renderer = SeatCanvasCoreRenderer(eaglLayer: renderView.layer as? CAEAGLLayer)
+        if let coreID = renderer?.coreID {
             SeatCanvasRendererDelegateRegistry.shared.register(coreID: coreID, delegate: self)
         }
-        backgroundColor = .white
+        renderer?.backgroundColor = .white
     }
 
     func setupNotification() {
@@ -191,22 +155,18 @@ extension SeatCanvasView {
         NotificationCenter.default.addObserver(self, selector: #selector(appWillEnterForeground(notification:)), name: UIApplication.willEnterForegroundNotification, object: nil)
     }
 
-    func rendererInvalidateContent() {
-        kk.SeatCanvasCoreRendererInvalidateContent(rendererCore)
-    }
-
-    func convertToCanvas(_ point: CGPoint) -> CGPoint {
-        let currentZoom = kk.SeatCanvasCoreRendererZoomScale(rendererCore)
-        let contentOffset = kk.SeatCanvasCoreRendereContentOffset(rendererCore)
-        let density = kk.SeatCanvasCoreRendererGetDensity(rendererCore)
-
-        let px = point.x * density
-        let py = point.y * density
-        let x = (px - contentOffset.x) / currentZoom
-        let y = (py - contentOffset.y) / currentZoom
-
-        return CGPointMake(x, y)
-    }
+//    func convertToCanvas(_ point: CGPoint) -> CGPoint {
+//        let currentZoom = kk.bridge.SeatCanvasCoreRendererZoomScale(rendererCore)
+//        let contentOffset = kk.bridge.SeatCanvasCoreRendereContentOffset(rendererCore)
+//        let density = kk.bridge.SeatCanvasCoreRendererGetDensity(rendererCore)
+//
+//        let px = point.x * density
+//        let py = point.y * density
+//        let x = (px - contentOffset.x) / currentZoom
+//        let y = (py - contentOffset.y) / currentZoom
+//
+//        return CGPointMake(x, y)
+//    }
 
     @objc
     func handleTapGestureRecognizer(gesture: UITapGestureRecognizer) {
@@ -218,7 +178,7 @@ extension SeatCanvasView {
         let contentScaleFactor = renderView.contentScaleFactor
         location.x *= contentScaleFactor
         location.y *= contentScaleFactor
-        kk.SeatCanvasCoreRendererHandTap(rendererCore, location)
+        renderer?.handTap(location: location)
 //        let location = gesture.location(in: renderView)
 //        let locationPx = convertToCanvas(location)
 //        var hitTest: kk.HitTestSeatRegionResult = .init()
@@ -245,11 +205,11 @@ extension SeatCanvasView {
         let state = gesture.state
         switch state {
         case .began:
-            kk.SeatCanvasCoreRendererHandPan(rendererCore, kk.gesture.GestureState.BEGAN, translation, timestampMs)
+            renderer?.handPan(state: kk.gesture.GestureState.BEGAN, translation: translation, timestamp: timestampMs)
         case .changed:
-            kk.SeatCanvasCoreRendererHandPan(rendererCore, kk.gesture.GestureState.CHANGED, translation, timestampMs)
+            renderer?.handPan(state: kk.gesture.GestureState.CHANGED, translation: translation, timestamp: timestampMs)
         case .ended, .cancelled:
-            kk.SeatCanvasCoreRendererHandPan(rendererCore, (state == .ended) ? kk.gesture.GestureState.ENDED : kk.gesture.GestureState.CANCELLED, translation, timestampMs)
+            renderer?.handPan(state: (state == .ended) ? kk.gesture.GestureState.ENDED : kk.gesture.GestureState.CANCELLED, translation: translation, timestamp: timestampMs)
             gesture.setTranslation(.zero, in: renderView)
         default:
             break
@@ -271,50 +231,43 @@ extension SeatCanvasView {
         switch state {
         case .began:
             gesture.scale = 1.0
-            kk.SeatCanvasCoreRendererHandPinch(rendererCore, kk.gesture.GestureState.BEGAN, 1.0, center)
+            renderer?.handPinch(state: kk.gesture.GestureState.BEGAN, scale: 1.0, center: center)
         case .changed:
             let scale = gesture.scale
-            kk.SeatCanvasCoreRendererHandPinch(rendererCore, kk.gesture.GestureState.CHANGED, scale, center)
+            renderer?.handPinch(state: kk.gesture.GestureState.CHANGED, scale: scale, center: center)
         case .ended, .cancelled:
             let scale = gesture.scale
-            kk.SeatCanvasCoreRendererHandPinch(rendererCore, (state == .ended) ? kk.gesture.GestureState.ENDED : kk.gesture.GestureState.CANCELLED, scale, center)
+
+            renderer?.handPinch(state: (state == .ended) ? kk.gesture.GestureState.ENDED : kk.gesture.GestureState.CANCELLED, scale: scale, center: center)
         default:
             break
         }
     }
 
-    func startDrawLoop() {
-        kk.SeatCanvasCoreRendererStart(rendererCore)
-    }
-
-    func stopDrawLoop() {
-        kk.SeatCanvasCoreRendererStop(rendererCore)
-    }
-
     @objc
     func appDidEnterBackground(notification _: Notification) {
-        stopDrawLoop()
+        renderer?.stopDrawLoop()
     }
 
     @objc
     func appWillEnterForeground(notification _: Notification) {
-        startDrawLoop()
+        renderer?.startDrawLoop()
     }
 
     func handleUpdateSize() {
-        _ = kk.SeatCanvasCoreRendererUpdateSize(rendererCore)
+        _ = renderer?.updateSize()
     }
 
-    func calculateVisibleContentRect() {
-        let baseMapScale = kk.SeatCanvasCoreRendererBaseMapScale(rendererCore)
-
-        // C++ 计算
-        var cppVisibleContentRect = kk.SeatCanvasCoreRendererGetVisibleContentRect(rendererCore)
-        let inverseScale = 1.0 / baseMapScale
-        let transform = CGAffineTransform(scaleX: inverseScale, y: inverseScale)
-        cppVisibleContentRect = cppVisibleContentRect.applying(transform)
-//        print("visibleContentRect: \(cppVisibleContentRect)")
-    }
+//    func calculateVisibleContentRect() {
+//        let baseMapScale = kk.bridge.SeatCanvasCoreRendererBaseMapScale(rendererCore)
+//
+//        // C++ 计算
+//        var cppVisibleContentRect = kk.bridge.SeatCanvasCoreRendererGetVisibleContentRect(rendererCore)
+//        let inverseScale = 1.0 / baseMapScale
+//        let transform = CGAffineTransform(scaleX: inverseScale, y: inverseScale)
+//        cppVisibleContentRect = cppVisibleContentRect.applying(transform)
+    ////        print("visibleContentRect: \(cppVisibleContentRect)")
+//    }
 }
 
 // MARK: - C++ 回调处理

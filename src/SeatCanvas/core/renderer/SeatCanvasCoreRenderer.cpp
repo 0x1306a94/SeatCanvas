@@ -269,6 +269,10 @@ float SeatCanvasCoreRenderer::showBackZoomThreshold() const {
     return _zoomLevelConfig.zoomScale50;
 }
 
+const tgfx::Color &SeatCanvasCoreRenderer::getBackgroundColor() const {
+    return _backgroundColor;
+}
+
 void SeatCanvasCoreRenderer::setBackgroundColor(const tgfx::Color &color) {
     if (_backgroundColor == color) {
         return;

@@ -1,4 +1,4 @@
 module SeatCanvas_Private {
-    private header "swift/SwiftBridge.h"
+    private header "platform/apple/swift/SwiftBridge.h"
     export *
 }

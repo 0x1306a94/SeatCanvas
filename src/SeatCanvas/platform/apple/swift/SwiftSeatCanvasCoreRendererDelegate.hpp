@@ -10,8 +10,8 @@
 
 #import "core/renderer/SeatCanvasCoreRendererDelegate.hpp"
 
-namespace kk::renderer {
-class SwiftSeatCanvasCoreRendererDelegate : public SeatCanvasCoreRendererDelegate {
+namespace kk::bridge {
+class SwiftSeatCanvasCoreRendererDelegate : public kk::renderer::SeatCanvasCoreRendererDelegate {
   public:
     explicit SwiftSeatCanvasCoreRendererDelegate();
     virtual ~SwiftSeatCanvasCoreRendererDelegate();
@@ -20,6 +20,6 @@ class SwiftSeatCanvasCoreRendererDelegate : public SeatCanvasCoreRendererDelegat
     virtual void didDeselectSeat(uint32_t coreID, const std::string &regionId, const std::string &seatId);
 };
 
-};  // namespace kk::renderer
+};  // namespace kk::bridge
 
 #endif /* SwiftSeatCanvasCoreRendererDelegate_hpp */

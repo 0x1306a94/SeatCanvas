@@ -17,9 +17,9 @@ import Foundation
 public func switf_bridge_shouldSelectSeat(coreID: UInt32, regionId: String, seatId: String) -> Bool {
     return MainActor.assumeIsolated {
         guard let delegate = SeatCanvasRendererDelegateRegistry.shared.delegate(for: coreID) else {
-#if DEBUG
-            print("[SwiftBridge] 警告: 未找到 coreID \(coreID) 对应的 SeatCanvasRendererDelegate")
-#endif
+            #if DEBUG
+                print("[SwiftBridge] 警告: 未找到 coreID \(coreID) 对应的 SeatCanvasRendererDelegate")
+            #endif
             return false
         }
 
@@ -35,9 +35,9 @@ public func switf_bridge_shouldSelectSeat(coreID: UInt32, regionId: String, seat
 public func switf_bridge_didSelectSeat(coreID: UInt32, regionId: String, seatId: String) {
     return MainActor.assumeIsolated {
         guard let delegate = SeatCanvasRendererDelegateRegistry.shared.delegate(for: coreID) else {
-#if DEBUG
-            print("[SwiftBridge] 警告: 未找到 coreID \(coreID) 对应的 SeatCanvasRendererDelegate")
-#endif
+            #if DEBUG
+                print("[SwiftBridge] 警告: 未找到 coreID \(coreID) 对应的 SeatCanvasRendererDelegate")
+            #endif
             return
         }
 
@@ -53,9 +53,9 @@ public func switf_bridge_didSelectSeat(coreID: UInt32, regionId: String, seatId:
 public func switf_bridge_didDeselectSeat(coreID: UInt32, regionId: String, seatId: String) {
     return MainActor.assumeIsolated {
         guard let delegate = SeatCanvasRendererDelegateRegistry.shared.delegate(for: coreID) else {
-#if DEBUG
-            print("[SwiftBridge] 警告: 未找到 coreID \(coreID) 对应的 SeatCanvasRendererDelegate")
-#endif
+            #if DEBUG
+                print("[SwiftBridge] 警告: 未找到 coreID \(coreID) 对应的 SeatCanvasRendererDelegate")
+            #endif
             return
         }
 

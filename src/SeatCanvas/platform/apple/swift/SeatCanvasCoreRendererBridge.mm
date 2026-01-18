@@ -1,28 +1,27 @@
 //
-//  SwiftBridge.mm
+//  SeatCanvasCoreRendererBridge.m
 //  SeatCanvas
 //
-//  Created by king on 2025/11/12.
+//  Created by KK on 2026/1/18.
 //
 
-#import "swift/SwiftBridge.h"
+#import "SeatCanvasCoreRendererBridge.h"
 
+#import "ColorCast.h"
 #import "core/BaseMapConfig.hpp"
 #import "core/Platform.hpp"
-#import "core/RegionInfo.hpp"
 #import "core/gesture/ElasticZoomPanController.hpp"
 #import "core/layers/BaseMapRootLayer.hpp"
-#import "core/renderer/SeatCanvasCoreRenderer.hpp"
-#import "core/renderer/SeatCanvasCoreRendererState.hpp"
-#import "core/utils/SystemProperties.hpp"
-#import "platform/apple/LayerPrerenderImage.h"
-#import "platform/ios/renderer/IOSPlatformView.h"
-
 #import "core/parser/BaseMapFormat.hpp"
 #import "core/parser/BaseMapParserFactory.hpp"
+#import "core/renderer/SeatCanvasCoreRenderer.hpp"
+#import "core/renderer/SeatCanvasCoreRendererState.hpp"
 #import "core/svg/ConvertSVGLayer.hpp"
 #import "core/svg/SVGMeshParser.hpp"
+#import "core/utils/SystemProperties.hpp"
 #import "core/utils/TimeProfiler.hpp"
+#import "platform/apple/LayerPrerenderImage.h"
+#import "platform/ios/renderer/IOSPlatformView.h"
 
 #import "SwiftSeatCanvasCoreRendererDelegate.hpp"
 
@@ -31,40 +30,7 @@
 #import <tgfx/platform/Print.h>
 #import <tgfx/svg/SVGDOM.h>
 
-#define __GetCPPObjectOrReturn(rawObj, objType, typedObjName, action) \
-    if (rawObj == nullptr) {                                          \
-        action;                                                       \
-    }                                                                 \
-    if (rawObj->realValue == nullptr) {                               \
-        action;                                                       \
-    }                                                                 \
-    auto typedObjName = static_cast<objType>(rawObj->realValue);
-
-/* clang-format off */
-
-#define GetCPPObjectOrReturn(rawObj, objType, typedObjName) \
-    __GetCPPObjectOrReturn(rawObj, objType, typedObjName, return)
-
-
-#define GetCPPObjectOrReturnValue(rawObj, objType, typedObjName, value) \
-    __GetCPPObjectOrReturn(rawObj, objType, typedObjName, return value)
-
-/* clang-format on */
-
-namespace kk {
-
-template <typename T>
-static void releaseCPPObject(void *_Nonnull obj) {
-    T *typedObj = (T *)obj;
-    if (typedObj != nullptr) {
-        delete typedObj;
-    }
-}
-
-// #ifdef __cplusplus
-// extern "C" {
-// #endif
-
+namespace kk::bridge {
 struct LoadBaseMapResult {
     std::shared_ptr<tgfx::Layer> textLayer;
     tgfx::Size baseMapSize;
@@ -104,7 +70,35 @@ void SeatCanvasInitSystemProperties(CGFloat density, CGFloat fontScale) {
     properties.updateFontScale(static_cast<float>(fontScale));
 }
 
-void *_Nullable SeatCanvasLoadBaseMap(const void *_Nullable __sized_by_or_null(len) bytes, size_t len, kk::parser::BaseMapFormat format, UIImage *_Nullable *_Nullable miniMapImage) {
+CPPObject *_Nonnull CreateSeatCanvasCoreRenderer(CAEAGLLayer *_Nonnull eagLayer) {
+    auto platformView = std::make_unique<kk::renderer::IOSPlatformView>(eagLayer);
+    auto zoomPanController = std::make_unique<kk::gesture::ElasticZoomPanController>();
+    auto renderer = new kk::renderer::SeatCanvasCoreRenderer(std::move(platformView), std::move(zoomPanController));
+
+    auto delegate = std::make_shared<SwiftSeatCanvasCoreRendererDelegate>();
+    renderer->setDelegate(std::move(delegate));
+
+    CPPObject *cppObj = AllocCPPObject(ObjectTag::CoreRenderer, renderer, CPPObjectDeleter<kk::renderer::SeatCanvasCoreRenderer>);
+    return cppObj;
+}
+
+uint32_t SeatCanvasCoreRendererGetCoreID(CPPObject *_Nonnull cppObject) {
+    GetCPPObjectOrReturnValue(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer, 0);
+    return renderer->coreID();
+}
+
+bool SeatCanvasCoreRendererReplacePlatformView(CPPObject *_Nonnull cppObject, CAEAGLLayer *_Nonnull eagLayer) {
+    GetCPPObjectOrReturnValue(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer, false);
+    if (eagLayer == nullptr) {
+        renderer->replacePlatformView(nullptr);
+        return true;
+    }
+    auto platformView = std::make_unique<kk::renderer::IOSPlatformView>(eagLayer);
+    renderer->replacePlatformView(std::move(platformView));
+    return true;
+}
+
+void *_Nullable SeatCanvasCoreRendererParseBaseMap(const void *_Nullable __sized_by_or_null(len) bytes, size_t len, kk::parser::BaseMapFormat format, UIImage *_Nullable *_Nullable miniMapImage) {
     if (bytes == nullptr || len == 0) {
         tgfx::PrintError("bytes is null or len is zero");
         return nullptr;
@@ -138,43 +132,50 @@ void *_Nullable SeatCanvasLoadBaseMap(const void *_Nullable __sized_by_or_null(l
     return static_cast<void *>(outResult);
 }
 
-void *_Nullable SeatCanvasLoadBaseMapFromSVG(const void *_Nullable __sized_by_or_null(len) bytes, size_t len, UIImage *_Nullable *_Nullable miniMapImage) {
-    return SeatCanvasLoadBaseMap(bytes, len, kk::parser::BaseMapFormat::SVG, miniMapImage);
+void *_Nullable SeatCanvasCoreRendererParseBaseMapFromSVG(const void *_Nullable __sized_by_or_null(len) bytes, size_t len, UIImage *_Nullable *_Nullable miniMapImage) {
+    return SeatCanvasCoreRendererParseBaseMap(bytes, len, kk::parser::BaseMapFormat::SVG, miniMapImage);
 }
 
-CPPObject *_Nonnull CreateSeatCanvasCoreRenderer(CAEAGLLayer *_Nonnull eagLayer) {
-    auto platformView = std::make_unique<kk::renderer::IOSPlatformView>(eagLayer);
-    auto zoomPanController = std::make_unique<kk::gesture::ElasticZoomPanController>();
-    auto renderer = new kk::renderer::SeatCanvasCoreRenderer(std::move(platformView), std::move(zoomPanController));
+bool SeatCanvasCoreRendererLoadBaseMap(CPPObject *_Nonnull cppObject, void **_Nullable loadResult) {
+    GetCPPObjectOrReturnValue(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer, false);
+    if (loadResult == nullptr || *loadResult == nullptr) {
+        renderer->setBaseMapConfig(nullptr, kk::SeatRenderMode::ZoomBased);
+        return true;
+    }
 
-    auto delegate = std::make_shared<kk::renderer::SwiftSeatCanvasCoreRendererDelegate>();
-    renderer->setDelegate(std::move(delegate));
+    // 支持 LoadBaseMapResult 和 LoadBaseMapResult（向后兼容）
+    LoadBaseMapResult *map = nullptr;
+    LoadBaseMapResult *svgMap = nullptr;
 
-    CPPObject *cppObj = (CPPObject *)malloc(sizeof(CPPObject));
-    cppObj->realValue = renderer;
-    cppObj->deleter = releaseCPPObject<kk::renderer::SeatCanvasCoreRenderer>;
-    return cppObj;
-}
+    // 尝试转换为 LoadBaseMapResult
+    map = static_cast<LoadBaseMapResult *>(*loadResult);
+    if (map == nullptr) {
+        // 尝试转换为旧的 LoadBaseMapResult（向后兼容）
+        svgMap = static_cast<LoadBaseMapResult *>(*loadResult);
+        if (svgMap != nullptr) {
+            // 转换为新的结构
+            map = new LoadBaseMapResult(*svgMap);
+            delete svgMap;
+        }
+    }
 
-uint32_t SeatCanvasCoreRendererGetCoreID(CPPObject *_Nonnull cppObject) {
-    GetCPPObjectOrReturnValue(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer, 0);
-    return renderer->coreID();
+    if (map == nullptr) {
+        *loadResult = nullptr;
+        return false;
+    }
+
+    auto baseMapConfig = std::make_shared<kk::BaseMapConfig>(map->meshBuilder, map->textLayer, map->miniLayer, map->baseMapSize);
+    renderer->setBaseMapConfig(std::move(baseMapConfig), kk::SeatRenderMode::ZoomBased);
+
+    delete map;
+    *loadResult = nullptr;
+
+    return true;
 }
 
 void SeatCanvasCoreRendererSetSeatStyleJSONConfig(CPPObject *_Nonnull cppObject, const void *_Nullable __sized_by_or_null(len) bytes, size_t len) {
     GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
     renderer->setStyleKeyToConfigFromJSON(bytes, len);
-}
-
-bool SeatCanvasCoreRendererReplacePlatformView(CPPObject *_Nonnull cppObject, CAEAGLLayer *_Nonnull eagLayer) {
-    GetCPPObjectOrReturnValue(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer, false);
-    if (eagLayer == nullptr) {
-        renderer->replacePlatformView(nullptr);
-        return true;
-    }
-    auto platformView = std::make_unique<kk::renderer::IOSPlatformView>(eagLayer);
-    renderer->replacePlatformView(std::move(platformView));
-    return true;
 }
 
 void SeatCanvasCoreRendererInvalidateContent(CPPObject *_Nonnull cppObject) {
@@ -222,43 +223,6 @@ CGPoint SeatCanvasCoreRendereContentOffset(CPPObject *_Nonnull cppObject) {
     return CGPointMake(static_cast<CGFloat>(contentOffset.x), static_cast<CGFloat>(contentOffset.y));
 }
 
-bool SeatCanvasCoreRendererLoadBaseMap(CPPObject *_Nonnull cppObject, void **_Nullable loadResult) {
-    GetCPPObjectOrReturnValue(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer, false);
-    if (loadResult == nullptr || *loadResult == nullptr) {
-        renderer->setBaseMapConfig(nullptr, kk::SeatRenderMode::ZoomBased);
-        return true;
-    }
-
-    // 支持 LoadBaseMapResult 和 LoadBaseMapResult（向后兼容）
-    LoadBaseMapResult *map = nullptr;
-    LoadBaseMapResult *svgMap = nullptr;
-
-    // 尝试转换为 LoadBaseMapResult
-    map = static_cast<LoadBaseMapResult *>(*loadResult);
-    if (map == nullptr) {
-        // 尝试转换为旧的 LoadBaseMapResult（向后兼容）
-        svgMap = static_cast<LoadBaseMapResult *>(*loadResult);
-        if (svgMap != nullptr) {
-            // 转换为新的结构
-            map = new LoadBaseMapResult(*svgMap);
-            delete svgMap;
-        }
-    }
-
-    if (map == nullptr) {
-        *loadResult = nullptr;
-        return false;
-    }
-
-    auto baseMapConfig = std::make_shared<kk::BaseMapConfig>(map->meshBuilder, map->textLayer, map->miniLayer, map->baseMapSize);
-    renderer->setBaseMapConfig(std::move(baseMapConfig), kk::SeatRenderMode::ZoomBased);
-
-    delete map;
-    *loadResult = nullptr;
-
-    return true;
-}
-
 CGFloat SeatCanvasCoreRendererBaseMapScale(CPPObject *_Nonnull cppObject) {
     GetCPPObjectOrReturnValue(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer, 1.0);
     auto contentScale = renderer->getContentScale();
@@ -293,6 +257,12 @@ void SeatCanvasCoreRendererSetBackgroundColor(CPPObject *_Nonnull cppObject, UIC
     [color getRed:&red green:&green blue:&blue alpha:&alpha];
     tgfx::Color tgfxColor(static_cast<float>(red), static_cast<float>(green), static_cast<float>(blue), static_cast<float>(alpha));
     renderer->setBackgroundColor(tgfxColor);
+}
+
+UIColor *SeatCanvasCoreRendererGetBackgroundColor(CPPObject *_Nonnull cppObject) {
+    GetCPPObjectOrReturnValue(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer, UIColor.clearColor);
+    const auto &backgroundColor = renderer->getBackgroundColor();
+    return UIColorFromTGFX(backgroundColor);
 }
 
 ZoomLevel SeatCanvasCoreRendererGetZoomLevel(CPPObject *_Nonnull cppObject) {
@@ -352,23 +322,6 @@ CGRect SeatCanvasCoreRendererGetVisibleContentRect(CPPObject *_Nonnull cppObject
         static_cast<CGFloat>(rect.height()));
 }
 
-bool SeatCanvasCoreRendererGetSeatRegionByPoint(CPPObject *_Nonnull cppObject, CGPoint targetPoint, HitTestSeatRegionResult &outResult) {
-    GetCPPObjectOrReturnValue(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer, false);
-    auto info = renderer->getSeatRegionDataByPoint(static_cast<float>(targetPoint.x), static_cast<float>(targetPoint.y));
-    if (info == nullptr) {
-        return false;
-    }
-
-    const auto &bounds = info->bounds;
-    outResult.regionId = info->regionId;
-    outResult.bounds = CGRectMake(
-        static_cast<CGFloat>(bounds.x()),
-        static_cast<CGFloat>(bounds.y()),
-        static_cast<CGFloat>(bounds.width()),
-        static_cast<CGFloat>(bounds.height()));
-    return true;
-}
-
 void SeatCanvasCoreRendererZoomToRect(CPPObject *_Nonnull cppObject, CGRect rect, bool animated, CGFloat padding, double durationMs) {
     GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
     tgfx::Rect targetRect = tgfx::Rect::MakeXYWH(static_cast<float>(rect.origin.x),
@@ -377,9 +330,4 @@ void SeatCanvasCoreRendererZoomToRect(CPPObject *_Nonnull cppObject, CGRect rect
                                                  static_cast<float>(rect.size.height));
     renderer->zoomToRect(targetRect, animated, static_cast<float>(padding), durationMs);
 }
-
-// #ifdef __cplusplus
-// }
-// #endif
-
-}  // namespace kk
+};  // namespace kk::bridge

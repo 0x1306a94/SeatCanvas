@@ -1,12 +1,13 @@
 //
-//  SwiftBridge.hpp
+//  SeatCanvasCoreRendererBridge.h
 //  SeatCanvas
 //
-//  Created by king on 2025/11/12.
+//  Created by KK on 2026/1/18.
 //
 
-#ifndef SwiftBridge_h
-#define SwiftBridge_h
+#import "CPPObject.hpp"
+#import "core/gesture/GestureState.hpp"
+#import "core/parser/BaseMapFormat.hpp"
 
 #import <CoreGraphics/CGGeometry.h>
 #import <QuartzCore/CAEAGLLayer.h>
@@ -14,83 +15,52 @@
 #import <UIKit/UIImage.h>
 #import <string>
 
-#import "core/gesture/GestureState.hpp"
-#import "core/parser/BaseMapFormat.hpp"
-
-// #ifdef __cplusplus
-// extern "C" {
-// #endif
-
-namespace kk {
-
-typedef struct {
-    void *_Nonnull realValue;
-    void (*_Nullable deleter)(void *_Nonnull);
-} CPPObject;
-
-struct HitTestSeatRegionResult {
-    /// 区域ID
-    std::string regionId{""};
-
-    CGRect bounds{CGRectZero};
-
-    HitTestSeatRegionResult() {
-    }
-
-    explicit HitTestSeatRegionResult(const std::string &regionId)
-        : regionId(regionId) {
-    }
-
-    /// 是否有效
-    bool valid() const {
-        return !regionId.empty();
-    }
-};
-
+namespace kk::bridge {
 struct ZoomLevel {
-    CGFloat zoomScale9{1.0f};
-    CGFloat zoomScale18{1.0f};
-    CGFloat zoomScale30{1.0f};
-    CGFloat zoomScale50{1.0f};
+    CGFloat zoomScale9 = {1.0f};
+    CGFloat zoomScale18 = {1.0f};
+    CGFloat zoomScale30 = {1.0f};
+    CGFloat zoomScale50 = {1.0f};
 };
 
-void SeatCanvasReleaseCPPObject(CPPObject *_Nonnull obj);
+/// 创建C++渲染器
+/// - Parameter eagLayer: 负责渲染输出的 OpenGL ES 目标
+/// - Returns: C++渲染器实例
+CPPObject *_Nonnull CreateSeatCanvasCoreRenderer(CAEAGLLayer *_Nullable eaglLayer);
+/// 获取C++渲染器ID
+/// - Parameter cppObject: C++渲染器实例
+/// - Returns: 渲染器ID
+uint32_t SeatCanvasCoreRendererGetCoreID(CPPObject *_Nonnull cppObject);
 
-/// 初始化系统属性
+/// 替换C++渲染器平台视图
 /// - Parameters:
-///   - density: 屏幕像素密度
-///   - fontScale: 字体缩放比例
-void SeatCanvasInitSystemProperties(CGFloat density, CGFloat fontScale);
+///   - cppObject: C++渲染器实例
+///   - eagLayer: 负责渲染输出的 OpenGL ES 目标
+bool SeatCanvasCoreRendererReplacePlatformView(CPPObject *_Nonnull cppObject, CAEAGLLayer *_Nullable eagLayer);
 
-/// 注册回退字体
-void SeatCanvasRegisterFallbackFonts();
-
-/// 加载底图（统一接口，支持多种格式）
+/// 解析底图（统一接口，支持多种格式）
 /// - Parameters:
 ///   - bytes: 底图二进制数据
 ///   - len: 数据长度
 ///   - format: 格式
 ///   - miniMapImage: 生成的minimap 图片（可选）
-/// - Returns: 加载成功则返回不透明数据指针，失败时返回 nullptr
-void *_Nullable SeatCanvasLoadBaseMap(const void *_Nullable __sized_by_or_null(len) bytes, size_t len, kk::parser::BaseMapFormat format, UIImage *_Nullable *_Nullable miniMapImage);
+/// - Returns: 解析成功则返回不透明数据指针，失败时返回 nullptr
+void *_Nullable SeatCanvasCoreRendererParseBaseMap(const void *_Nullable __sized_by_or_null(len) bytes, size_t len, kk::parser::BaseMapFormat format, UIImage *_Nullable *_Nullable miniMapImage);
 
-/// 加载 SVG 底图（向后兼容接口）
+/// 解析 SVG 底图（向后兼容接口）
 /// - Parameters:
 ///   - bytes: svg 二进制数据
 ///   - len: 数据长度
 ///   - miniMapImage: 生成的minimap 图片
-/// - Returns: 加载成功则返回不透明数据指针，失败时返回 nullptr
-void *_Nullable SeatCanvasLoadBaseMapFromSVG(const void *_Nullable __sized_by_or_null(len) bytes, size_t len, UIImage *_Nullable *_Nullable miniMapImage);
+/// - Returns: 解析成功则返回不透明数据指针，失败时返回 nullptr
+void *_Nullable SeatCanvasCoreRendererParseBaseMapFromSVG(const void *_Nullable __sized_by_or_null(len) bytes, size_t len, UIImage *_Nullable *_Nullable miniMapImage);
 
-/// 创建C++渲染器
-/// - Parameter eagLayer: 负责渲染输出的 OpenGL ES 目标
-/// - Returns: C++渲染器实例
-CPPObject *_Nonnull CreateSeatCanvasCoreRenderer(CAEAGLLayer *_Nullable eagLayer);
-
-/// 获取C++渲染器ID
-/// - Parameter cppObject: C++渲染器实例
-/// - Returns: 渲染器ID
-uint32_t SeatCanvasCoreRendererGetCoreID(CPPObject *_Nonnull cppObject);
+/// 渲染器加载底图
+/// - Parameters:
+///   - cppObject: C++渲染器实例
+///   - loadResult: 由 SeatCanvasLoadBaseMapFromSVG 返回的指针，执行完此函数后，loadResult 将不在可用，上层请勿继续保留使用
+/// - Returns: 是否成功
+bool SeatCanvasCoreRendererLoadBaseMap(CPPObject *_Nonnull cppObject, void **_Nullable loadResult);
 
 /// 设置座位样式
 /// - Parameters:
@@ -98,12 +68,6 @@ uint32_t SeatCanvasCoreRendererGetCoreID(CPPObject *_Nonnull cppObject);
 ///   - bytes: json字节数据
 ///   - len: json字节大小
 void SeatCanvasCoreRendererSetSeatStyleJSONConfig(CPPObject *_Nonnull cppObject, const void *_Nullable __sized_by_or_null(len) bytes, size_t len);
-
-/// 替换C++渲染器平台视图
-/// - Parameters:
-///   - cppObject: C++渲染器实例
-///   - eagLayer: 负责渲染输出的 OpenGL ES 目标
-bool SeatCanvasCoreRendererReplacePlatformView(CPPObject *_Nonnull cppObject, CAEAGLLayer *_Nullable eagLayer);
 
 /// 让渲染内容失效
 /// - Parameter cppObject: C++渲染器实例
@@ -151,13 +115,6 @@ CGFloat SeatCanvasCoreRendererMaximumZoomScale(CPPObject *_Nonnull cppObject);
 /// - Returns: 内容偏移量
 CGPoint SeatCanvasCoreRendereContentOffset(CPPObject *_Nonnull cppObject);
 
-/// 渲染器加载底图
-/// - Parameters:
-///   - cppObject: C++渲染器实例
-///   - loadResult: 由 SeatCanvasLoadBaseMapFromSVG 返回的指针，执行完此函数后，loadResult 将不在可用，上层请勿继续保留使用
-/// - Returns: 是否成功
-bool SeatCanvasCoreRendererLoadBaseMap(CPPObject *_Nonnull cppObject, void **_Nullable loadResult);
-
 /// 渲染器底图缩放级别
 /// - Parameters:
 ///   - cppObject: C++渲染器实例
@@ -188,6 +145,13 @@ CGSize SeatCanvasCoreRendererContentSize(CPPObject *_Nonnull cppObject);
 ///   - color: 背景色
 /// - Returns: 内容大小
 void SeatCanvasCoreRendererSetBackgroundColor(CPPObject *_Nonnull cppObject, UIColor *_Nullable color);
+
+/// 获取渲染画布背景色
+/// - Parameters:
+///   - cppObject: C++渲染器实例
+///   - color: 背景色
+/// - Returns: 内容大小
+UIColor *SeatCanvasCoreRendererGetBackgroundColor(CPPObject *_Nonnull cppObject);
 
 /// 获取缩放级别
 /// - Parameter cppObject: C++渲染器实例
@@ -239,14 +203,6 @@ CGFloat SeatCanvasCoreRendererGetDensity(CPPObject *_Nonnull cppObject);
 /// - Returns: 显示区域
 CGRect SeatCanvasCoreRendererGetVisibleContentRect(CPPObject *_Nonnull cppObject);
 
-/// 获取座位区域信息
-/// - Parameters:
-///   - cppObject: C++渲染器实例
-///   - targetPoint: 目标点(像素单位)
-///   - outResult: 结果
-/// - Returns: 返回目标点对应的座位区域
-bool SeatCanvasCoreRendererGetSeatRegionByPoint(CPPObject *_Nonnull cppObject, CGPoint targetPoint, HitTestSeatRegionResult &outResult);
-
 /// 缩放到指定区域并居中显示
 /// - Parameters:
 ///   - cppObject: C++渲染器实例
@@ -255,10 +211,4 @@ bool SeatCanvasCoreRendererGetSeatRegionByPoint(CPPObject *_Nonnull cppObject, C
 ///   - padding: 区域周围的边距（在内容坐标系中），默认为 0
 ///   - durationMs: 动画持续时间（毫秒），仅在 animated 为 true 时有效，默认 300ms
 void SeatCanvasCoreRendererZoomToRect(CPPObject *_Nonnull cppObject, CGRect rect, bool animated, CGFloat padding, double durationMs);
-// #ifdef __cplusplus
-//     }
-// #endif
-
-};  // namespace kk
-
-#endif /* SwiftBridge_h */
+};  // namespace kk::bridge

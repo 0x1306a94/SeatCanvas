@@ -108,6 +108,7 @@ class SeatCanvasCoreRenderer {
     void setContentOffset(const tgfx::Point &contentOffset);
     bool isSmallVenue() const;
     float showBackZoomThreshold() const;
+    const tgfx::Color &getBackgroundColor() const;
     void setBackgroundColor(const tgfx::Color &color);
 
     /**

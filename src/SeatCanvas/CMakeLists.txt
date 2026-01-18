@@ -34,11 +34,7 @@ list(APPEND SeatCanvas_STATIC_LIBS tgfx)
 if(IOS)
     message(STATUS "Platform: IOS")
     list(APPEND SeatCanvas_PRIVATE_HEADERS
-        # ${CMAKE_CURRENT_LIST_DIR}/core/renderer/RendererBackend.hpp
-        # ${CMAKE_CURRENT_LIST_DIR}/core/renderer/SeatCanvasCoreRenderer.hpp
-        # ${CMAKE_CURRENT_LIST_DIR}/core/renderer/SeatCanvasCoreRenderer.hpp
-        # ${CMAKE_CURRENT_LIST_DIR}/platform/ios/renderer/IOSRendererBackend.h
-        ${CMAKE_CURRENT_LIST_DIR}/swift/SwiftBridge.h
+        ${CMAKE_CURRENT_LIST_DIR}/platform/apple/swift/SwiftBridge.h
     )
 
     add_files_by_extension(SeatCanvas_PLATFORM_IOS_FILES ".h;.hpp;.m;.mm;.cpp;.swift"
@@ -166,9 +162,9 @@ if(MACOS OR IOS)
     _swift_generate_cxx_header_from_sources(${LIB_TARGET_NAME} 
         ${LIB_TARGET_NAME}-Bridge-swift.h
         SWIFT_SOURCES
-            "${CMAKE_CURRENT_LIST_DIR}/swift/SeatCanvasRendererDelegate.swift"
-            "${CMAKE_CURRENT_LIST_DIR}/swift/SeatCanvasRendererDelegateRegistry.swift"
-            "${CMAKE_CURRENT_LIST_DIR}/swift/SwiftBridge.swift"
+            "${CMAKE_CURRENT_LIST_DIR}/platform/apple/swift/SeatCanvasRendererDelegate.swift"
+            "${CMAKE_CURRENT_LIST_DIR}/platform/apple/swift/SeatCanvasRendererDelegateRegistry.swift"
+            "${CMAKE_CURRENT_LIST_DIR}/platform/apple/swift/SwiftBridge.swift"
         MODULE_NAME
             "${LIB_TARGET_NAME}"
         SEARCH_PATHS 

@@ -15,7 +15,7 @@
 
 #import <swift/bridging>
 
-namespace kk::renderer {
+namespace kk::bridge {
 SwiftSeatCanvasCoreRendererDelegate::SwiftSeatCanvasCoreRendererDelegate() {
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
 }
@@ -35,4 +35,4 @@ void SwiftSeatCanvasCoreRendererDelegate::didSelectSeat(uint32_t coreID, const s
 void SwiftSeatCanvasCoreRendererDelegate::didDeselectSeat(uint32_t coreID, const std::string &regionId, const std::string &seatId) {
     SeatCanvas::switf_bridge_didDeselectSeat(coreID, regionId, seatId);
 }
-};  // namespace kk::renderer
+};  // namespace kk::bridge

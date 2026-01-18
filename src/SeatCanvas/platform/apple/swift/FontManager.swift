@@ -14,6 +14,6 @@ public final class FontManager: NSObject {
     /// 注册回退字体
     @objc
     public static func registerFallbackFonts() {
-        kk.SeatCanvasRegisterFallbackFonts()
+        kk.bridge.RegisterFallbackFonts()
     }
 }
