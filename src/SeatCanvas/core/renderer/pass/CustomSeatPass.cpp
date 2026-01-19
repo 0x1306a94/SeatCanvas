@@ -9,9 +9,9 @@
 
 #include "UniformData.hpp"
 #include "core/renderer/SeatCanvasCoreRendererState.hpp"
-#include "core/renderer/SeatRegionMesh.hpp"
 
 #include <algorithm>
+#include <cstring>
 #include <tgfx/core/Image.h>
 #include <tgfx/gpu/Context.h>
 #include <tgfx/gpu/GPU.h>
@@ -23,20 +23,21 @@ namespace kk::renderer {
 static constexpr char SEAT_VERTEXT_SHADER[] = R"(
 in vec2 inPosition;
 in vec2 inTextureCoord;
-in int inStyleIndex;
+
+in vec2 inInstancePosition;
+in vec4 inInstanceUVRect;
 
 layout(std140) uniform VertexUniformBlock {
     mat3 uMVP;
-    vec4 uTextureCoordRects[40];
 };
 
 out vec2 vTexCoord;
 
 void main() {
-    vec3 pos = uMVP * vec3(inPosition, 1.0);
+    vec2 worldPos = inPosition + inInstancePosition;
+    vec3 pos = uMVP * vec3(worldPos, 1.0);
     gl_Position = vec4(pos.xy, 0.0, 1.0);
-    vec4 uvRect = uTextureCoordRects[inStyleIndex];
-    vTexCoord = uvRect.xy + inTextureCoord * (uvRect.zw - uvRect.xy);
+    vTexCoord = inInstanceUVRect.xy + inTextureCoord * (inInstanceUVRect.zw - inInstanceUVRect.xy);
 }
 )";
 
@@ -62,32 +63,27 @@ CustomSeatPass::CustomSeatPass() {
 
     position = {"inPosition", tgfx::VertexFormat::Float2};
     textureCoord = {"inTextureCoord", tgfx::VertexFormat::Float2};
-    styleIndex = {"inStyleIndex", tgfx::VertexFormat::Int};
+    instancePosition = {"inInstancePosition", tgfx::VertexFormat::Float2};
+    instanceUVRect = {"inInstanceUVRect", tgfx::VertexFormat::Float4};
 
     mvpUniform = {"uMVP", UniformFormat::Float3x3};
-    textureCoordRectsUniform = {"uTextureCoordRects", UniformFormat::Float4, 40};
-    uniformData.reset(new UniformData({mvpUniform, textureCoordRectsUniform}));
+    uniformData.reset(new UniformData({mvpUniform}));
 }
 
 CustomSeatPass::~CustomSeatPass() {
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
 }
 
-void CustomSeatPass::updateRegionMeshes(const std::vector<std::shared_ptr<SeatRegionMesh>> &meshes) {
-    regionMeshes = meshes;
+void CustomSeatPass::updateSeats(std::vector<SeatInstanceData> &&seats) {
+    this->seats = std::move(seats);
 }
 
-void CustomSeatPass::updateUVOffset(const std::vector<float> &uvOffset) {
-    bitFields.dirtyUVTable = true;
-    this->uvOffset = uvOffset;
-}
-
-void CustomSeatPass::clearRegionMeshes() {
-    regionMeshes.clear();
+void CustomSeatPass::clearSeats() {
+    this->seats.clear();
 }
 
 bool CustomSeatPass::hasData() const {
-    return !regionMeshes.empty();
+    return !seats.empty();
 }
 
 void CustomSeatPass::setDefaultColor(const tgfx::Color &color) {
@@ -101,10 +97,15 @@ void CustomSeatPass::setAtlasTexture(std::shared_ptr<tgfx::Texture> texture) {
     atlasTexture = texture;
 }
 
+void CustomSeatPass::setSeatSize(float seatSize) {
+    this->seatSize = seatSize;
+    this->baseQuadVBO = nullptr;
+}
+
 bool CustomSeatPass::onDraw(tgfx::CommandEncoder *encoder, const SeatCanvasCoreRendererState *state) {
     bitFields.avaiable = false;
 
-    if (encoder == nullptr || atlasTexture == nullptr || regionMeshes.empty()) {
+    if (encoder == nullptr || atlasTexture == nullptr || seats.empty()) {
         return false;
     }
 
@@ -133,6 +134,14 @@ bool CustomSeatPass::onDraw(tgfx::CommandEncoder *encoder, const SeatCanvasCoreR
         return false;
     }
 
+    if (!prepareBaseQuadBuffer(gpu)) {
+        return false;
+    }
+
+    if (!updateInstanceBuffer(gpu)) {
+        return false;
+    }
+
     if (!updateMVPMatrix(state)) {
         return false;
     }
@@ -151,21 +160,9 @@ bool CustomSeatPass::onDraw(tgfx::CommandEncoder *encoder, const SeatCanvasCoreR
     renderPass->setPipeline(pipeline);
     renderPass->setTexture(0, atlasTexture, sampler);
     renderPass->setUniformBuffer(0, uboBuffer, 0, uboBuffer->size());
-
-    for (const auto &mesh : regionMeshes) {
-        if (mesh->vertexCount == 0 || !mesh->vbo) {
-            continue;
-        }
-
-        renderPass->setVertexBuffer(0, mesh->vbo);
-        if (mesh->indexCount > 0 && mesh->ibo) {
-            renderPass->setIndexBuffer(mesh->ibo);
-            renderPass->drawIndexed(tgfx::PrimitiveType::Triangles, mesh->indexCount);
-        } else {
-            renderPass->draw(tgfx::PrimitiveType::Triangles, mesh->vertexCount);
-        }
-    }
-
+    renderPass->setVertexBuffer(0, baseQuadVBO);
+    renderPass->setVertexBuffer(1, instanceBuffer);
+    renderPass->draw(tgfx::PrimitiveType::TriangleStrip, 4, static_cast<uint32_t>(seats.size()));
     renderPass->end();
 
     bitFields.avaiable = true;
@@ -192,6 +189,8 @@ void CustomSeatPass::onResetGPUResources() {
     textureImage.reset();
     renderTexture.reset();
     sampler.reset();
+    baseQuadVBO.reset();
+    instanceBuffer.reset();
 }
 
 std::string CustomSeatPass::onBuildVertexShader() const {
@@ -203,8 +202,9 @@ std::string CustomSeatPass::onBuildFragmentShader() const {
 }
 
 std::vector<tgfx::VertexBufferLayout> CustomSeatPass::vertexBufferLayouts() const {
-    tgfx::VertexBufferLayout vertextLayout{{position, textureCoord, styleIndex}, tgfx::VertexStepMode::Vertex};
-    return {vertextLayout};
+    tgfx::VertexBufferLayout vertexLayout{{position, textureCoord}, tgfx::VertexStepMode::Vertex};
+    tgfx::VertexBufferLayout instanceLayout{{instancePosition, instanceUVRect}, tgfx::VertexStepMode::Instance};
+    return {vertexLayout, instanceLayout};
 }
 
 std::vector<tgfx::BindingEntry> CustomSeatPass::uniformBlocks() const {
@@ -259,7 +259,6 @@ bool CustomSeatPass::prepareSampler(tgfx::GPU *gpu) {
         return true;
     }
 
-    // 配置采样器：使用线性过滤和边缘夹紧
     tgfx::SamplerDescriptor samplerDesc{};
     samplerDesc.minFilter = tgfx::FilterMode::Linear;
     samplerDesc.magFilter = tgfx::FilterMode::Linear;
@@ -287,6 +286,56 @@ bool CustomSeatPass::prepareBuffer(tgfx::GPU *gpu) {
     return true;
 }
 
+bool CustomSeatPass::prepareBaseQuadBuffer(tgfx::GPU *gpu) {
+    if (baseQuadVBO) {
+        return true;
+    }
+
+    struct QuadVertex {
+        float pos[2];
+        float uv[2];
+    };
+
+    QuadVertex quadVertices[4] = {
+        {{0.0f, seatSize}, {0.0f, 1.0f}},      // bottom-left
+        {{seatSize, seatSize}, {1.0f, 1.0f}},  // bottom-right
+        {{0.0f, 0.0f}, {0.0f, 0.0f}},          // top-left
+        {{seatSize, 0.0f}, {1.0f, 0.0f}}       // top-right
+    };
+
+    baseQuadVBO = gpu->createBuffer(sizeof(quadVertices), tgfx::GPUBufferUsage::VERTEX);
+    if (!baseQuadVBO) {
+        return false;
+    }
+
+    auto vboPtr = baseQuadVBO->map();
+    if (vboPtr) {
+        std::memcpy(vboPtr, quadVertices, sizeof(quadVertices));
+        baseQuadVBO->unmap();
+    }
+
+    return true;
+}
+
+bool CustomSeatPass::updateInstanceBuffer(tgfx::GPU *gpu) {
+    auto mustBufferSize = seats.size() * sizeof(SeatInstanceData);
+    if (!instanceBuffer || instanceBuffer->size() < mustBufferSize) {
+        instanceBuffer = gpu->createBuffer(mustBufferSize, tgfx::GPUBufferUsage::VERTEX);
+    }
+
+    if (!instanceBuffer) {
+        return false;
+    }
+
+    auto ptr = instanceBuffer->map();
+    if (ptr == nullptr) {
+        return false;
+    }
+    std::memcpy(ptr, seats.data(), mustBufferSize);
+    instanceBuffer->unmap();
+    return true;
+}
+
 bool CustomSeatPass::updateUBOBuffer() {
     auto ptr = uboBuffer->map();
     if (ptr == nullptr) {
@@ -294,17 +343,6 @@ bool CustomSeatPass::updateUBOBuffer() {
     }
     uniformData->setBuffer(ptr);
     uniformData->setData(mvpUniform.name(), mvpMatrix);
-
-    if (bitFields.dirtyUVTable) {
-        auto expectedSize = textureCoordRectsUniform.count() * 4;
-        std::vector<float> uvRects(expectedSize, 0.0f);
-        auto copySize = std::min(uvOffset.size(), static_cast<size_t>(expectedSize));
-        if (copySize > 0) {
-            std::copy(uvOffset.begin(), uvOffset.begin() + copySize, uvRects.begin());
-        }
-        uniformData->setArrayData(textureCoordRectsUniform.name(), uvRects.data(), textureCoordRectsUniform.count());
-        bitFields.dirtyUVTable = false;
-    }
     uboBuffer->unmap();
     return true;
 }

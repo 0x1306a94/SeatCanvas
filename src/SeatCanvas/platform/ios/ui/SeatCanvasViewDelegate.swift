@@ -14,21 +14,21 @@ public protocol SeatCanvasViewDelegate {
     /// 是否可以选中座位
     /// - Parameters:
     ///   - view: SeatCanvasView 实例
-    ///   - regionId: 区域ID
+    ///   - zoneId: 区域ID
     ///   - seatId: 座位ID
-    func seatCanvasView(_ view: SeatCanvasView, shouldSelectSeat regionId: String, seatId: String) -> Bool
+    func seatCanvasView(_ view: SeatCanvasView, shouldSelectSeat zoneId: String, seatId: String) -> Bool
 
     /// 选中某个座位
     /// - Parameters:
     ///   - view: SeatCanvasView 实例
-    ///   - regionId: 区域ID
+    ///   - zoneId: 区域ID
     ///   - seatId: 座位ID
-    func seatCanvasView(_ view: SeatCanvasView, didSelectSeat regionId: String, seatId: String)
+    func seatCanvasView(_ view: SeatCanvasView, didSelectSeat zoneId: String, seatId: String)
 
     /// 取消选中某个座位
     /// - Parameters:
     ///   - view: SeatCanvasView 实例
-    ///   - regionId: 区域ID
+    ///   - zoneId: 区域ID
     ///   - seatId: 座位ID
-    func seatCanvasView(_ view: SeatCanvasView, didDeselectSeat regionId: String, seatId: String)
+    func seatCanvasView(_ view: SeatCanvasView, didDeselectSeat zoneId: String, seatId: String)
 }

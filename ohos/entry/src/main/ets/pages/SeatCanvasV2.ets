@@ -14,15 +14,15 @@ export struct SeatCanvasV2 {
 
   aboutToAppear(): void {
     this.delegate = {
-      shouldSelectSeat: (regionId: string, seatId: string) => {
-        console.log(`tgfx shouldSelectSeat: ${regionId} ${seatId}`)
+      shouldSelectSeat: (zoneId: string, seatId: string) => {
+        console.log(`tgfx shouldSelectSeat: ${zoneId} ${seatId}`)
         return true;
       },
-      didSelectSeat: (regionId: string, seatId: string) => {
-        console.log(`tgfx didSelectSeat: ${regionId} ${seatId}`)
+      didSelectSeat: (zoneId: string, seatId: string) => {
+        console.log(`tgfx didSelectSeat: ${zoneId} ${seatId}`)
       },
-      didDeselectSeat: (regionId: string, seatId: string) => {
-        console.log(`tgfx didDeselectSeat: ${regionId} ${seatId}`)
+      didDeselectSeat: (zoneId: string, seatId: string) => {
+        console.log(`tgfx didDeselectSeat: ${zoneId} ${seatId}`)
       },
     };
 

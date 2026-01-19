@@ -86,7 +86,7 @@ SeatCanvas/
 
 **位置**: `src/SeatCanvas/core/style/`
 
-**样式类型**: `CircleSeatStyleConfig`（圆形样式），`SVGSeatStyleConfig`（SVG 样式），`SeatStyleKey`（regionId + styleId）
+**样式类型**: `CircleSeatStyleConfig`（圆形样式），`SVGSeatStyleConfig`（SVG 样式），`SeatStyleKey`（zoneId + styleId）
 
 **样式渲染**: `SeatStyleRenderer`（基类）→ `CanvasSeatStyleRenderer`（渲染到纹理图集）
 
@@ -193,7 +193,7 @@ SeatCanvasView({ controller: this.controller })
 
 **手势处理**: `handleTap(location)`, `handlePan(state, translation, timestampMs)`, `handlePinch(state, scale, center)`
 
-**区域操作**: `zoomToRect(rect, animated, padding, durationMs)`, `setSelectedRegionId(regionId)`, `getSeatRegionDataByPoint(x, y)`
+**区域操作**: `zoomToRect(rect, animated, padding, durationMs)`, `setSelectedzoneId(zoneId)`, `getSeatRegionDataByPoint(x, y)`
 
 **坐标转换**: `convertScreenToOriginal()`, `convertOriginalToScreen()`, `getVisibleOriginalRect()`, `isPointInContentArea()`
 
@@ -307,7 +307,7 @@ SeatCanvasView({ controller: this.controller })
 
 ### 区域缩放
 
-`zoomToRect()` 缩放到区域（可指定动画参数）→ `getVisibleOriginalRect()` 获取可见区域 → `setSelectedRegionId()` 设置选中区域（ClickToEnter 模式）
+`zoomToRect()` 缩放到区域（可指定动画参数）→ `getVisibleOriginalRect()` 获取可见区域 → `setSelectedzoneId()` 设置选中区域（ClickToEnter 模式）
 
 ### 切换渲染模式
 

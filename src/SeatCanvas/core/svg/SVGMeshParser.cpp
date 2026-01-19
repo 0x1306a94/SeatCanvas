@@ -8,7 +8,7 @@
 #include "SVGMeshParser.hpp"
 
 #include "core/renderer/BaseMapMeshBuilder.hpp"
-#include "core/renderer/RegionMeshInfo.hpp"
+#include "core/renderer/ZoneMeshInfo.hpp"
 
 #include <core/PathTriangulator.h>
 
@@ -71,9 +71,9 @@ std::unique_ptr<SVGMeshParseResult> SVGMeshParser::parse(std::shared_ptr<tgfx::S
     }
 
     for (auto &item : shapeOrders) {
-        auto regionMeshInfo = processPath(item.second, item.first, viewportLengthContext);
-        if (regionMeshInfo) {
-            meshBuilder->addRegionMeshInfo(std::move(regionMeshInfo));
+        auto zoneMeshInfo = processPath(item.second, item.first, viewportLengthContext);
+        if (zoneMeshInfo) {
+            meshBuilder->addZoneMeshInfo(std::move(zoneMeshInfo));
         }
     }
 
@@ -250,14 +250,14 @@ std::vector<float> SimplifyLineDashPattern(const std::vector<float> &pattern,
     return simplifiedDashes;
 }
 
-std::shared_ptr<kk::renderer::RegionMeshInfo> SVGMeshParser::processPath(const tgfx::Path &path, tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext) {
+std::shared_ptr<kk::renderer::ZoneMeshInfo> SVGMeshParser::processPath(const tgfx::Path &path, tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext) {
     if (meshBuilder == nullptr) {
         return nullptr;
     }
 
     auto bounds = path.getBounds();
 
-    std::string regionId;
+    std::string zoneId;
     std::unordered_map<std::string, std::string> attributes;
 
     const auto &customAttributes = node->getCustomAttributes();
@@ -267,7 +267,7 @@ std::shared_ptr<kk::renderer::RegionMeshInfo> SVGMeshParser::processPath(const t
         }
 
         if (item.name == "zoneId") {
-            regionId = item.value;
+            zoneId = item.value;
         }
         attributes[item.name] = item.value;
     }
@@ -276,32 +276,32 @@ std::shared_ptr<kk::renderer::RegionMeshInfo> SVGMeshParser::processPath(const t
         attributes["id"] = id.value();
     }
 
-    auto regionMeshInfo = std::make_shared<kk::renderer::RegionMeshInfo>();
-    regionMeshInfo->regionId = regionId;
-    regionMeshInfo->attributes = attributes;
-    regionMeshInfo->fillBounds = bounds;
-    regionMeshInfo->path = std::make_shared<tgfx::Path>(path);
+    auto zoneMeshInfo = std::make_shared<kk::renderer::ZoneMeshInfo>();
+    zoneMeshInfo->zoneId = zoneId;
+    zoneMeshInfo->attributes = attributes;
+    zoneMeshInfo->fillBounds = bounds;
+    zoneMeshInfo->path = std::make_shared<tgfx::Path>(path);
 
     if (const auto &attribute = node->getFill().get(); attribute && attribute->type() == tgfx::SVGPaint::Type::Color) {
-        regionMeshInfo->fillColor = attribute->color().color();
+        zoneMeshInfo->fillColor = attribute->color().color();
     }
 
     std::vector<float> fillTriangleVertices;
     tgfx::PathTriangulator::ToAATriangles(path, bounds, &fillTriangleVertices);
     if (!fillTriangleVertices.empty()) {
         for (size_t idx = 0; idx < fillTriangleVertices.size(); idx += 3) {
-            kk::renderer::BaseMapRegionVertex vertex{};
+            kk::renderer::BaseMapZoneVertex vertex{};
             vertex.x = fillTriangleVertices[idx];
             vertex.y = fillTriangleVertices[idx + 1];
             vertex.coverage = fillTriangleVertices[idx + 2];
-            regionMeshInfo->fillVertices.push_back(vertex);
+            zoneMeshInfo->fillVertices.push_back(vertex);
         }
     }
 
     tgfx::Stroke stroke{};
 
     if (const auto &strokeAttr = node->getStroke().get(); strokeAttr && strokeAttr->type() == tgfx::SVGPaint::Type::Color) {
-        regionMeshInfo->strokeColor = strokeAttr->color().color();
+        zoneMeshInfo->strokeColor = strokeAttr->color().color();
     };
 
     bool hasStrokeWidth = false;
@@ -310,13 +310,13 @@ std::shared_ptr<kk::renderer::RegionMeshInfo> SVGMeshParser::processPath(const t
         stroke.width = lengthContext.resolve(widthAttr.value(), tgfx::SVGLengthContext::LengthType::Horizontal);
     }
 
-    if (!regionMeshInfo->strokeColor && !hasStrokeWidth) {
-        return regionMeshInfo;
+    if (!zoneMeshInfo->strokeColor && !hasStrokeWidth) {
+        return zoneMeshInfo;
     }
 
-    if (!regionMeshInfo->strokeColor) {
+    if (!zoneMeshInfo->strokeColor) {
         // default stroke color
-        regionMeshInfo->strokeColor = tgfx::Color::Black();
+        zoneMeshInfo->strokeColor = tgfx::Color::Black();
     }
 
     if (const auto &joinAttr = node->getStrokeLineJoin().get(); joinAttr) {
@@ -339,7 +339,7 @@ std::shared_ptr<kk::renderer::RegionMeshInfo> SVGMeshParser::processPath(const t
         stroke.miterLimit = miterAttr.value();
     }
 
-    regionMeshInfo->strokeWidth = stroke.width;
+    zoneMeshInfo->strokeWidth = stroke.width;
 
     std::vector<float> dashes{};
     float dashOffset = 0.0f;
@@ -362,44 +362,44 @@ std::shared_ptr<kk::renderer::RegionMeshInfo> SVGMeshParser::processPath(const t
     }
     strokeShape = tgfx::Shape::ApplyStroke(std::move(strokeShape), &stroke);
     if (!strokeShape) {
-        return regionMeshInfo;
+        return zoneMeshInfo;
     }
 
-    if (!dashes.empty() || !regionMeshInfo->fillColor) {
+    if (!dashes.empty() || !zoneMeshInfo->fillColor) {
         auto strokePath = strokeShape->getPath();
-        regionMeshInfo->strokeOnTop = true;
-        regionMeshInfo->strokeBounds = strokePath.getBounds();
+        zoneMeshInfo->strokeOnTop = true;
+        zoneMeshInfo->strokeBounds = strokePath.getBounds();
         std::vector<float> strokeTriangleVertices;
-        tgfx::PathTriangulator::ToAATriangles(strokePath, regionMeshInfo->strokeBounds,
+        tgfx::PathTriangulator::ToAATriangles(strokePath, zoneMeshInfo->strokeBounds,
                                               &strokeTriangleVertices);
         if (!strokeTriangleVertices.empty()) {
             for (size_t idx = 0; idx < strokeTriangleVertices.size(); idx += 3) {
-                kk::renderer::BaseMapRegionVertex vertex{};
+                kk::renderer::BaseMapZoneVertex vertex{};
                 vertex.x = strokeTriangleVertices[idx];
                 vertex.y = strokeTriangleVertices[idx + 1];
                 vertex.coverage = strokeTriangleVertices[idx + 2];
-                regionMeshInfo->strokeVertices.push_back(vertex);
+                zoneMeshInfo->strokeVertices.push_back(vertex);
             }
         }
     } else {
         tgfx::Path expandedPath = path;
         expandedPath.addPath(strokeShape->getPath(), tgfx::PathOp::Union);
-        regionMeshInfo->strokeOnTop = false;
-        regionMeshInfo->strokeBounds = expandedPath.getBounds();
+        zoneMeshInfo->strokeOnTop = false;
+        zoneMeshInfo->strokeBounds = expandedPath.getBounds();
         std::vector<float> strokeTriangleVertices;
-        tgfx::PathTriangulator::ToAATriangles(expandedPath, regionMeshInfo->strokeBounds,
+        tgfx::PathTriangulator::ToAATriangles(expandedPath, zoneMeshInfo->strokeBounds,
                                               &strokeTriangleVertices);
         if (!strokeTriangleVertices.empty()) {
             for (size_t idx = 0; idx < strokeTriangleVertices.size(); idx += 3) {
-                kk::renderer::BaseMapRegionVertex vertex{};
+                kk::renderer::BaseMapZoneVertex vertex{};
                 vertex.x = strokeTriangleVertices[idx];
                 vertex.y = strokeTriangleVertices[idx + 1];
                 vertex.coverage = strokeTriangleVertices[idx + 2];
-                regionMeshInfo->strokeVertices.push_back(vertex);
+                zoneMeshInfo->strokeVertices.push_back(vertex);
             }
         }
     }
 
-    return regionMeshInfo;
+    return zoneMeshInfo;
 }
 };  // namespace kk::svg

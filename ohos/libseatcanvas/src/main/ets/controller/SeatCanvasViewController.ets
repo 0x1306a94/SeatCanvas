@@ -170,23 +170,23 @@ export class SeatCanvasViewController {
     this.jView.updateSeats(zoneId, seats);
   }
 
-  readonly onShouldSelectSeat = (regionId: string, seatId: string): boolean => {
+  readonly onShouldSelectSeat = (zoneId: string, seatId: string): boolean => {
     const delegate = this.delegate?.deref();
     if (delegate && delegate.shouldSelectSeat) {
-      return delegate.shouldSelectSeat(regionId, seatId);
+      return delegate.shouldSelectSeat(zoneId, seatId);
     }
     return false
   }
-  readonly onDidSelectSeat = (regionId: string, seatId: string) => {
+  readonly onDidSelectSeat = (zoneId: string, seatId: string) => {
     const delegate = this.delegate?.deref();
     if (delegate && delegate.didSelectSeat) {
-      delegate.didSelectSeat(regionId, seatId);
+      delegate.didSelectSeat(zoneId, seatId);
     }
   }
-  readonly onDidDeselectSeat = (regionId: string, seatId: string) => {
+  readonly onDidDeselectSeat = (zoneId: string, seatId: string) => {
     const delegate = this.delegate?.deref();
     if (delegate && delegate.didDeselectSeat) {
-      delegate.didDeselectSeat(regionId, seatId);
+      delegate.didDeselectSeat(zoneId, seatId);
     }
   }
 }

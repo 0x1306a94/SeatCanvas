@@ -69,8 +69,6 @@ class PlatformView;
 class RenderFrameMetrics;
 class CustomBaseMapPass;
 class CustomSeatPass;
-struct SeatRegionMesh;
-class SeatRegionMeshManager;
 class SeatStyleAtlasManager;
 class SeatCanvasCoreRendererState;
 class SeatCanvasCoreRenderer {
@@ -211,24 +209,24 @@ class SeatCanvasCoreRenderer {
     void zoomToRect(const tgfx::Rect &rect, bool animated = true, float padding = 0.0f, double durationMs = 300.0);
 
     /// 设置选中的区域ID（仅对 ClickToEnter 模式有效）
-    /// @param regionId 区域ID，为空表示取消选择，恢复到全区域视图
-    void setSelectedRegionId(const std::string &regionId);
+    /// @param zoneId 区域ID，为空表示取消选择，恢复到全区域视图
+    void setSelectedzoneId(const std::string &zoneId);
 
     /// 设置区域数据
     /// 用于设置区域的显示信息（区域颜色和价格颜色）
-    /// @param regionData 区域数据，包含 regionId, regionColor, priceColor
+    /// @param regionData 区域数据，包含 zoneId, regionColor, priceColor
     void setRegionData(const kk::SeatZoneData &regionData);
 
     /// 设置某个区域的座位数据
-    /// @param regionId 区域ID
+    /// @param zoneId 区域ID
     /// @param seats 座位数据列表，每个座位包含 seatId, status, x, y
-    void setSeatData(const std::string &regionId, const std::vector<kk::SeatData> &seats);
+    void setSeatData(const std::string &zoneId, const std::vector<kk::SeatData> &seats);
 
     /// 更新座位状态
-    /// @param regionId 区域ID
+    /// @param zoneId 区域ID
     /// @param seatId 座位ID
     /// @param status 新的座位状态
-    void updateSeatStatus(const std::string &regionId, const std::string &seatId, uint32_t status);
+    void updateSeatStatus(const std::string &zoneId, const std::string &seatId, uint32_t status);
 
     /// 清除所有区域和座位数据
     void clearSeatData();
@@ -251,8 +249,8 @@ class SeatCanvasCoreRenderer {
     void setMiniMapLayer(std::shared_ptr<kk::layer::BaseMapRootLayer> layer);
 
     /// 为区域创建虚拟的 BaseMapLayer
-    /// @param regionId 区域ID
-    std::shared_ptr<kk::layer::BaseMapRootLayer> buildVirtualBaseMapLayerForRegion(const std::string &regionId);
+    /// @param zoneId 区域ID
+    std::shared_ptr<kk::layer::BaseMapRootLayer> buildVirtualBaseMapLayerForRegion(const std::string &zoneId);
 
     /// 内部方法，根据原始尺寸更新内容缩放比例（用于规范化内容尺寸）
     void updateContentScale();
@@ -288,7 +286,7 @@ class SeatCanvasCoreRenderer {
     /// @param location 缩放目标位置（viewport 坐标系，像素单位）
     void scrollViewWithLocation(const tgfx::Point &location);
 
-    void scrollViewWithRegion(const std::string &regionId);
+    void scrollViewWithRegion(const std::string &zoneId);
 
     void zoomToPoint(const tgfx::Point &location, float scale, bool animated = true, float padding = 0.0f, double durationMs = 300.0);
 
@@ -302,8 +300,6 @@ class SeatCanvasCoreRenderer {
     /// @return 如果当前缩放级别大于 zoomScale50 返回 true，否则返回 false
     bool shouldAutoDrawSeat() const;
 
-    std::shared_ptr<SeatRegionMesh> buildSeatRegionMesh(tgfx::Context *context, const std::string &regionId);
-
   private:
     uint32_t _coreID;
     std::shared_ptr<SeatCanvasCoreRendererDelegate> _delegate;
@@ -312,7 +308,6 @@ class SeatCanvasCoreRenderer {
     std::unique_ptr<SeatCanvasCoreRendererState> _state;
     std::unique_ptr<CustomBaseMapPass> customBaseMapPass;
     std::unique_ptr<CustomSeatPass> customSeatPass;
-    std::unique_ptr<SeatRegionMeshManager> _seatRegionMeshManager;
     std::unique_ptr<SeatStyleAtlasManager> _seatAtlasManager;
     std::unique_ptr<kk::drawers::SeatRegionNameLayerTree> _seatRegionNameLayer;
     std::unique_ptr<kk::drawers::SeatOverlayLayerTree> _overlayLayer;
@@ -337,10 +332,9 @@ class SeatCanvasCoreRenderer {
     kk::ZoomLevelConfig _zoomLevelConfig = {};
     uint32_t _minimapAnimationId = {0};
 
-    // 区域和座位数据存储
     std::unordered_map<std::string, kk::SeatZoneData> _regionDataMap = {};
     std::unordered_map<std::string, std::vector<kk::SeatData>> _seatDataMap = {};
-    float _seatSize = {36.0f};  // 座位大小（默认 36x36）
+    float _seatSize = {36.0f};
 };
 };  // namespace kk::renderer
 

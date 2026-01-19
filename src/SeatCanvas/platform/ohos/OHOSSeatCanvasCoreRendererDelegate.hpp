@@ -19,9 +19,9 @@ class OHOSSeatCanvasCoreRendererDelegate : public kk::renderer::SeatCanvasCoreRe
   public:
     OHOSSeatCanvasCoreRendererDelegate();
     virtual ~OHOSSeatCanvasCoreRendererDelegate();
-    virtual bool shouldSelectSeat(uint32_t coreID, const std::string &regionId, const std::string &seatId);
-    virtual void didSelectSeat(uint32_t coreID, const std::string &regionId, const std::string &seatId);
-    virtual void didDeselectSeat(uint32_t coreID, const std::string &regionId, const std::string &seatId);
+    virtual bool shouldSelectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId);
+    virtual void didSelectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId);
+    virtual void didDeselectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId);
 
     void setShouldSelectSeatCallback(napi_env env, napi_value callback);
     void setDidSelectSeatCallback(napi_env env, napi_value callback);

@@ -220,15 +220,15 @@ controller.applySeatStyleJSONConfig(config);
 import { SeatCanvasRendererDelegate } from 'libseatcanvas';
 
 let delegate: SeatCanvasRendererDelegate = {
-  shouldSelectSeat: (regionId: string, seatId: string) => {
+  shouldSelectSeat: (zoneId: string, seatId: string) => {
     // 返回 true 表示可以选中，false 表示不能选中
     return true;
   },
-  didSelectSeat: (regionId: string, seatId: string) => {
-    console.log(`座位已选中: regionId=${regionId}, seatId=${seatId}`);
+  didSelectSeat: (zoneId: string, seatId: string) => {
+    console.log(`座位已选中: zoneId=${zoneId}, seatId=${seatId}`);
   },
-  didDeselectSeat: (regionId: string, seatId: string) => {
-    console.log(`座位已取消选中: regionId=${regionId}, seatId=${seatId}`);
+  didDeselectSeat: (zoneId: string, seatId: string) => {
+    console.log(`座位已取消选中: zoneId=${zoneId}, seatId=${seatId}`);
   },
 };
 

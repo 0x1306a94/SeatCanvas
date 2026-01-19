@@ -126,11 +126,11 @@ export declare namespace seatcanvas {
      */
     zoomToRect(bounds: Rect, animated: boolean, padding: number, duration: number);
 
-    setShouldSelectSeatCallback(callback: (regionId: string, seatId: string) => boolean);
+    setShouldSelectSeatCallback(callback: (zoneId: string, seatId: string) => boolean);
 
-    setDidSelectSeatCallback(callback: (regionId: string, seatId: string) => void);
+    setDidSelectSeatCallback(callback: (zoneId: string, seatId: string) => void);
 
-    setDidDeselectSeatCallback(callback: (regionId: string, seatId: string) => void);
+    setDidDeselectSeatCallback(callback: (zoneId: string, seatId: string) => void);
 
     updateSeatZones(zones: SeatZoneData[]);
 

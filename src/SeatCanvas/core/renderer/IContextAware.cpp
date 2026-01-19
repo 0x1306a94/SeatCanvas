@@ -13,7 +13,6 @@ namespace kk::renderer {
 
 bool IContextAware::attachContext(tgfx::Context *context) {
     if (context == nullptr) {
-        // Context 为 nullptr，如果之前有 Context 则重置资源
         if (this->context != nullptr) {
             this->context = nullptr;
             this->contextID = 0;
@@ -33,7 +32,7 @@ bool IContextAware::attachContext(tgfx::Context *context) {
         return true;
     }
 
-    return false;  // Context 未变化
+    return false;
 }
 
 };  // namespace kk::renderer

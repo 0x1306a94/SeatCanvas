@@ -243,7 +243,7 @@ extension SeatCanvasViewController: SeatCanvasViewDelegate {
     /// 是否可以选中座位
     /// - Parameters:
     ///   - view: SeatCanvasView 实例
-    ///   - regionId: 区域ID
+    ///   - zoneId: 区域ID
     ///   - seatId: 座位ID
     func seatCanvasView(_: SeatCanvasView, shouldSelectSeat _: String, seatId _: String) -> Bool {
         true
@@ -252,18 +252,18 @@ extension SeatCanvasViewController: SeatCanvasViewDelegate {
     /// 选中某个座位
     /// - Parameters:
     ///   - view: SeatCanvasView 实例
-    ///   - regionId: 区域ID
+    ///   - zoneId: 区域ID
     ///   - seatId: 座位ID
-    func seatCanvasView(_: SeatCanvasView, didSelectSeat regionId: String, seatId: String) {
-        print(#function, regionId, seatId)
+    func seatCanvasView(_: SeatCanvasView, didSelectSeat zoneId: String, seatId: String) {
+        print(#function, zoneId, seatId)
     }
 
     /// 取消选中某个座位
     /// - Parameters:
     ///   - view: SeatCanvasView 实例
-    ///   - regionId: 区域ID
+    ///   - zoneId: 区域ID
     ///   - seatId: 座位ID
-    func seatCanvasView(_: SeatCanvasView, didDeselectSeat regionId: String, seatId: String) {
-        print(#function, regionId, seatId)
+    func seatCanvasView(_: SeatCanvasView, didDeselectSeat zoneId: String, seatId: String) {
+        print(#function, zoneId, seatId)
     }
 }

@@ -29,7 +29,7 @@ class SVGGroup;
 };  // namespace tgfx
 
 namespace kk::renderer {
-class RegionMeshInfo;
+class ZoneMeshInfo;
 class BaseMapMeshBuilder;
 };  // namespace kk::renderer
 
@@ -46,7 +46,7 @@ struct SVGMeshParseResult {
 /// SVG Mesh 解析器
 /// 负责从 SVGDOM 解析图形数据：
 /// 1. 解析图形节点（Circle, Rect, Ellipse, Path, Poly）生成 mesh 顶点数据
-/// 2. 收集区域信息（bounds, regionId, attributes）
+/// 2. 收集区域信息（bounds, zoneId, attributes）
 /// 3. 保存 Path 用于精确 hit-test
 class SVGMeshParser {
   public:
@@ -71,7 +71,7 @@ class SVGMeshParser {
     void removeInvisible();
 
     /// 处理解析后的 Path，生成 mesh 和区域信息
-    std::shared_ptr<kk::renderer::RegionMeshInfo> processPath(const tgfx::Path &path, tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext);
+    std::shared_ptr<kk::renderer::ZoneMeshInfo> processPath(const tgfx::Path &path, tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext);
 
   private:
     kk::renderer::BaseMapMeshBuilder *meshBuilder = nullptr;

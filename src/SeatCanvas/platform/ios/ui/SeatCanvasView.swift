@@ -204,7 +204,7 @@ extension SeatCanvasView {
 //            return
 //        }
 //
-//        print("hitTest: \(hitTest.regionId) \(hitTest.bounds) ")
+//        print("hitTest: \(hitTest.zoneId) \(hitTest.bounds) ")
 //        kk.SeatCanvasCoreRendererZoomToRect(rendererCore, hitTest.bounds, true, 20, 300)
     }
 
@@ -291,15 +291,15 @@ extension SeatCanvasView {
 // MARK: - C++ 回调处理
 
 extension SeatCanvasView: SeatCanvasRendererDelegate {
-    func seatCanvasRendererShouldSelectSeat(regionId: String, seatId: String) -> Bool {
-        delegate?.seatCanvasView(self, shouldSelectSeat: regionId, seatId: seatId) ?? false
+    func seatCanvasRendererShouldSelectSeat(zoneId: String, seatId: String) -> Bool {
+        delegate?.seatCanvasView(self, shouldSelectSeat: zoneId, seatId: seatId) ?? false
     }
 
-    func seatCanvasRendererDidSelectSeat(regionId: String, seatId: String) {
-        delegate?.seatCanvasView(self, didSelectSeat: regionId, seatId: seatId)
+    func seatCanvasRendererDidSelectSeat(zoneId: String, seatId: String) {
+        delegate?.seatCanvasView(self, didSelectSeat: zoneId, seatId: seatId)
     }
 
-    func seatCanvasRendererDidDeselectSeat(regionId: String, seatId: String) {
-        delegate?.seatCanvasView(self, didDeselectSeat: regionId, seatId: seatId)
+    func seatCanvasRendererDidDeselectSeat(zoneId: String, seatId: String) {
+        delegate?.seatCanvasView(self, didDeselectSeat: zoneId, seatId: seatId)
     }
 }

@@ -9,8 +9,8 @@
 #define CustomBaseMapPass_hpp
 
 #include "core/BaseMapColorState.h"
-#include "core/renderer/BaseMapRegionVertex.hpp"
-#include "core/renderer/RegionMeshInfo.hpp"
+#include "core/renderer/BaseMapZoneVertex.hpp"
+#include "core/renderer/ZoneMeshInfo.hpp"
 #include "core/renderer/pass/CustomRenderPass.hpp"
 #include "core/renderer/pass/Uniform.hpp"
 

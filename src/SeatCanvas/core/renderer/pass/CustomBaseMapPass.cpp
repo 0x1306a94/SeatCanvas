@@ -332,14 +332,14 @@ bool CustomBaseMapPass::updateFillVBOBuffer() {
         return true;
     }
 
-    BaseMapRegionVertex *ptr = static_cast<BaseMapRegionVertex *>(fillVBOBuffer->map());
+    BaseMapZoneVertex *ptr = static_cast<BaseMapZoneVertex *>(fillVBOBuffer->map());
     if (ptr == nullptr) {
         return false;
     }
 
-    const auto &regionMeshInfos = meshBuilder->getRegionMeshInfos();
+    const auto &ZoneMeshInfos = meshBuilder->getZoneMeshInfos();
     int32_t index = -1;
-    for (const auto &regionMesh : regionMeshInfos) {
+    for (const auto &regionMesh : ZoneMeshInfos) {
         auto drawRange = meshBuilder->findRegionDrawRangeByIndex(++index);
         if (!drawRange) {
             continue;
@@ -360,21 +360,21 @@ bool CustomBaseMapPass::updateFillVBOBuffer() {
 
         if (regionMesh->strokeOnTop) {
             if (!fillVertices.empty()) {
-                memcpy(static_cast<void *>((ptr + offset)), fillVertices.data(), sizeof(BaseMapRegionVertex) * fillVertices.size());
+                std::memcpy(static_cast<void *>((ptr + offset)), fillVertices.data(), sizeof(BaseMapZoneVertex) * fillVertices.size());
                 offset += fillVertices.size();
             }
 
             if (!strokeVertices.empty()) {
-                memcpy(static_cast<void *>((ptr + offset)), strokeVertices.data(), sizeof(BaseMapRegionVertex) * strokeVertices.size());
+                std::memcpy(static_cast<void *>((ptr + offset)), strokeVertices.data(), sizeof(BaseMapZoneVertex) * strokeVertices.size());
             }
         } else {
             if (!strokeVertices.empty()) {
-                memcpy(static_cast<void *>((ptr + offset)), strokeVertices.data(), sizeof(BaseMapRegionVertex) * strokeVertices.size());
+                std::memcpy(static_cast<void *>((ptr + offset)), strokeVertices.data(), sizeof(BaseMapZoneVertex) * strokeVertices.size());
                 offset += strokeVertices.size();
             }
 
             if (!fillVertices.empty()) {
-                memcpy(static_cast<void *>((ptr + offset)), fillVertices.data(), sizeof(BaseMapRegionVertex) * fillVertices.size());
+                std::memcpy(static_cast<void *>((ptr + offset)), fillVertices.data(), sizeof(BaseMapZoneVertex) * fillVertices.size());
             }
         }
     }
@@ -425,13 +425,13 @@ bool CustomBaseMapPass::prepareColorTexture(tgfx::GPU *gpu) {
 }
 
 bool CustomBaseMapPass::updateColorTexture(tgfx::GPU *gpu, const SeatCanvasCoreRendererState *state) {
-    const auto &regionMeshInfos = meshBuilder->getRegionMeshInfos();
-    if (regionMeshInfos.empty()) {
+    const auto &ZoneMeshInfos = meshBuilder->getZoneMeshInfos();
+    if (ZoneMeshInfos.empty()) {
         return false;
     }
 
     constexpr int kMaxTextureWidth = 512;
-    int colorCount = static_cast<int>(regionMeshInfos.size() * 2);
+    int colorCount = static_cast<int>(ZoneMeshInfos.size() * 2);
     int textureWidth = std::min(colorCount, kMaxTextureWidth);
     int textureHeight = (colorCount + kMaxTextureWidth - 1) / kMaxTextureWidth;
 
@@ -454,8 +454,8 @@ bool CustomBaseMapPass::updateColorTexture(tgfx::GPU *gpu, const SeatCanvasCoreR
     std::vector<uint8_t> pixelData(textureHeight * rowBytes);
     std::fill(pixelData.begin(), pixelData.end(), 0);
 
-    for (size_t index = 0; index < regionMeshInfos.size(); index++) {
-        const auto &regionMesh = regionMeshInfos[index];
+    for (size_t index = 0; index < ZoneMeshInfos.size(); index++) {
+        const auto &regionMesh = ZoneMeshInfos[index];
         auto fillColorToUse = regionMesh->fillColor;
         if (colorState == kk::BaseMapColorState::Rainbow && regionMesh->priceColor) {
             fillColorToUse = regionMesh->priceColor;
@@ -507,8 +507,8 @@ void CustomBaseMapPass::renderFill(std::shared_ptr<tgfx::RenderPass> &renderPass
     renderPass->setTexture(0, colorTexture, colorSampler);
     renderPass->setVertexBuffer(0, fillVBOBuffer);
 
-    const auto &regionMeshInfos = meshBuilder->getRegionMeshInfos();
-    if (visibleIndices.size() == regionMeshInfos.size()) {
+    const auto &ZoneMeshInfos = meshBuilder->getZoneMeshInfos();
+    if (visibleIndices.size() == ZoneMeshInfos.size()) {
         renderPass->draw(tgfx::PrimitiveType::Triangles, static_cast<int>(meshBuilder->getTotalVertexCount()));
         return;
     }
@@ -601,7 +601,7 @@ std::vector<size_t> CustomBaseMapPass::getVisibleRegionMesheIndices(const SeatCa
     //    visibleRect.outset(60, 60);
 
     // 查找与可见区域相交的所有区域
-    const auto &regionMeshInfos = meshBuilder->getRegionMeshInfos();
+    const auto &ZoneMeshInfos = meshBuilder->getZoneMeshInfos();
     std::vector<size_t> visibleIndices{};
     meshBuilder->findRegionsIntersectingRect(visibleRect, &visibleIndices);
     return visibleIndices;

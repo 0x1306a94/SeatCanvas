@@ -366,7 +366,7 @@ void SeatCanvasCoreRenderer::drawSeatIfNeeded(tgfx::Canvas *canvas) {
     
     // 4. 为每个区域创建或更新座位图层
     for (const auto &region : regions) {
-        auto atlas = _seatLayer->getSeatAtlasLayerOrCreate(region->regionId);
+        auto atlas = _seatLayer->getSeatAtlasLayerOrCreate(region->zoneId);
         
         // 遍历该区域的座位数据
         for (const auto &seatInfo : seatInfos) {
@@ -394,24 +394,24 @@ void SeatCanvasCoreRenderer::drawSeatIfNeeded(tgfx::Canvas *canvas) {
 
 ```cpp
 std::shared_ptr<SeatAtlasLayer> SeatLayerTree::getSeatAtlasLayerOrCreate(
-    const std::string &regionId,
+    const std::string &zoneId,
     std::function<void(SeatAtlasLayer *)> onCreate
 ) {
     // 查找或创建 SeatAtlasLayer
-    auto iter = _seatAtlasLayers.find(regionId);
+    auto iter = _seatAtlasLayers.find(zoneId);
     if (iter == _seatAtlasLayers.end()) {
         auto layer = kk::layer::SeatAtlasLayer::Make();
         if (onCreate) {
             onCreate(layer.get());
         }
-        _seatAtlasLayers[regionId] = layer;
+        _seatAtlasLayers[zoneId] = layer;
         
         // 添加到座位根图层
         if (_seatRootLayer) {
             _seatRootLayer->addChild(layer);
         }
     }
-    return _seatAtlasLayers[regionId];
+    return _seatAtlasLayers[zoneId];
 }
 ```
 
@@ -441,7 +441,7 @@ tgfx::Point SeatLayerTree::localToGlobal(const tgfx::Point &localPoint) const {
 
 ```cpp
 // 获取指定位置的座位区域ID
-std::optional<std::string> SeatLayerTree::getSeatRegionIdAt(float x, float y) const {
+std::optional<std::string> SeatLayerTree::getSeatzoneIdAt(float x, float y) const {
     // 1. 粗略查找：使用 bounding box
     auto layers = _baseMapLayer->getLayersUnderPoint(x, y);
     

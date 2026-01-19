@@ -212,7 +212,6 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         nativeUpdateSeats(zoneId, seats)
     }
 
-
     private fun zoomToRect(
         bounds: Rect,
         animated: Boolean = true,
@@ -236,30 +235,30 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
 
     /**
      * 由 C++ 层调用，转发给 delegate
-     * @param regionId 区域ID
+     * @param zoneId 区域ID
      * @param seatId 座位ID
      * @return true 表示可以选中，false 表示不能选中
      */
-    private fun nativeOnShouldSelectSeat(regionId: String, seatId: String): Boolean {
-        return delegate?.shouldSelectSeat(regionId, seatId) ?: false
+    private fun nativeOnShouldSelectSeat(zoneId: String, seatId: String): Boolean {
+        return delegate?.shouldSelectSeat(zoneId, seatId) ?: false
     }
 
     /**
      * 由 C++ 层调用，转发给 delegate
-     * @param regionId 区域ID
+     * @param zoneId 区域ID
      * @param seatId 座位ID
      */
-    private fun nativeOnDidSelectSeat(regionId: String, seatId: String) {
-        delegate?.didSelectSeat(regionId, seatId)
+    private fun nativeOnDidSelectSeat(zoneId: String, seatId: String) {
+        delegate?.didSelectSeat(zoneId, seatId)
     }
 
     /**
      * 由 C++ 层调用，转发给 delegate
-     * @param regionId 区域ID
+     * @param zoneId 区域ID
      * @param seatId 座位ID
      */
-    private fun nativeOnDidDeselectSeat(regionId: String, seatId: String) {
-        delegate?.didDeselectSeat(regionId, seatId)
+    private fun nativeOnDidDeselectSeat(zoneId: String, seatId: String) {
+        delegate?.didDeselectSeat(zoneId, seatId)
     }
 
     private external fun nativeLoadBaseMapFromFormat(data: ByteArray?, formatName: String): Long

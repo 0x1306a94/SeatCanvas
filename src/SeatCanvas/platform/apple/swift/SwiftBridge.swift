@@ -12,9 +12,9 @@ import Foundation
 /// 选中座位回调，由 C++ 层调用(仅内部调用)
 /// - Parameters:
 ///   - coreID: 座位渲染器实例ID
-///   - regionId: 区域ID
+///   - zoneId: 区域ID
 ///   - seatId: 座位ID
-public func switf_bridge_shouldSelectSeat(coreID: UInt32, regionId: String, seatId: String) -> Bool {
+public func switf_bridge_shouldSelectSeat(coreID: UInt32, zoneId: String, seatId: String) -> Bool {
     return MainActor.assumeIsolated {
         guard let delegate = SeatCanvasRendererDelegateRegistry.shared.delegate(for: coreID) else {
             #if DEBUG
@@ -23,16 +23,16 @@ public func switf_bridge_shouldSelectSeat(coreID: UInt32, regionId: String, seat
             return false
         }
 
-        return delegate.seatCanvasRendererShouldSelectSeat(regionId: regionId, seatId: seatId)
+        return delegate.seatCanvasRendererShouldSelectSeat(zoneId: zoneId, seatId: seatId)
     }
 }
 
 /// 选中座位回调，由 C++ 层调用(仅内部调用)
 /// - Parameters:
 ///   - coreID: 座位渲染器实例ID
-///   - regionId: 区域ID
+///   - zoneId: 区域ID
 ///   - seatId: 座位ID
-public func switf_bridge_didSelectSeat(coreID: UInt32, regionId: String, seatId: String) {
+public func switf_bridge_didSelectSeat(coreID: UInt32, zoneId: String, seatId: String) {
     return MainActor.assumeIsolated {
         guard let delegate = SeatCanvasRendererDelegateRegistry.shared.delegate(for: coreID) else {
             #if DEBUG
@@ -41,16 +41,16 @@ public func switf_bridge_didSelectSeat(coreID: UInt32, regionId: String, seatId:
             return
         }
 
-        delegate.seatCanvasRendererDidSelectSeat(regionId: regionId, seatId: seatId)
+        delegate.seatCanvasRendererDidSelectSeat(zoneId: zoneId, seatId: seatId)
     }
 }
 
 /// 是否可以选中座位，由 C++ 层调用(仅内部调用)
 /// - Parameters:
 ///   - coreID: 座位渲染器实例ID
-///   - regionId: 区域ID
+///   - zoneId: 区域ID
 ///   - seatId: 座位ID
-public func switf_bridge_didDeselectSeat(coreID: UInt32, regionId: String, seatId: String) {
+public func switf_bridge_didDeselectSeat(coreID: UInt32, zoneId: String, seatId: String) {
     return MainActor.assumeIsolated {
         guard let delegate = SeatCanvasRendererDelegateRegistry.shared.delegate(for: coreID) else {
             #if DEBUG
@@ -59,6 +59,6 @@ public func switf_bridge_didDeselectSeat(coreID: UInt32, regionId: String, seatI
             return
         }
 
-        delegate.seatCanvasRendererDidDeselectSeat(regionId: regionId, seatId: seatId)
+        delegate.seatCanvasRendererDidDeselectSeat(zoneId: zoneId, seatId: seatId)
     }
 }

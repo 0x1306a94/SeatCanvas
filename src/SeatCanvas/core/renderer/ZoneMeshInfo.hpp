@@ -1,14 +1,14 @@
 //
-//  RegionMeshInfo.hpp
+//  ZoneMeshInfo.hpp
 //  SeatCanvas
 //
 //  Created by king on 2025/12/18.
 //
 
-#ifndef RegionMeshInfo_hpp
-#define RegionMeshInfo_hpp
+#ifndef ZoneMeshInfo_hpp
+#define ZoneMeshInfo_hpp
 
-#include "BaseMapRegionVertex.hpp"
+#include "BaseMapZoneVertex.hpp"
 
 #include <tgfx/core/Color.h>
 #include <tgfx/core/Path.h>
@@ -22,8 +22,8 @@
 #include <vector>
 
 namespace kk::renderer {
-struct RegionMeshInfo {
-    std::string regionId = {""};
+struct ZoneMeshInfo {
+    std::string zoneId = {""};
     std::unordered_map<std::string, std::string> attributes = {};
 
     tgfx::Rect fillBounds = {tgfx::Rect::MakeEmpty()};
@@ -32,13 +32,13 @@ struct RegionMeshInfo {
     std::optional<tgfx::Color> fillColor = {std::nullopt};
     std::optional<tgfx::Color> strokeColor = {std::nullopt};
     std::optional<tgfx::Color> priceColor = {std::nullopt};
-    std::vector<BaseMapRegionVertex> fillVertices = {};
-    std::vector<BaseMapRegionVertex> strokeVertices = {};
+    std::vector<BaseMapZoneVertex> fillVertices = {};
+    std::vector<BaseMapZoneVertex> strokeVertices = {};
     float additionalAlpha = 1.0f;
     float strokeWidth = 1.0f;
     bool strokeOnTop = true;
 
-    RegionMeshInfo() = default;
+    ZoneMeshInfo() = default;
 
     bool isValid() const {
         if (!path) {
@@ -55,4 +55,4 @@ struct RegionMeshInfo {
 
 }  // namespace kk::renderer
 
-#endif /* RegionMeshInfo_hpp */
+#endif /* ZoneMeshInfo_hpp */

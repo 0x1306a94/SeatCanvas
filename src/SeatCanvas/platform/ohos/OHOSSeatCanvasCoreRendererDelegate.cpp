@@ -84,7 +84,7 @@ void OHOSSeatCanvasCoreRendererDelegate::setDidDeselectSeatCallback(napi_env env
     }
 }
 
-bool OHOSSeatCanvasCoreRendererDelegate::shouldSelectSeat(uint32_t coreID, const std::string &regionId, const std::string &seatId) {
+bool OHOSSeatCanvasCoreRendererDelegate::shouldSelectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId) {
     if (_shouldSelectSeat == nullptr) {
         return false;
     }
@@ -100,13 +100,13 @@ bool OHOSSeatCanvasCoreRendererDelegate::shouldSelectSeat(uint32_t coreID, const
         return false;
     }
 
-    napi_value regionIdValue = nullptr;
+    napi_value zoneIdValue = nullptr;
     napi_value seatIdValue = nullptr;
-    napi_create_string_utf8(env, regionId.c_str(), regionId.length(), &regionIdValue);
+    napi_create_string_utf8(env, zoneId.c_str(), zoneId.length(), &zoneIdValue);
     napi_create_string_utf8(env, seatId.c_str(), seatId.length(), &seatIdValue);
 
     napi_value result = nullptr;
-    napi_value argv[2] = {regionIdValue, seatIdValue};
+    napi_value argv[2] = {zoneIdValue, seatIdValue};
     napi_status status = napi_call_function(env, nullptr, callback, 2, argv, &result);
 
     if (status != napi_ok || result == nullptr) {
@@ -118,7 +118,7 @@ bool OHOSSeatCanvasCoreRendererDelegate::shouldSelectSeat(uint32_t coreID, const
     return boolResult;
 }
 
-void OHOSSeatCanvasCoreRendererDelegate::didSelectSeat(uint32_t coreID, const std::string &regionId, const std::string &seatId) {
+void OHOSSeatCanvasCoreRendererDelegate::didSelectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId) {
     if (_didSelectSeat == nullptr) {
         return;
     }
@@ -134,16 +134,16 @@ void OHOSSeatCanvasCoreRendererDelegate::didSelectSeat(uint32_t coreID, const st
         return;
     }
 
-    napi_value regionIdValue = nullptr;
+    napi_value zoneIdValue = nullptr;
     napi_value seatIdValue = nullptr;
-    napi_create_string_utf8(env, regionId.c_str(), regionId.length(), &regionIdValue);
+    napi_create_string_utf8(env, zoneId.c_str(), zoneId.length(), &zoneIdValue);
     napi_create_string_utf8(env, seatId.c_str(), seatId.length(), &seatIdValue);
 
-    napi_value argv[2] = {regionIdValue, seatIdValue};
+    napi_value argv[2] = {zoneIdValue, seatIdValue};
     napi_call_function(env, nullptr, callback, 2, argv, nullptr);
 }
 
-void OHOSSeatCanvasCoreRendererDelegate::didDeselectSeat(uint32_t coreID, const std::string &regionId, const std::string &seatId) {
+void OHOSSeatCanvasCoreRendererDelegate::didDeselectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId) {
     if (_didDeselectSeat == nullptr) {
         return;
     }
@@ -159,12 +159,12 @@ void OHOSSeatCanvasCoreRendererDelegate::didDeselectSeat(uint32_t coreID, const 
         return;
     }
 
-    napi_value regionIdValue = nullptr;
+    napi_value zoneIdValue = nullptr;
     napi_value seatIdValue = nullptr;
-    napi_create_string_utf8(env, regionId.c_str(), regionId.length(), &regionIdValue);
+    napi_create_string_utf8(env, zoneId.c_str(), zoneId.length(), &zoneIdValue);
     napi_create_string_utf8(env, seatId.c_str(), seatId.length(), &seatIdValue);
 
-    napi_value argv[2] = {regionIdValue, seatIdValue};
+    napi_value argv[2] = {zoneIdValue, seatIdValue};
     napi_call_function(env, nullptr, callback, 2, argv, nullptr);
 }
 

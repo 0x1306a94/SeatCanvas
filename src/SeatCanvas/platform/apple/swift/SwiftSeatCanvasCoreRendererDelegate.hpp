@@ -15,9 +15,9 @@ class SwiftSeatCanvasCoreRendererDelegate : public kk::renderer::SeatCanvasCoreR
   public:
     explicit SwiftSeatCanvasCoreRendererDelegate();
     virtual ~SwiftSeatCanvasCoreRendererDelegate();
-    virtual bool shouldSelectSeat(uint32_t coreID, const std::string &regionId, const std::string &seatId);
-    virtual void didSelectSeat(uint32_t coreID, const std::string &regionId, const std::string &seatId);
-    virtual void didDeselectSeat(uint32_t coreID, const std::string &regionId, const std::string &seatId);
+    virtual bool shouldSelectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId);
+    virtual void didSelectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId);
+    virtual void didDeselectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId);
 };
 
 };  // namespace kk::bridge

@@ -15,9 +15,9 @@ namespace kk::renderer {
 class SeatCanvasCoreRendererDelegate {
   public:
     virtual ~SeatCanvasCoreRendererDelegate() = default;
-    virtual bool shouldSelectSeat(uint32_t coreID, const std::string &regionId, const std::string &seatId) = 0;
-    virtual void didSelectSeat(uint32_t coreID, const std::string &regionId, const std::string &seatId) = 0;
-    virtual void didDeselectSeat(uint32_t coreID, const std::string &regionId, const std::string &seatId) = 0;
+    virtual bool shouldSelectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId) = 0;
+    virtual void didSelectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId) = 0;
+    virtual void didDeselectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId) = 0;
 };
 };  // namespace kk::renderer
 
