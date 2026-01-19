@@ -460,9 +460,9 @@ bool CustomBaseMapPass::updateColorTexture(tgfx::GPU *gpu, const SeatCanvasCoreR
         bitFields.dirtyFillColor = true;
     }
 
-    if (!bitFields.dirtyFillColor) {
-        return true;
-    }
+    //    if (!bitFields.dirtyFillColor) {
+    //        return true;
+    //    }
 
     auto rowBytes = static_cast<size_t>(textureWidth * 4);
     // 准备像素数据：RGBA 格式，多行布局
@@ -486,9 +486,9 @@ bool CustomBaseMapPass::updateColorTexture(tgfx::GPU *gpu, const SeatCanvasCoreR
             size_t pixelIndex = (row * textureWidth + col) * 4;
             auto &color = fillColorToUse.value();
             auto additionalAlpha = regionMesh->additionalAlpha;
-            pixelData[pixelIndex + 0] = static_cast<uint8_t>(color.red * 255.0f * additionalAlpha);
-            pixelData[pixelIndex + 1] = static_cast<uint8_t>(color.green * 255.0f * additionalAlpha);
-            pixelData[pixelIndex + 2] = static_cast<uint8_t>(color.blue * 255.0f * additionalAlpha);
+            pixelData[pixelIndex + 0] = static_cast<uint8_t>(color.red * 255.0f);
+            pixelData[pixelIndex + 1] = static_cast<uint8_t>(color.green * 255.0f);
+            pixelData[pixelIndex + 2] = static_cast<uint8_t>(color.blue * 255.0f);
             pixelData[pixelIndex + 3] = static_cast<uint8_t>(color.alpha * 255.0f * additionalAlpha);
         }
 
@@ -503,9 +503,9 @@ bool CustomBaseMapPass::updateColorTexture(tgfx::GPU *gpu, const SeatCanvasCoreR
             size_t pixelIndex = (row * textureWidth + col) * 4;
             auto &color = regionMesh->strokeColor.value();
 
-            pixelData[pixelIndex + 0] = static_cast<uint8_t>(color.red * 255.0f * strokeAlpha);
-            pixelData[pixelIndex + 1] = static_cast<uint8_t>(color.green * 255.0f * strokeAlpha);
-            pixelData[pixelIndex + 2] = static_cast<uint8_t>(color.blue * 255.0f * strokeAlpha);
+            pixelData[pixelIndex + 0] = static_cast<uint8_t>(color.red * 255.0f);
+            pixelData[pixelIndex + 1] = static_cast<uint8_t>(color.green * 255.0f);
+            pixelData[pixelIndex + 2] = static_cast<uint8_t>(color.blue * 255.0f);
             pixelData[pixelIndex + 3] = static_cast<uint8_t>(color.alpha * 255.0f * strokeAlpha);
         }
     }
