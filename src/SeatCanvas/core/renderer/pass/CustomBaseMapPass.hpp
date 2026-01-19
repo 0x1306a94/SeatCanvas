@@ -26,16 +26,11 @@ class UniformData;
 class BaseMapMeshBuilder;
 class CustomBaseMapPass : public CustomRenderPass {
   public:
-    // 颜色模式已移除，现在只使用原始颜色
-    // 业务代码可以通过 BaseMapMeshBuilder::updateRegionColor 更新区域颜色
-
     CustomBaseMapPass();
     virtual ~CustomBaseMapPass();
 
     void updateMeshBuilder(std::shared_ptr<BaseMapMeshBuilder> meshBuilder);
     void updateColorState(kk::BaseMapColorState state);
-    void invalidateColorTable();
-    // 颜色模式相关方法已移除
 
     virtual bool onDraw(tgfx::CommandEncoder *encoder, const SeatCanvasCoreRendererState *state) override;
     virtual std::shared_ptr<tgfx::Image> outputImage() override;
@@ -72,7 +67,6 @@ class CustomBaseMapPass : public CustomRenderPass {
     struct {
         bool dirtyFillUBO : 1;
         bool dirtyFillVBO : 1;
-        bool dirtyFillColor : 1;
         bool dirtyStrokeUBO : 1;
         bool dirtyStrokeVBO : 1;
         bool avaiable : 1;

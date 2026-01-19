@@ -1861,7 +1861,6 @@ void SeatCanvasCoreRenderer::setRegionData(const kk::SeatZoneData &regionData) {
                 if (regionData.priceColor.has_value()) {
                     regionMeshInfo->priceColor = regionData.priceColor;
                 }
-                customBaseMapPass->invalidateColorTable();
                 invalidateContent();
             }
         }

@@ -98,7 +98,6 @@ void CustomBaseMapPass::updateMeshBuilder(std::shared_ptr<BaseMapMeshBuilder> me
 
     this->meshBuilder = meshBuilder;
     this->fillVBOBuffer = nullptr;
-    bitFields.dirtyFillColor = true;
     bitFields.dirtyFillVBO = true;
 }
 
@@ -107,11 +106,6 @@ void CustomBaseMapPass::updateColorState(kk::BaseMapColorState state) {
         return;
     }
     colorState = state;
-    bitFields.dirtyFillColor = true;
-}
-
-void CustomBaseMapPass::invalidateColorTable() {
-    bitFields.dirtyFillColor = true;
 }
 
 bool CustomBaseMapPass::onDraw(tgfx::CommandEncoder *encoder, const SeatCanvasCoreRendererState *state) {
@@ -414,10 +408,9 @@ bool CustomBaseMapPass::prepareColorTexture(tgfx::GPU *gpu) {
         return true;
     }
 
-    // 创建采样器
     if (!colorSampler) {
         tgfx::SamplerDescriptor samplerDesc{};
-        samplerDesc.minFilter = tgfx::FilterMode::Nearest;  // 使用最近邻，因为颜色是离散的
+        samplerDesc.minFilter = tgfx::FilterMode::Nearest;
         samplerDesc.magFilter = tgfx::FilterMode::Nearest;
         samplerDesc.mipmapMode = tgfx::MipmapMode::None;
         samplerDesc.addressModeX = tgfx::AddressMode::ClampToEdge;
@@ -428,7 +421,6 @@ bool CustomBaseMapPass::prepareColorTexture(tgfx::GPU *gpu) {
         }
     }
 
-    // 颜色纹理会在 updateColorTexture 中创建
     return true;
 }
 
@@ -438,11 +430,10 @@ bool CustomBaseMapPass::updateColorTexture(tgfx::GPU *gpu, const SeatCanvasCoreR
         return false;
     }
 
-    // 创建颜色纹理：最大宽度为 512，超过时使用多行布局
     constexpr int kMaxTextureWidth = 512;
     int colorCount = static_cast<int>(regionMeshInfos.size() * 2);
     int textureWidth = std::min(colorCount, kMaxTextureWidth);
-    int textureHeight = (colorCount + kMaxTextureWidth - 1) / kMaxTextureWidth;  // 向上取整
+    int textureHeight = (colorCount + kMaxTextureWidth - 1) / kMaxTextureWidth;
 
     if (!colorTexture || colorTexture->width() != textureWidth || colorTexture->height() != textureHeight) {
         tgfx::TextureDescriptor desc{
@@ -457,17 +448,10 @@ bool CustomBaseMapPass::updateColorTexture(tgfx::GPU *gpu, const SeatCanvasCoreR
         if (!colorTexture) {
             return false;
         }
-        bitFields.dirtyFillColor = true;
     }
 
-    //    if (!bitFields.dirtyFillColor) {
-    //        return true;
-    //    }
-
     auto rowBytes = static_cast<size_t>(textureWidth * 4);
-    // 准备像素数据：RGBA 格式，多行布局
     std::vector<uint8_t> pixelData(textureHeight * rowBytes);
-    // 初始化未使用的像素为透明黑色
     std::fill(pixelData.begin(), pixelData.end(), 0);
 
     for (size_t index = 0; index < regionMeshInfos.size(); index++) {
@@ -511,8 +495,6 @@ bool CustomBaseMapPass::updateColorTexture(tgfx::GPU *gpu, const SeatCanvasCoreR
     }
 
     gpu->queue()->writeTexture(colorTexture, tgfx::Rect::MakeWH(textureWidth, textureHeight), pixelData.data(), rowBytes);
-
-    bitFields.dirtyFillColor = false;
     return true;
 }
 
