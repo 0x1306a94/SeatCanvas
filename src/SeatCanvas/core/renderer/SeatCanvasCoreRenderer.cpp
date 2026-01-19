@@ -819,6 +819,7 @@ void SeatCanvasCoreRenderer::updateUseBaseMapConfig(std::shared_ptr<kk::BaseMapC
         _useBaseMapConfig = config;
 
         applyBaseMapColorState(kk::BaseMapColorState::Rainbow);
+        applySavedZoneDataColors(config->meshBuilder());
         customBaseMapPass->updateMeshBuilder(config->meshBuilder());
 
         customSeatPass->clearSeats();
@@ -1738,28 +1739,101 @@ void SeatCanvasCoreRenderer::applyBaseMapColorState(BaseMapColorState toState) {
     _baseMapColorState = toState;
 }
 
-void SeatCanvasCoreRenderer::setRegionData(const kk::SeatZoneData &regionData) {
+void SeatCanvasCoreRenderer::setZoneData(const kk::SeatZoneData &regionData) {
     if (!regionData.isValid()) {
         return;
     }
 
+    // 保存数据到映射表（无论 config 是否存在，都要保存）
     _regionDataMap[regionData.zoneId] = regionData;
 
+    // 尝试更新 meshBuilder 中的颜色配置
     auto config = _useBaseMapConfig.lock();
-    if (config) {
-        auto meshBuilder = config->meshBuilder();
-        if (meshBuilder) {
-            auto ZoneMeshInfo = meshBuilder->findRegionById(regionData.zoneId);
-            if (ZoneMeshInfo) {
-                if (regionData.color.has_value()) {
-                    ZoneMeshInfo->fillColor = regionData.color;
-                }
-                if (regionData.priceColor.has_value()) {
-                    ZoneMeshInfo->priceColor = regionData.priceColor;
-                }
-                invalidateContent();
+    if (!config) {
+        return;
+    }
+
+    auto meshBuilder = config->meshBuilder();
+    if (!meshBuilder) {
+        return;
+    }
+
+    auto zoneMeshInfo = meshBuilder->findRegionById(regionData.zoneId);
+    if (!zoneMeshInfo) {
+        return;
+    }
+
+    // 更新颜色配置，只有真正改变时才触发重绘
+    bool colorChanged = false;
+
+    if (regionData.color.has_value()) {
+        if (zoneMeshInfo->fillColor != regionData.color) {
+            zoneMeshInfo->fillColor = regionData.color;
+            colorChanged = true;
+        }
+    } else {
+        if (zoneMeshInfo->fillColor.has_value()) {
+            zoneMeshInfo->fillColor = std::nullopt;
+            colorChanged = true;
+        }
+    }
+
+    if (regionData.priceColor.has_value()) {
+        if (zoneMeshInfo->priceColor != regionData.priceColor) {
+            zoneMeshInfo->priceColor = regionData.priceColor;
+            colorChanged = true;
+        }
+    } else {
+        if (zoneMeshInfo->priceColor.has_value()) {
+            zoneMeshInfo->priceColor = std::nullopt;
+            colorChanged = true;
+        }
+    }
+
+    if (colorChanged) {
+        invalidateContent();
+    }
+}
+
+void SeatCanvasCoreRenderer::applySavedZoneDataColors(std::shared_ptr<BaseMapMeshBuilder> meshBuilder) {
+    if (!meshBuilder || _regionDataMap.empty()) {
+        return;
+    }
+
+    bool anyColorChanged = false;
+    for (const auto &[zoneId, zoneData] : _regionDataMap) {
+        auto zoneMeshInfo = meshBuilder->findRegionById(zoneId);
+        if (!zoneMeshInfo) {
+            continue;
+        }
+
+        if (zoneData.color.has_value()) {
+            if (zoneMeshInfo->fillColor != zoneData.color) {
+                zoneMeshInfo->fillColor = zoneData.color;
+                anyColorChanged = true;
+            }
+        } else {
+            if (zoneMeshInfo->fillColor.has_value()) {
+                zoneMeshInfo->fillColor = std::nullopt;
+                anyColorChanged = true;
             }
         }
+
+        if (zoneData.priceColor.has_value()) {
+            if (zoneMeshInfo->priceColor != zoneData.priceColor) {
+                zoneMeshInfo->priceColor = zoneData.priceColor;
+                anyColorChanged = true;
+            }
+        } else {
+            if (zoneMeshInfo->priceColor.has_value()) {
+                zoneMeshInfo->priceColor = std::nullopt;
+                anyColorChanged = true;
+            }
+        }
+    }
+
+    if (anyColorChanged) {
+        invalidateContent();
     }
 }
 

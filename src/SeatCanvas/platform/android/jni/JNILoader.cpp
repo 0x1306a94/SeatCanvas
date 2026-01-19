@@ -177,7 +177,7 @@ Java_com_libseatcanvas_SeatCanvasView_nativeUpdateSeatZones(JNIEnv *env, jobject
         auto zoneData = kk::jni::JSeatZoneData::FromJava(env, element);
         env->DeleteLocalRef(element);
         if (zoneData) {
-            renderer->setRegionData(*zoneData);
+            renderer->setZoneData(*zoneData);
         }
     }
 }

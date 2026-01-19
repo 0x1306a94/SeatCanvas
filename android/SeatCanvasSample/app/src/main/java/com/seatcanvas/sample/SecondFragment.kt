@@ -66,8 +66,7 @@ class SecondFragment : Fragment() {
             }
         })
 
-        // 加载底图后，延迟生成并设置 mock 数据
-        binding.seatCanvasView.postDelayed({ loadMockData() }, 500)
+        loadMockData()
     }
 
     private fun loadMockData() {

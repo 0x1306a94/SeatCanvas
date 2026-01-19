@@ -182,7 +182,7 @@ void SeatCanvasCoreRendererSetSeatZoneDatas(CPPObject *_Nonnull cppObject, CPPOb
     }
     auto zoneMap = static_cast<std::unordered_map<std::string, kk::SeatZoneData> *>(zoneBuilder->realValue);
     for (const auto &[key, value] : *zoneMap) {
-        renderer->setRegionData(value);
+        renderer->setZoneData(value);
     }
 }
 

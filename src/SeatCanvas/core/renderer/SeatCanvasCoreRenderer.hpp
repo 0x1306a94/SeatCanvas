@@ -71,8 +71,8 @@ class CustomBaseMapPass;
 class CustomSeatPass;
 class SeatStyleAtlasManager;
 class SeatCanvasCoreRendererState;
+class BaseMapMeshBuilder;
 class SeatCanvasCoreRenderer {
-
   public:
     explicit SeatCanvasCoreRenderer(
         std::unique_ptr<PlatformView> platformView,
@@ -215,7 +215,7 @@ class SeatCanvasCoreRenderer {
     /// 设置区域数据
     /// 用于设置区域的显示信息（区域颜色和价格颜色）
     /// @param regionData 区域数据，包含 zoneId, regionColor, priceColor
-    void setRegionData(const kk::SeatZoneData &regionData);
+    void setZoneData(const kk::SeatZoneData &regionData);
 
     /// 设置某个区域的座位数据
     /// @param zoneId 区域ID
@@ -291,6 +291,8 @@ class SeatCanvasCoreRenderer {
     void zoomToPoint(const tgfx::Point &location, float scale, bool animated = true, float padding = 0.0f, double durationMs = 300.0);
 
     void applyBaseMapColorState(kk::BaseMapColorState toState);
+
+    void applySavedZoneDataColors(std::shared_ptr<BaseMapMeshBuilder> meshBuilder);
 
     void drawFPS(tgfx::Canvas *canvas);
 

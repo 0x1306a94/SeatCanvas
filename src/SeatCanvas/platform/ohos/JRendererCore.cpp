@@ -539,7 +539,7 @@ static napi_value UpdateSeatZones(napi_env env, napi_callback_info info) {
         napi_get_element(env, args[0], i, &element);
         auto zoneData = GetSeatZoneData(env, element);
         if (zoneData) {
-            renderer->setRegionData(zoneData.value());
+            renderer->setZoneData(zoneData.value());
         }
     }
     return nullptr;

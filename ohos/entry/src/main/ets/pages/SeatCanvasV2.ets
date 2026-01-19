@@ -27,6 +27,7 @@ export struct SeatCanvasV2 {
     };
 
     this.controller.setDelegate(this.delegate);
+    this.loadMockData();
   }
 
   aboutToDisappear(): void {
@@ -104,7 +105,6 @@ export struct SeatCanvasV2 {
       this.applySVGSeatStyleConfig();
       await this.controller.loadFromAssets(manager, `svg/${this.basemapName}.svg`, BaseMapFormat.SVG);
       console.log(`底图: svg/${this.basemapName}.svg 加载成功`);
-      this.loadMockData();
     })
   }
 }

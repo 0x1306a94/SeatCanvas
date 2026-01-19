@@ -50,11 +50,7 @@ class SeatCanvasViewController: UIViewController {
         seatCanvasView.applySeatStyleJSONConfig(buildSVGSeatStyleConfig())
 
         loadBaseMap()
-
-        // 加载底图后，生成并设置 mock 数据
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            self?.loadMockData()
-        }
+        loadMockData()
     }
 
     @IBAction func handleCircleSeatStyle(_: UISwitch) {
