@@ -1744,10 +1744,7 @@ void SeatCanvasCoreRenderer::setZoneData(const kk::SeatZoneData &zoneData) {
         return;
     }
 
-    // 保存数据到映射表（无论 config 是否存在，都要保存）
     _zoneDataMap[zoneData.zoneId] = zoneData;
-
-    // 尝试更新 meshBuilder 中的颜色配置
     auto config = _useBaseMapConfig.lock();
     if (!config) {
         return;
@@ -1763,9 +1760,7 @@ void SeatCanvasCoreRenderer::setZoneData(const kk::SeatZoneData &zoneData) {
         return;
     }
 
-    // 更新颜色配置，只有真正改变时才触发重绘
     bool colorChanged = false;
-
     if (zoneData.color.has_value()) {
         if (zoneMeshInfo->fillColor != zoneData.color) {
             zoneMeshInfo->fillColor = zoneData.color;

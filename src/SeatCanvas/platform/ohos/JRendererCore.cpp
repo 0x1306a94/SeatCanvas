@@ -40,6 +40,22 @@ namespace kk::js {
 
 static std::unordered_map<std::string, std::shared_ptr<JRendererCore>> ViewMap = {};
 
+static tgfx::Color ColorFromARGBInt(uint32_t argb) {
+    auto a = static_cast<uint8_t>((argb >> 24) & 0xFF);
+    auto r = static_cast<uint8_t>((argb >> 16) & 0xFF);
+    auto g = static_cast<uint8_t>((argb >> 8) & 0xFF);
+    auto b = static_cast<uint8_t>(argb & 0xFF);
+    return tgfx::Color::FromRGBA(r, g, b, a);
+}
+
+static int32_t ColorToARGBInt(const tgfx::Color &color) {
+    auto a = static_cast<uint8_t>(color.alpha * 255);
+    auto r = static_cast<uint8_t>(color.red * 255);
+    auto g = static_cast<uint8_t>(color.green * 255);
+    auto b = static_cast<uint8_t>(color.blue * 255);
+    return static_cast<int32_t>((a << 24) | (r << 16) | (g << 8) | b);
+}
+
 struct LoadBaseMapResult {
     std::shared_ptr<tgfx::Layer> textLayer;
     tgfx::Size baseMapSize;
@@ -268,6 +284,47 @@ static napi_value Stop(napi_env env, napi_callback_info info) {
     }
     view->stop();
     return nullptr;
+}
+
+static napi_value SetCanvasColor(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+    napi_value jsView = nullptr;
+    size_t argc = 1;
+    napi_value args[1] = {nullptr};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr || argc < 1) {
+        return nullptr;
+    }
+    int32_t colorInt = 0;
+    napi_get_value_int32(env, args[0], &colorInt);
+    view->setBackgroundColor(ColorFromARGBInt(static_cast<uint32_t>(colorInt)));
+    return nullptr;
+}
+
+static napi_value GetCanvasColor(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+    napi_value jsView = nullptr;
+    size_t argc = 0;
+    napi_value args[1] = {nullptr};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr) {
+        napi_value def = nullptr;
+        napi_create_int32(env, 0xFFFFFFFF, &def);
+        return def;
+    }
+    auto *renderer = view->internalRenderer();
+    if (renderer == nullptr) {
+        napi_value def = nullptr;
+        napi_create_int32(env, 0xFFFFFFFF, &def);
+        return def;
+    }
+    napi_value result = nullptr;
+    napi_create_int32(env, ColorToARGBInt(renderer->getBackgroundColor()), &result);
+    return result;
 }
 
 static napi_value Release(napi_env env, napi_callback_info info) {
@@ -623,6 +680,8 @@ bool JRendererCore::Init(napi_env env, napi_value exports) {
         JS_DEFAULT_METHOD_ENTRY(applySeatStyleJSONConfig, ApplySeatStyleJSONConfig),
         JS_DEFAULT_METHOD_ENTRY(start, Start),
         JS_DEFAULT_METHOD_ENTRY(stop, Stop),
+        JS_DEFAULT_METHOD_ENTRY(setCanvasColor, SetCanvasColor),
+        JS_DEFAULT_METHOD_ENTRY(getCanvasColor, GetCanvasColor),
         JS_DEFAULT_METHOD_ENTRY(release, Release),
         JS_DEFAULT_METHOD_ENTRY(handleTap, HandleTap),
         JS_DEFAULT_METHOD_ENTRY(handlePan, HandlePan),

@@ -44,7 +44,7 @@ class SecondFragment : Fragment() {
         val baseMapInfo = arguments?.getParcelable<BaseMapFileInfo>(ARG_BASE_MAP_INFO) ?: return
         val data = readAssetFileToByteArray(requireContext(), baseMapInfo.assetPath) ?: return
         binding.seatCanvasView.loadBaseMap(data, BaseMapFormat.SVG)
-
+        binding.seatCanvasView.canvasColor = ContextCompat.getColor(context, R.color.canvas_bg)
         // 应用默认样式（SVG样式）
         binding.seatCanvasView.applySeatStyleJSONConfig(buildSVGSeatStyleConfig())
 
@@ -59,11 +59,17 @@ class SecondFragment : Fragment() {
             }
 
             override fun didSelectSeat(zoneId: String, seatId: String) {
-                android.util.Log.d("SecondFragment", "didSelectSeat: zoneId=$zoneId, seatId=$seatId")
+                android.util.Log.d(
+                    "SecondFragment",
+                    "didSelectSeat: zoneId=$zoneId, seatId=$seatId"
+                )
             }
 
             override fun didDeselectSeat(zoneId: String, seatId: String) {
-                android.util.Log.d("SecondFragment", "didDeselectSeat: zoneId=$zoneId, seatId=$seatId")
+                android.util.Log.d(
+                    "SecondFragment",
+                    "didDeselectSeat: zoneId=$zoneId, seatId=$seatId"
+                )
             }
         })
 
@@ -90,7 +96,11 @@ class SecondFragment : Fragment() {
     }
 
     private fun loadZoneDatas(baseMapInfo: BaseMapFileInfo): Array<SeatZoneData> {
-        val path = ResourceExtensions.zoneDataPath(requireContext(), baseMapInfo.scope, baseMapInfo.filename)
+        val path = ResourceExtensions.zoneDataPath(
+            requireContext(),
+            baseMapInfo.scope,
+            baseMapInfo.filename
+        )
         val jsonString = readAssetFileToString(requireContext(), path) ?: return emptyArray()
         return try {
             val gson = Gson()
@@ -110,7 +120,11 @@ class SecondFragment : Fragment() {
     }
 
     private fun loadSeatDatas(baseMapInfo: BaseMapFileInfo): Map<String, List<MockSeatData>> {
-        val path = ResourceExtensions.seatDataPath(requireContext(), baseMapInfo.scope, baseMapInfo.filename)
+        val path = ResourceExtensions.seatDataPath(
+            requireContext(),
+            baseMapInfo.scope,
+            baseMapInfo.filename
+        )
         val jsonString = readAssetFileToString(requireContext(), path) ?: return emptyMap()
         return try {
             val gson = Gson()
@@ -160,21 +174,69 @@ class SecondFragment : Fragment() {
         val available = ContextCompat.getColor(context, R.color.seat_available)
         val sold = ContextCompat.getColor(context, R.color.seat_sold)
         val locked = ContextCompat.getColor(context, R.color.seat_locked)
-        val disabled = ContextCompat.getColor(context, R.color.seat_disableed)
+        val disabled = ContextCompat.getColor(context, R.color.seat_disabled)
         val overlay = Color.argb((0.7 * 255).toInt(), 0, 0, 0) // 黑色，透明度 0.7
         val checkmark = Color.WHITE
 
-        builder.addCircleStyle(status = 0U, selected = false, fill = available, overlay = overlay, checkmark = checkmark)
-        builder.addCircleStyle(status = 0U, selected = true, fill = available, overlay = overlay, checkmark = checkmark)
+        builder.addCircleStyle(
+            status = 0U,
+            selected = false,
+            fill = available,
+            overlay = overlay,
+            checkmark = checkmark
+        )
+        builder.addCircleStyle(
+            status = 0U,
+            selected = true,
+            fill = available,
+            overlay = overlay,
+            checkmark = checkmark
+        )
 
-        builder.addCircleStyle(status = 1U, selected = false, fill = sold, overlay = overlay, checkmark = checkmark)
-        builder.addCircleStyle(status = 1U, selected = true, fill = sold, overlay = overlay, checkmark = checkmark)
+        builder.addCircleStyle(
+            status = 1U,
+            selected = false,
+            fill = sold,
+            overlay = overlay,
+            checkmark = checkmark
+        )
+        builder.addCircleStyle(
+            status = 1U,
+            selected = true,
+            fill = sold,
+            overlay = overlay,
+            checkmark = checkmark
+        )
 
-        builder.addCircleStyle(status = 2U, selected = false, fill = locked, overlay = overlay, checkmark = checkmark)
-        builder.addCircleStyle(status = 2U, selected = true, fill = locked, overlay = overlay, checkmark = checkmark)
+        builder.addCircleStyle(
+            status = 2U,
+            selected = false,
+            fill = locked,
+            overlay = overlay,
+            checkmark = checkmark
+        )
+        builder.addCircleStyle(
+            status = 2U,
+            selected = true,
+            fill = locked,
+            overlay = overlay,
+            checkmark = checkmark
+        )
 
-        builder.addCircleStyle(status = 3U, selected = false, fill = disabled, overlay = overlay, checkmark = checkmark)
-        builder.addCircleStyle(status = 3U, selected = true, fill = disabled, overlay = overlay, checkmark = checkmark)
+        builder.addCircleStyle(
+            status = 3U,
+            selected = false,
+            fill = disabled,
+            overlay = overlay,
+            checkmark = checkmark
+        )
+        builder.addCircleStyle(
+            status = 3U,
+            selected = true,
+            fill = disabled,
+            overlay = overlay,
+            checkmark = checkmark
+        )
 
         return builder.toJSONData()
     }

@@ -98,6 +98,17 @@ export class SeatCanvasViewController {
   }
 
   /**
+   * 画布背景色（ColorInt，AARRGGBB）。如 0xFFFFFFFF、0xfff5f5f5 等。
+   */
+  get canvasColor(): number {
+    return this.jView.getCanvasColor();
+  }
+
+  set canvasColor(value: number) {
+    this.jView.setCanvasColor(value);
+  }
+
+  /**
    * 释放内部 C++ 资源， 调用后将不能在继续使用当前对象
    */
   release() {

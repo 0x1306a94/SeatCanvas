@@ -19,7 +19,7 @@ final class SeatCanvasCoreRenderer {
         self.cppObject = cppObject
     }
 
-    var backgroundColor: UIColor {
+    var backgroundColor: UIColor? {
         set {
             guard let cppObject = cppObject else {
                 return

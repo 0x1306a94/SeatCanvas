@@ -27,6 +27,7 @@ class SeatCanvasViewController: UIViewController {
 
         seatCanvasView = SeatCanvasView(frame: .zero)
         seatCanvasView.backgroundColor = UIColor(named: "b1")
+        seatCanvasView.canvasColor = UIColor(named: "b1")
         seatCanvasView.delegate = self
         seatCanvasView.translatesAutoresizingMaskIntoConstraints = false
 

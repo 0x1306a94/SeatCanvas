@@ -89,6 +89,18 @@ export declare namespace seatcanvas {
     stop(): void;
 
     /**
+     * 设置画布背景色
+     * @param value ColorInt（AARRGGBB），如 0xFFFFFFFF、0xff000000 等
+     */
+    setCanvasColor(value: number): void;
+
+    /**
+     * 获取画布背景色
+     * @returns ColorInt（AARRGGBB）
+     */
+    getCanvasColor(): number;
+
+    /**
      * 释放内部 C++ 资源， 调用后将不能在继续使用当前对象
      */
     release(): void;

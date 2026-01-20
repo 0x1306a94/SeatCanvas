@@ -7,6 +7,7 @@
 
 #include <jni.h>
 
+#include <tgfx/core/Color.h>
 #include <tgfx/core/Data.h>
 #include <tgfx/core/Stream.h>
 #include <tgfx/layers/TextLayer.h>
@@ -89,6 +90,22 @@ static void DeleteSeatCanvasCoreRenderer(JNIEnv *env, jobject thiz) {
     delete renderer;
     env->SetLongField(thiz, SeatCanvasView_NativePtr, 0L);
 }
+
+static tgfx::Color ColorFromARGBInt(uint32_t argb) {
+    auto a = static_cast<uint8_t>((argb >> 24) & 0xFF);
+    auto r = static_cast<uint8_t>((argb >> 16) & 0xFF);
+    auto g = static_cast<uint8_t>((argb >> 8) & 0xFF);
+    auto b = static_cast<uint8_t>(argb & 0xFF);
+    return tgfx::Color::FromRGBA(r, g, b, a);
+}
+
+static int32_t ColorToARGBInt(const tgfx::Color &color) {
+    auto a = static_cast<uint8_t>(color.alpha * 255);
+    auto r = static_cast<uint8_t>(color.red * 255);
+    auto g = static_cast<uint8_t>(color.green * 255);
+    auto b = static_cast<uint8_t>(color.blue * 255);
+    return static_cast<int32_t>((a << 24) | (r << 16) | (g << 8) | b);
+}
 }  // namespace kk::jni
 
 extern "C" {
@@ -145,6 +162,19 @@ Java_com_libseatcanvas_SeatCanvasView_nativeLoadBaseMap(JNIEnv *env, jobject thi
     delete map;
 
     return true;
+}
+
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeSetCanvasColor(JNIEnv *env, jobject thiz, jint color) {
+    GetCPPObjectOrReturn(env, thiz, renderer);
+    auto argb = static_cast<uint32_t>(color);
+    renderer->setBackgroundColor(kk::jni::ColorFromARGBInt(argb));
+}
+
+JNIEXPORT jint JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeGetCanvasColor(JNIEnv *env, jobject thiz) {
+    GetCPPObjectOrReturnValue(env, thiz, renderer, 0xFFFFFFFF);
+    return static_cast<jint>(kk::jni::ColorToARGBInt(renderer->getBackgroundColor()));
 }
 
 JNIEXPORT void JNICALL

@@ -7,6 +7,7 @@ import android.view.MotionEvent
 import android.view.Surface
 import android.view.TextureView
 import android.view.View
+import androidx.annotation.ColorInt
 
 class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
     private var surface: Surface? = null
@@ -198,6 +199,22 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         nativeSetSeatStyleJSONConfig(data, data.size)
     }
 
+    /**
+     * 画布背景色（ColorInt，AARRGGBB）。如 Color.WHITE、Color.parseColor("#RRGGBB") 等。
+     */
+    var canvasColor: Int
+        @ColorInt get() {
+            if (nativeInitialized()) {
+                return nativeGetCanvasColor()
+            } else {
+                return android.graphics.Color.WHITE
+            }
+        }
+        set(@ColorInt value) {
+            if (nativeInitialized()) nativeSetCanvasColor(value)
+        }
+
+
     fun updateSeatZones(zones: Array<SeatZoneData>) {
         if (!nativeInitialized()) {
             return
@@ -263,6 +280,8 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
 
     private external fun nativeLoadBaseMapFromFormat(data: ByteArray?, formatName: String): Long
     private external fun nativeLoadBaseMap(ptr: Long): Boolean
+    private external fun nativeSetCanvasColor(color: Int)
+    private external fun nativeGetCanvasColor(): Int
     private external fun nativeSetSeatStyleJSONConfig(data: ByteArray?, len: Int)
     private external fun nativeUpdateSeatZones(zones: Array<SeatZoneData>)
     private external fun nativeUpdateSeats(zoneId: String, seats: Array<SeatData>)

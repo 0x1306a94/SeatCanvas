@@ -27,7 +27,7 @@ public class SeatCanvasView: UIView {
     var panGestureRecognizer: UIPanGestureRecognizer!
     var pinchGestureRecognizer: UIPinchGestureRecognizer!
 
-    public var canvasColor: UIColor {
+    public var canvasColor: UIColor? {
         set {
             renderer?.backgroundColor = newValue
         }

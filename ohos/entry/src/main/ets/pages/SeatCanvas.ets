@@ -31,7 +31,7 @@ export struct SeatCanvas {
     };
 
     this.controller.setDelegate(this.delegate);
-    this.loadMockData();
+    this.controller.canvasColor = 0xFFF8F8F8;
   }
 
   aboutToDisappear(): void {
@@ -49,14 +49,14 @@ export struct SeatCanvas {
     this.controller.applySeatStyleJSONConfig(config);
   }
 
-  async loadMockData(): Promise<void> {
+  loadMockData() {
     if (!this.baseMap) {
       return;
     }
-    const zoneDatas = await this.loadZoneDatas();
+    const zoneDatas = this.loadZoneDatas();
     this.controller.updateSeatZones(zoneDatas);
 
-    const seatDatas = await this.loadSeatDatas();
+    const seatDatas = this.loadSeatDatas();
     for (const zoneId of Object.keys(seatDatas)) {
       const seats = seatDatas[zoneId];
       const seatDataArray: SeatData[] = seats.map((mockSeat: MockSeatData): SeatData => ({
@@ -70,12 +70,12 @@ export struct SeatCanvas {
     }
   }
 
-  async loadZoneDatas(): Promise<SeatZoneData[]> {
+  loadZoneDatas(): SeatZoneData[] {
     if (!this.baseMap) {
       return [];
     }
     const path = ResourceExtensions.zoneDataPath(this.baseMap.scope, this.baseMap.filename);
-    const jsonString = await this.readRawFileToString(path);
+    const jsonString = this.readRawFileToString(path);
     if (!jsonString) {
       return [];
     }
@@ -92,12 +92,12 @@ export struct SeatCanvas {
     }
   }
 
-  async loadSeatDatas(): Promise<Record<string, MockSeatData[]>> {
+  loadSeatDatas(): Record<string, MockSeatData[]> {
     if (!this.baseMap) {
       return {};
     }
     const path = ResourceExtensions.seatDataPath(this.baseMap.scope, this.baseMap.filename);
-    const jsonString = await this.readRawFileToString(path);
+    const jsonString = this.readRawFileToString(path);
     if (!jsonString) {
       return {};
     }
@@ -109,7 +109,7 @@ export struct SeatCanvas {
     }
   }
 
-  async readRawFileToString(fileName: string): Promise<string | null> {
+  readRawFileToString(fileName: string): string | null {
     try {
       const manager = getContext(this).resourceManager;
       const rawFileContent = manager.getRawFileContentSync(fileName);
@@ -187,7 +187,7 @@ export struct SeatCanvas {
       this.applySVGSeatStyleConfig();
       await this.controller.loadFromAssets(manager, this.baseMap.assetPath, BaseMapFormat.SVG);
       console.log(`底图: ${this.baseMap.assetPath} 加载成功`);
-      await this.loadMockData();
+      this.loadMockData();
     })
   }
 }
