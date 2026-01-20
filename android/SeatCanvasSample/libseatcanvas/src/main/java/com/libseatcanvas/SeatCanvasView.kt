@@ -290,6 +290,14 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
     /**
      * 由 C++ 层调用，转发给 delegate
      * @param zoneId 区域ID
+     */
+    private fun nativeOnDidTapZone(zoneId: String) {
+        delegate?.didTapZone(zoneId)
+    }
+
+    /**
+     * 由 C++ 层调用，转发给 delegate
+     * @param zoneId 区域ID
      * @param seatId 座位ID
      * @return true 表示可以选中，false 表示不能选中
      */

@@ -9,6 +9,7 @@ import Foundation
 
 @MainActor
 protocol SeatCanvasRendererDelegate: AnyObject {
+    func seatCanvasRendererDidTapZone(zoneId: String)
     func seatCanvasRendererShouldSelectSeat(zoneId: String, seatId: String) -> Bool
     func seatCanvasRendererDidSelectSeat(zoneId: String, seatId: String)
     func seatCanvasRendererDidDeselectSeat(zoneId: String, seatId: String)

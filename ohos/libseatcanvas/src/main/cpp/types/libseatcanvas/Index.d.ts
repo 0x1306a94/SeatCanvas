@@ -168,6 +168,8 @@ export declare namespace seatcanvas {
 
     setDidDeselectSeatCallback(callback: (zoneId: string, seatId: string) => void);
 
+    setDidTapZoneCallback(callback: (zoneId: string) => void);
+
     updateSeatZones(zones: SeatZoneData[]);
 
     updateSeats(zoneId: string, seats: SeatData[]);

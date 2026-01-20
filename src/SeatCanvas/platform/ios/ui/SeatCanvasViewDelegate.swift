@@ -31,4 +31,10 @@ public protocol SeatCanvasViewDelegate {
     ///   - zoneId: 区域ID
     ///   - seatId: 座位ID
     func seatCanvasView(_ view: SeatCanvasView, didDeselectSeat zoneId: String, seatId: String)
+
+    /// 点击某个区域
+    /// - Parameters:
+    ///   - view: SeatCanvasView 实例
+    ///   - zoneId: 区域ID
+    func seatCanvasView(_ view: SeatCanvasView, didTapZone zoneId: String)
 }

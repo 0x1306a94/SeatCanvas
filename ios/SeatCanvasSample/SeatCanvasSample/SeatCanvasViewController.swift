@@ -172,6 +172,14 @@ class SeatCanvasViewController: UIViewController {
 }
 
 extension SeatCanvasViewController: SeatCanvasViewDelegate {
+    /// 点击某个区域
+    /// - Parameters:
+    ///   - view: SeatCanvasView 实例
+    ///   - zoneId: 区域ID
+    func seatCanvasView(_: SeatCanvasView, didTapZone zoneId: String) {
+        print(#function, zoneId)
+    }
+
     /// 是否可以选中座位
     /// - Parameters:
     ///   - view: SeatCanvasView 实例

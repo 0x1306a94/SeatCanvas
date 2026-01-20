@@ -53,6 +53,13 @@ class SecondFragment : Fragment() {
 
         // 设置座位选择代理
         binding.seatCanvasView.setDelegate(object : SeatCanvasRendererDelegate {
+            override fun didTapZone(zoneId: String) {
+                android.util.Log.d(
+                    "SecondFragment",
+                    "didTapZone: zoneId=$zoneId"
+                )
+            }
+
             override fun shouldSelectSeat(zoneId: String, seatId: String): Boolean {
                 // 返回 true 表示可以选中，false 表示不能选中
                 return true

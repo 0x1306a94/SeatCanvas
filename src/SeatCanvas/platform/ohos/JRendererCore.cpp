@@ -621,6 +621,33 @@ static napi_value SetDidDeselectSeatCallback(napi_env env, napi_callback_info in
     return nullptr;
 }
 
+static napi_value SetDidTapZoneCallback(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+    napi_value jsView = nullptr;
+    size_t argc = 1;
+    napi_value args[1] = {0};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr) {
+        return nullptr;
+    }
+
+    auto delegate = view->getDelegate();
+    if (delegate == nullptr) {
+        return nullptr;
+    }
+
+    napi_value callback = nullptr;
+    if (argc > 0 && args[0] != nullptr) {
+        callback = args[0];
+    }
+
+    delegate->setDidTapZoneCallback(env, callback);
+
+    return nullptr;
+}
+
 static napi_value ZoomToRect(napi_env env, napi_callback_info info) {
     kk::js::NapiEnvHolder::setEnv(env);
 
@@ -790,6 +817,7 @@ bool JRendererCore::Init(napi_env env, napi_value exports) {
         JS_DEFAULT_METHOD_ENTRY(setShouldSelectSeatCallback, SetShouldSelectSeatCallback),
         JS_DEFAULT_METHOD_ENTRY(setDidSelectSeatCallback, SetDidSelectSeatCallback),
         JS_DEFAULT_METHOD_ENTRY(setDidDeselectSeatCallback, SetDidDeselectSeatCallback),
+        JS_DEFAULT_METHOD_ENTRY(setDidTapZoneCallback, SetDidTapZoneCallback),
         JS_DEFAULT_METHOD_ENTRY(updateSeatZones, UpdateSeatZones),
         JS_DEFAULT_METHOD_ENTRY(updateSeats, UpdateSeats),
     };

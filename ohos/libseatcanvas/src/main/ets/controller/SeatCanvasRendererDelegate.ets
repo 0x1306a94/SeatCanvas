@@ -1,5 +1,11 @@
 export interface SeatCanvasRendererDelegate {
   /**
+   * 点击某个区域
+   * @param zoneId 区域ID
+   */
+  didTapZone?: (zoneId: string) => void;
+
+  /**
    * 是否可以选中座位
    * @param zoneId 区域ID
    * @param seatId 座位ID

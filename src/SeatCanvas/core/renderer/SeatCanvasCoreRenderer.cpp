@@ -1361,6 +1361,9 @@ void SeatCanvasCoreRenderer::handleAutoZoomOnTap(const tgfx::Point &location) {
 
     // 使用找到的区域进行缩放
     if (!zoneInfo->zoneId.empty()) {
+        if (_delegate) {
+            _delegate->didTapZone(_coreID, zoneInfo->zoneId);
+        }
         scrollViewWithZone(zoneInfo->zoneId);
         return;
     }

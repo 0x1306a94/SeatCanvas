@@ -9,6 +9,23 @@ import Foundation
 
 // MARK: - C++ 到 Swift 的桥接函数
 
+/// 点击区域回调，由 C++ 层调用(仅内部调用)
+/// - Parameters:
+///   - coreID: 座位渲染器实例ID
+///   - zoneId: 区域ID
+public func switf_bridge_didTapZone(coreID: UInt32, zoneId: String) {
+    return MainActor.assumeIsolated {
+        guard let delegate = SeatCanvasRendererDelegateRegistry.shared.delegate(for: coreID) else {
+            #if DEBUG
+                print("[SwiftBridge] 警告: 未找到 coreID \(coreID) 对应的 SeatCanvasRendererDelegate")
+            #endif
+            return
+        }
+
+        delegate.seatCanvasRendererDidTapZone(zoneId: zoneId)
+    }
+}
+
 /// 选中座位回调，由 C++ 层调用(仅内部调用)
 /// - Parameters:
 ///   - coreID: 座位渲染器实例ID

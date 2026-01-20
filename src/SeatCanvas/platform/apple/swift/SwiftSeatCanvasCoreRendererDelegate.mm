@@ -24,6 +24,10 @@ SwiftSeatCanvasCoreRendererDelegate::~SwiftSeatCanvasCoreRendererDelegate() {
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
 }
 
+void SwiftSeatCanvasCoreRendererDelegate::didTapZone(uint32_t coreID, const std::string &zoneId) {
+    SeatCanvas::switf_bridge_didTapZone(coreID, zoneId);
+}
+
 bool SwiftSeatCanvasCoreRendererDelegate::shouldSelectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId) {
     return SeatCanvas::switf_bridge_shouldSelectSeat(coreID, zoneId, seatId);
 }
@@ -35,4 +39,5 @@ void SwiftSeatCanvasCoreRendererDelegate::didSelectSeat(uint32_t coreID, const s
 void SwiftSeatCanvasCoreRendererDelegate::didDeselectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId) {
     SeatCanvas::switf_bridge_didDeselectSeat(coreID, zoneId, seatId);
 }
+
 };  // namespace kk::bridge

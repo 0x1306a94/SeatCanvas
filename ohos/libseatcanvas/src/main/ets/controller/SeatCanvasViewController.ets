@@ -55,12 +55,18 @@ export class SeatCanvasViewController {
       } else {
         this.jView.setDidDeselectSeatCallback(null);
       }
+      if (delegate.didTapZone) {
+        this.jView.setDidTapZoneCallback(this.onDidTapZone);
+      } else {
+        this.jView.setDidTapZoneCallback(null);
+      }
     } else {
       this.delegate = null;
       // 清除 native 回调
       this.jView.setShouldSelectSeatCallback(null);
       this.jView.setDidSelectSeatCallback(null);
       this.jView.setDidDeselectSeatCallback(null);
+      this.jView.setDidTapZoneCallback(null);
     }
   }
 
@@ -225,6 +231,12 @@ export class SeatCanvasViewController {
     const delegate = this.delegate?.deref();
     if (delegate && delegate.didDeselectSeat) {
       delegate.didDeselectSeat(zoneId, seatId);
+    }
+  }
+  readonly onDidTapZone = (zoneId: string) => {
+    const delegate = this.delegate?.deref();
+    if (delegate && delegate.didTapZone) {
+      delegate.didTapZone(zoneId);
     }
   }
 }

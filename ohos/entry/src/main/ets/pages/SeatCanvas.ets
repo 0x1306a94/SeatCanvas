@@ -18,6 +18,9 @@ export struct SeatCanvas {
 
   aboutToAppear(): void {
     this.delegate = {
+      didTapZone: (zoneId: string) => {
+        console.log(`tgfx didTapZone: ${zoneId}`)
+      },
       shouldSelectSeat: (zoneId: string, seatId: string) => {
         console.log(`tgfx shouldSelectSeat: ${zoneId} ${seatId}`)
         return true;

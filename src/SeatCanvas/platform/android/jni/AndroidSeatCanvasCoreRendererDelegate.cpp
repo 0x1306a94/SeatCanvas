@@ -24,6 +24,36 @@ AndroidSeatCanvasCoreRendererDelegate::~AndroidSeatCanvasCoreRendererDelegate() 
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
 }
 
+void AndroidSeatCanvasCoreRendererDelegate::didTapZone(uint32_t coreID, const std::string &zoneId) {
+    kk::jni::JNIEnvironment environment;
+    auto env = environment.current();
+    if (env == nullptr || _seatCanvasView.isEmpty()) {
+        return;
+    }
+
+    auto jzoneId = kk::jni::SafeConvertToJString(env, zoneId);
+
+    jclass clazz = env->GetObjectClass(_seatCanvasView.get());
+    if (clazz == nullptr) {
+        env->ExceptionClear();
+        env->DeleteLocalRef(jzoneId);
+        return;
+    }
+
+    jmethodID methodID = env->GetMethodID(clazz, "nativeOnDidTapZone", "(Ljava/lang/String;)V");
+    if (methodID == nullptr) {
+        env->ExceptionClear();
+        env->DeleteLocalRef(clazz);
+        env->DeleteLocalRef(jzoneId);
+        return;
+    }
+
+    env->CallVoidMethod(_seatCanvasView.get(), methodID, jzoneId);
+
+    env->DeleteLocalRef(clazz);
+    env->DeleteLocalRef(jzoneId);
+}
+
 bool AndroidSeatCanvasCoreRendererDelegate::shouldSelectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId) {
     kk::jni::JNIEnvironment environment;
     auto env = environment.current();

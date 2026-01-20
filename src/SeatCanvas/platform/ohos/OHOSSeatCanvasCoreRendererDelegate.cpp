@@ -20,8 +20,6 @@ OHOSSeatCanvasCoreRendererDelegate::OHOSSeatCanvasCoreRendererDelegate() {
 
 OHOSSeatCanvasCoreRendererDelegate::~OHOSSeatCanvasCoreRendererDelegate() {
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
-
-    // 清理 napi_ref
     napi_env env = kk::js::NapiEnvHolder::getEnv();
     if (env != nullptr) {
         if (_shouldSelectSeat != nullptr) {
@@ -36,6 +34,25 @@ OHOSSeatCanvasCoreRendererDelegate::~OHOSSeatCanvasCoreRendererDelegate() {
             napi_delete_reference(env, _didDeselectSeat);
             _didDeselectSeat = nullptr;
         }
+        if (_didTapZone != nullptr) {
+            napi_delete_reference(env, _didTapZone);
+            _didTapZone = nullptr;
+        }
+    }
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::setDidTapZoneCallback(napi_env env, napi_value callback) {
+    if (env == nullptr) {
+        return;
+    }
+
+    if (_didTapZone != nullptr) {
+        napi_delete_reference(env, _didTapZone);
+        _didTapZone = nullptr;
+    }
+
+    if (callback != nullptr) {
+        napi_create_reference(env, callback, 1, &_didTapZone);
     }
 }
 
@@ -82,6 +99,29 @@ void OHOSSeatCanvasCoreRendererDelegate::setDidDeselectSeatCallback(napi_env env
     if (callback != nullptr) {
         napi_create_reference(env, callback, 1, &_didDeselectSeat);
     }
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::didTapZone(uint32_t coreID, const std::string &zoneId) {
+    if (_didTapZone == nullptr) {
+        return;
+    }
+
+    napi_env env = kk::js::NapiEnvHolder::getEnv();
+    if (env == nullptr) {
+        return;
+    }
+
+    napi_value callback = nullptr;
+    napi_get_reference_value(env, _didTapZone, &callback);
+    if (callback == nullptr) {
+        return;
+    }
+
+    napi_value zoneIdValue = nullptr;
+    napi_create_string_utf8(env, zoneId.c_str(), zoneId.length(), &zoneIdValue);
+
+    napi_value argv[1] = {zoneIdValue};
+    napi_call_function(env, nullptr, callback, 1, argv, nullptr);
 }
 
 bool OHOSSeatCanvasCoreRendererDelegate::shouldSelectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId) {

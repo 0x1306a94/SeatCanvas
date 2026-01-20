@@ -19,15 +19,18 @@ class OHOSSeatCanvasCoreRendererDelegate : public kk::renderer::SeatCanvasCoreRe
   public:
     OHOSSeatCanvasCoreRendererDelegate();
     virtual ~OHOSSeatCanvasCoreRendererDelegate();
+    virtual void didTapZone(uint32_t coreID, const std::string &zoneId);
     virtual bool shouldSelectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId);
     virtual void didSelectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId);
     virtual void didDeselectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId);
 
+    void setDidTapZoneCallback(napi_env env, napi_value callback);
     void setShouldSelectSeatCallback(napi_env env, napi_value callback);
     void setDidSelectSeatCallback(napi_env env, napi_value callback);
     void setDidDeselectSeatCallback(napi_env env, napi_value callback);
 
   private:
+    napi_ref _didTapZone = nullptr;
     napi_ref _shouldSelectSeat = nullptr;
     napi_ref _didSelectSeat = nullptr;
     napi_ref _didDeselectSeat = nullptr;

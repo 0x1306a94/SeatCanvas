@@ -308,6 +308,10 @@ extension SeatCanvasView {
 // MARK: - C++ 回调处理
 
 extension SeatCanvasView: SeatCanvasRendererDelegate {
+    func seatCanvasRendererDidTapZone(zoneId: String) {
+        delegate?.seatCanvasView(self, didTapZone: zoneId)
+    }
+
     func seatCanvasRendererShouldSelectSeat(zoneId: String, seatId: String) -> Bool {
         delegate?.seatCanvasView(self, shouldSelectSeat: zoneId, seatId: seatId) ?? false
     }
