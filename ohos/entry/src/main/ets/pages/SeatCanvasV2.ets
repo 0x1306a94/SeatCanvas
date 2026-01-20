@@ -1,12 +1,16 @@
-import { SeatCanvasViewV2, SeatCanvasViewController, BaseMapFormat, SeatCanvasRendererDelegate } from 'libseatcanvas';
+import { SeatCanvasViewV2, SeatCanvasViewController, BaseMapFormat, SeatCanvasRendererDelegate, SeatData, SeatZoneData } from 'libseatcanvas';
 import { SeatStyleBuilder } from './SeatStyleBuilder';
 import { resourceManager } from '@kit.LocalizationKit';
-import { generateMockSeatDatas, generateMockZoneDatas, getMockRegions } from './SeatDataMock';
+import { util } from '@kit.ArkTS';
+import { BaseMapFileInfo } from './BaseMapFileInfo';
+import { ResourceExtensions } from './ResourceExtensions';
+import { MockSeatData } from './MockSeatData';
+import { MockZoneInfo } from './MockZoneInfo';
 
 @ComponentV2
 export struct SeatCanvasV2 {
   private navPathStack: NavPathStack = new NavPathStack();
-  @Local private basemapName: string = '';
+  @Local private baseMap: BaseMapFileInfo | null = null;
   @Local private controller: SeatCanvasViewController = new SeatCanvasViewController();
   @Local useCircleSeatStyle: boolean = false;
   @Local useSVGSeatStyle: boolean = true;
@@ -27,7 +31,6 @@ export struct SeatCanvasV2 {
     };
 
     this.controller.setDelegate(this.delegate);
-    this.loadMockData();
   }
 
   aboutToDisappear(): void {
@@ -45,12 +48,86 @@ export struct SeatCanvasV2 {
     this.controller.applySeatStyleJSONConfig(config);
   }
 
-  loadMockData() {
-    const zones = generateMockZoneDatas();
-    this.controller.updateSeatZones(generateMockZoneDatas());
-    const regions = getMockRegions();
-    for (const r of regions) {
-      this.controller.updateSeats(r.zoneId, generateMockSeatDatas(r.rect));
+  async loadMockData(): Promise<void> {
+    if (!this.baseMap) {
+      return;
+    }
+    const zoneDatas = await this.loadZoneDatas();
+    this.controller.updateSeatZones(zoneDatas);
+
+    const seatDatas = await this.loadSeatDatas();
+    for (const zoneId of Object.keys(seatDatas)) {
+      const seats = seatDatas[zoneId];
+      const seatDataArray: SeatData[] = seats.map((mockSeat: MockSeatData): SeatData => ({
+        seatId: mockSeat.seatId,
+        status: mockSeat.status,
+        selected: mockSeat.selected || false,
+        x: mockSeat.x,
+        y: mockSeat.y
+      }));
+      this.controller.updateSeats(zoneId, seatDataArray);
+    }
+  }
+
+  async loadZoneDatas(): Promise<SeatZoneData[]> {
+    if (!this.baseMap) {
+      return [];
+    }
+    const path = ResourceExtensions.zoneDataPath(this.baseMap.scope, this.baseMap.filename);
+    const jsonString = await this.readRawFileToString(path);
+    if (!jsonString) {
+      return [];
+    }
+    try {
+      const zones: MockZoneInfo[] = JSON.parse(jsonString);
+      return zones.map((zone: MockZoneInfo): SeatZoneData => ({
+        zoneId: zone.zoneId,
+        color: zone.color,
+        priceColor: zone.pirceColor
+      }));
+    } catch (e) {
+      console.error('Failed to parse zone data:', e);
+      return [];
+    }
+  }
+
+  async loadSeatDatas(): Promise<Record<string, MockSeatData[]>> {
+    if (!this.baseMap) {
+      return {};
+    }
+    const path = ResourceExtensions.seatDataPath(this.baseMap.scope, this.baseMap.filename);
+    const jsonString = await this.readRawFileToString(path);
+    if (!jsonString) {
+      return {};
+    }
+    try {
+      return JSON.parse(jsonString);
+    } catch (e) {
+      console.error('Failed to parse seat data:', e);
+      return {};
+    }
+  }
+
+  async readRawFileToString(fileName: string): Promise<string | null> {
+    try {
+      const manager = getContext(this).resourceManager;
+      const rawFileContent = manager.getRawFileContentSync(fileName);
+      if (rawFileContent == null) {
+        console.error(`Failed to load file: ${fileName}`);
+        return null;
+      }
+      const textDecoderOptions: util.TextDecoderOptions = {
+        fatal: false,
+        ignoreBOM: true
+      };
+      const decodeToStringOptions: util.DecodeToStringOptions = {
+        stream: false
+      };
+      const textDecoder = util.TextDecoder.create('utf-8', textDecoderOptions);
+      return textDecoder.decodeToString(rawFileContent, decodeToStringOptions);
+    } catch (e) {
+      console.error(`Error loading file ${fileName}:`, e);
+      return null;
     }
   }
 
@@ -96,15 +173,20 @@ export struct SeatCanvasV2 {
       .width('100%')
       .height('100%')
     }
-    .title(this.basemapName)
+    .title(this.baseMap?.filename || '')
     .onReady(async (ctx) => {
       this.navPathStack = ctx.pathStack
-      this.basemapName = ctx.pathInfo.param as string
+      this.baseMap = ctx.pathInfo.param as BaseMapFileInfo
+
+      if (!this.baseMap) {
+        return;
+      }
 
       let manager = getContext(this).resourceManager;
       this.applySVGSeatStyleConfig();
-      await this.controller.loadFromAssets(manager, `svg/${this.basemapName}.svg`, BaseMapFormat.SVG);
-      console.log(`底图: svg/${this.basemapName}.svg 加载成功`);
+      await this.controller.loadFromAssets(manager, this.baseMap.assetPath, BaseMapFormat.SVG);
+      console.log(`底图: ${this.baseMap.assetPath} 加载成功`);
+      await this.loadMockData();
     })
   }
 }

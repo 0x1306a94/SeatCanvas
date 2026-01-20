@@ -8,13 +8,14 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.libseatcanvas.BaseMapFormat
 import com.libseatcanvas.SeatCanvasRendererDelegate
+import com.libseatcanvas.SeatData
+import com.libseatcanvas.SeatZoneData
 import com.libseatcanvas.style.SeatStyleConfigBuilder
 import com.seatcanvas.sample.databinding.FragmentSecondBinding
-import com.seatcanvas.sample.generateMockSeatDatas
-import com.seatcanvas.sample.generateMockZoneDatas
-import com.seatcanvas.sample.getMockRegions
 
 /**
  * A simple [Fragment] subclass as the second destination in the navigation.
@@ -40,8 +41,8 @@ class SecondFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val baseMapName = arguments?.getString(ARG_BASE_MAP_NAME) ?: DEFAULT_BASE_MAP
-        val data = readAssetFileToByteArray(requireContext(), baseMapName) ?: return
+        val baseMapInfo = arguments?.getParcelable<BaseMapFileInfo>(ARG_BASE_MAP_INFO) ?: return
+        val data = readAssetFileToByteArray(requireContext(), baseMapInfo.assetPath) ?: return
         binding.seatCanvasView.loadBaseMap(data, BaseMapFormat.SVG)
 
         // 应用默认样式（SVG样式）
@@ -66,13 +67,58 @@ class SecondFragment : Fragment() {
             }
         })
 
-        loadMockData()
+        loadMockData(baseMapInfo)
     }
 
-    private fun loadMockData() {
-        binding.seatCanvasView.updateSeatZones(generateMockZoneDatas())
-        for (region in getMockRegions()) {
-            binding.seatCanvasView.updateSeats(region.zoneId, generateMockSeatDatas(region.rect))
+    private fun loadMockData(baseMapInfo: BaseMapFileInfo) {
+        val zoneDatas = loadZoneDatas(baseMapInfo)
+        binding.seatCanvasView.updateSeatZones(zoneDatas)
+
+        val seatDatas = loadSeatDatas(baseMapInfo)
+        for ((zoneId, seats) in seatDatas) {
+            val seatDataArray = seats.map { mockSeat ->
+                SeatData(
+                    seatId = mockSeat.seatId,
+                    status = mockSeat.status,
+                    selected = mockSeat.selected,
+                    x = mockSeat.x,
+                    y = mockSeat.y
+                )
+            }.toTypedArray()
+            binding.seatCanvasView.updateSeats(zoneId, seatDataArray)
+        }
+    }
+
+    private fun loadZoneDatas(baseMapInfo: BaseMapFileInfo): Array<SeatZoneData> {
+        val path = ResourceExtensions.zoneDataPath(requireContext(), baseMapInfo.scope, baseMapInfo.filename)
+        val jsonString = readAssetFileToString(requireContext(), path) ?: return emptyArray()
+        return try {
+            val gson = Gson()
+            val type = object : TypeToken<List<MockZoneInfo>>() {}.type
+            val zones: List<MockZoneInfo> = gson.fromJson(jsonString, type)
+            zones.map { zone ->
+                SeatZoneData(
+                    zoneId = zone.zoneId,
+                    color = zone.color,
+                    priceColor = zone.priceColor
+                )
+            }.toTypedArray()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyArray()
+        }
+    }
+
+    private fun loadSeatDatas(baseMapInfo: BaseMapFileInfo): Map<String, List<MockSeatData>> {
+        val path = ResourceExtensions.seatDataPath(requireContext(), baseMapInfo.scope, baseMapInfo.filename)
+        val jsonString = readAssetFileToString(requireContext(), path) ?: return emptyMap()
+        return try {
+            val gson = Gson()
+            val type = object : TypeToken<Map<String, List<MockSeatData>>>() {}.type
+            gson.fromJson(jsonString, type)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyMap()
         }
     }
 
@@ -136,9 +182,9 @@ class SecondFragment : Fragment() {
     private fun buildSVGSeatStyleConfig(): ByteArray? {
         val builder = SeatStyleConfigBuilder()
 
-        val available = loadSVGContent("icon_seat_selectable")
-        val selected = loadSVGContent("icon_seat_selected")
-        val disabled = loadSVGContent("icon_seat_nonselectable")
+        val available = loadSVGContent("icon_seat_selectable.svg")
+        val selected = loadSVGContent("icon_seat_selected.svg")
+        val disabled = loadSVGContent("icon_seat_nonselectable.svg")
 
         if (available == null || selected == null || disabled == null) {
             return null
@@ -161,8 +207,21 @@ class SecondFragment : Fragment() {
 
     private fun loadSVGContent(name: String): String? {
         return try {
-            val fileName = "svg/$name.svg"
+            val fileName = requireContext().defaultSeatStylePath(name)
             requireContext().assets.open(fileName).use { inputStream ->
+                inputStream.bufferedReader().use { reader ->
+                    reader.readText()
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    private fun readAssetFileToString(context: Context, fileName: String): String? {
+        return try {
+            context.assets.open(fileName).use { inputStream ->
                 inputStream.bufferedReader().use { reader ->
                     reader.readText()
                 }
@@ -185,7 +244,6 @@ class SecondFragment : Fragment() {
     }
 
     companion object {
-        const val ARG_BASE_MAP_NAME = "baseMapName"
-        private const val DEFAULT_BASE_MAP = "svg/performbg.svg"
+        const val ARG_BASE_MAP_INFO = "baseMapInfo"
     }
 }

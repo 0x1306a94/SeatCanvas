@@ -10,17 +10,15 @@ import UIKit
 class ViewController: UIViewController {
     var tableView: UITableView!
 
-    var basemapNames: [String] = [
-        "performbg",
-        "performbg_2",
-        "73807",
-        "73808",
-    ]
+    var baseMapSections: [[BaseMapFileInfo]] = []
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
         title = "底图"
+
+        baseMapSections.append(Bundle.Sample.defaultBaseMaps())
+        baseMapSections.append(Bundle.Sample.customizedBaseMaps())
 
         setupTableView()
     }
@@ -45,8 +43,12 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
         tableView.delegate = self
     }
 
-    func tableView(_: UITableView, numberOfRowsInSection _: Int) -> Int {
-        basemapNames.count
+    func numberOfSections(in _: UITableView) -> Int {
+        baseMapSections.count
+    }
+
+    func tableView(_: UITableView, numberOfRowsInSection section: Int) -> Int {
+        baseMapSections[section].count
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -54,14 +56,14 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
             fatalError("Unregistered cell")
         }
 
-        cell.textLabel?.text = basemapNames[indexPath.row]
+        cell.textLabel?.text = baseMapSections[indexPath.section][indexPath.row].filename
         return cell
     }
 
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+    func tableView(_: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        let name = basemapNames[indexPath.row]
-        let vc = SeatCanvasViewController(basemapName: name)
+        let baseMap = baseMapSections[indexPath.section][indexPath.row]
+        let vc = SeatCanvasViewController(baseMap: baseMap)
         navigationController?.pushViewController(vc, animated: true)
     }
 }

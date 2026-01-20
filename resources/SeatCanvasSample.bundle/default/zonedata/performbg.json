@@ -1,0 +1,164 @@
+[
+    {
+        "color": "#FFFFFFFF",
+        "pirceColor": "#1C0088FF",
+        "x": 850,
+        "y": 2800,
+        "w": 550,
+        "h": 320,
+        "zoneId": "20011"
+    },
+    {
+        "color": "#FFFFFFFF",
+        "pirceColor": "#882255FF",
+        "x": 850,
+        "y": 3170,
+        "w": 550,
+        "h": 320,
+        "zoneId": "20012"
+    },
+    {
+        "color": "#FFFFFFFF",
+        "pirceColor": "#4DE604FF",
+        "x": 850,
+        "y": 3540,
+        "w": 550,
+        "h": 320,
+        "zoneId": "20013"
+    },
+    {
+        "color": "#FFFFFFFF",
+        "pirceColor": "#8C5502FF",
+        "x": 850,
+        "y": 3910,
+        "w": 550,
+        "h": 320,
+        "zoneId": "20014"
+    },
+    {
+        "color": "#FFFFFFFF",
+        "pirceColor": "#3016F3FF",
+        "x": 2000,
+        "y": 2800,
+        "w": 450,
+        "h": 280,
+        "zoneId": "20031"
+    },
+    {
+        "color": "#FFFFFFFF",
+        "pirceColor": "#3B2499FF",
+        "x": 2000,
+        "y": 3130,
+        "w": 450,
+        "h": 280,
+        "zoneId": "20032"
+    },
+    {
+        "color": "#FFFFFFFF",
+        "pirceColor": "#929446FF",
+        "x": 2000,
+        "y": 3790,
+        "w": 450,
+        "h": 280,
+        "zoneId": "20034"
+    },
+    {
+        "color": "#FFFFFFFF",
+        "pirceColor": "#772610FF",
+        "x": 1700,
+        "y": 1520,
+        "w": 700,
+        "h": 230,
+        "zoneId": "10085"
+    },
+    {
+        "color": "#FFFFFFFF",
+        "pirceColor": "#2AE179FF",
+        "x": 2450,
+        "y": 1520,
+        "w": 700,
+        "h": 230,
+        "zoneId": "10086"
+    },
+    {
+        "color": "#FFFFFFFF",
+        "pirceColor": "#BCD04CFF",
+        "x": 9550,
+        "y": 2800,
+        "w": 450,
+        "h": 280,
+        "zoneId": "30031"
+    },
+    {
+        "color": "#FFFFFFFF",
+        "pirceColor": "#49E058FF",
+        "x": 9550,
+        "y": 3130,
+        "w": 450,
+        "h": 280,
+        "zoneId": "30032"
+    },
+    {
+        "color": "#FFFFFFFF",
+        "pirceColor": "#BE24D5FF",
+        "x": 9550,
+        "y": 3460,
+        "w": 450,
+        "h": 280,
+        "zoneId": "30033"
+    },
+    {
+        "color": "#FFFFFFFF",
+        "pirceColor": "#ED0688FF",
+        "x": 9600,
+        "y": 1800,
+        "w": 700,
+        "h": 220,
+        "zoneId": "10096"
+    },
+    {
+        "color": "#FFFFFFFF",
+        "pirceColor": "#F96229FF",
+        "x": 11100,
+        "y": 1800,
+        "w": 700,
+        "h": 220,
+        "zoneId": "10098"
+    },
+    {
+        "color": "#FFFFFFFF",
+        "pirceColor": "#CCC7C1FF",
+        "x": 6950,
+        "y": 9300,
+        "w": 700,
+        "h": 250,
+        "zoneId": "40109"
+    },
+    {
+        "color": "#FFFFFFFF",
+        "pirceColor": "#74D6A5FF",
+        "x": 7700,
+        "y": 9300,
+        "w": 700,
+        "h": 250,
+        "zoneId": "40110"
+    },
+    {
+        "color": "#FFFFFFFF",
+        "pirceColor": "#122564FF",
+        "x": 6600,
+        "y": 9600,
+        "w": 750,
+        "h": 300,
+        "zoneId": "40123"
+    },
+    {
+        "color": "#FFFFFFFF",
+        "pirceColor": "#3C3616FF",
+        "x": 7400,
+        "y": 9600,
+        "w": 750,
+        "h": 300,
+        "zoneId": "40124"
+    }
+]

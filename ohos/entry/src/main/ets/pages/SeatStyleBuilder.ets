@@ -23,9 +23,9 @@ export class SeatStyleBuilder {
    */
   static BuildSVGSeatStyleConfig(manager: resourceManager.ResourceManager): string | null {
 
-    let available = SeatStyleBuilder.loadSVGContent(manager, 'icon_seat_selectable');
-    let selected = SeatStyleBuilder.loadSVGContent(manager, 'icon_seat_selected');
-    let disabled = SeatStyleBuilder.loadSVGContent(manager, 'icon_seat_nonselectable');
+    let available = SeatStyleBuilder.loadSVGContent(manager, 'icon_seat_selectable.svg');
+    let selected = SeatStyleBuilder.loadSVGContent(manager, 'icon_seat_selected.svg');
+    let disabled = SeatStyleBuilder.loadSVGContent(manager, 'icon_seat_nonselectable.svg');
 
     if (available == null || selected == null || disabled == null) {
       return null;
@@ -56,7 +56,7 @@ export class SeatStyleBuilder {
    */
   private static loadSVGContent(manager: resourceManager.ResourceManager, name: string): string | null {
     try {
-      let fileName = `svg/${name}.svg`;
+      let fileName = `SeatCanvasSampleAssets/default/seatstyle/${name}`;
       let rawFileContent = manager.getRawFileContentSync(fileName);
       if (rawFileContent == null) {
         console.error(`Failed to load SVG file: ${fileName}`);

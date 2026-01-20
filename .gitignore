@@ -54,3 +54,5 @@
 
 .DS_Store
 ios/SeatCanvasSample/Configuration/Developer.xcconfig
+
+resources/SeatCanvasSample.bundle/customized/

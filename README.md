@@ -113,10 +113,76 @@ SeatCanvas/
 ├── android/                 # Android 示例和资源
 ├── ohos/                    # OHOS 示例和资源
 ├── resources/               # 资源文件
-│   └── SVGBaseMap.bundle/  # 测试资源文件（SVG 底图示例）
 ├── third_party/             # 第三方依赖（通过 depsync 同步）
 └── CMakeLists.txt          # CMake 构建配置
 ```
+
+### SeatCanvasSample.bundle 目录结构
+
+示例应用使用的资源包 `SeatCanvasSample.bundle` 采用以下目录结构：
+
+```
+SeatCanvasSample.bundle/
+└── default/                  # 默认资源作用域
+    ├── basemap/             # 底图文件目录
+    │   ├── performbg.svg
+    │   ├── performbg_2.svg
+    │   ├── 73807.svg
+    │   └── 73808.svg
+    ├── seatstyle/           # 座位样式 SVG 图标目录
+    │   ├── icon_seat_selectable.svg      # 可选座位图标
+    │   ├── icon_seat_selected.svg        # 已选座位图标
+    │   └── icon_seat_nonselectable.svg   # 不可选座位图标
+    ├── zonedata/            # 区域数据 JSON 文件目录
+    │   ├── performbg.json
+    │   └── performbg_2.json
+    └── seatdata/            # 座位数据 JSON 文件目录
+        ├── performbg.json
+        └── performbg_2.json
+```
+
+**资源作用域说明：**
+- `default/`: 默认资源作用域，包含示例应用的基础资源
+- `customized/`: 自定义资源作用域（可选），用于存放用户自定义的资源文件. 需和 `default` 结构保持一致。用于快速查看自己的场馆渲染效果
+
+**文件命名规则：**
+- 底图文件：SVG 格式，文件名对应 `zonedata/` 和 `seatdata/` 目录中的 JSON 文件名（不含扩展名）
+- 区域数据：JSON 格式，文件名与对应的底图文件名一致（`.svg` 替换为 `.json`）
+- 座位数据：JSON 格式，文件名与对应的底图文件名一致（`.svg` 替换为 `.json`）
+
+**JSON 数据格式：**
+
+区域数据 (`zonedata/*.json`) 格式：
+```json
+[
+  {
+    "zoneId": "37492",
+    "x": 33,
+    "y": 411,
+    "w": 289,
+    "h": 329,
+    "color": "#FFFFFFFF",
+    "pirceColor": "#DF0AEEFF"
+  }
+]
+```
+
+座位数据 (`seatdata/*.json`) 格式：
+```json
+{
+  "37492": [
+    {
+      "seatId": "seat_0_0",
+      "status": 0,
+      "x": 33,
+      "y": 411
+    }
+  ]
+}
+```
+
+**平台资源路径：**
+- 通过软连复用 `SeatCanvasSample.bundle`
 
 ## 使用示例
 
@@ -209,10 +275,10 @@ let config = SeatStyleBuilder.BuildSVGSeatStyleConfig(manager);
 controller.applySeatStyleJSONConfig(config);
 ```
 
-`SeatStyleBuilder.BuildSVGSeatStyleConfig()` 会自动从资源文件加载以下 SVG 图标：
-- `svg/icon_chooseSeat_canSelected.svg` - 可选座位
-- `svg/icon_chooseSeat_selected.svg` - 已选座位
-- `svg/icon_chooseSeat_noSelected.svg` - 不可选座位（已售/锁定/禁用）
+`SeatStyleBuilder.BuildSVGSeatStyleConfig()` 会自动从示例资源文件加载以下 SVG 图标：
+- `SeatCanvasSample.bundle/default/seatstyle/icon_chooseSeat_canSelected.svg` - 可选座位
+- `SeatCanvasSample.bundle/default/seatstyle/icon_chooseSeat_selected.svg` - 已选座位
+- `SeatCanvasSample.bundle/default/seatstyle/icon_chooseSeat_noSelected.svg` - 不可选座位（已售/锁定/禁用）
 
 #### 设置座位选择代理
 
