@@ -77,7 +77,7 @@ tgfx::Rect SeatCanvasCoreRendererState::getVisibleOriginalRect() const {
     float contentRight = (screenRight - contentOffset.x) / zoomScale;
     float contentBottom = (screenBottom - contentOffset.y) / zoomScale;
 
-    // 转换为原始坐标系（region.bounds 使用的是原始坐标）
+    // 转换为原始坐标系（zone.bounds 使用的是原始坐标）
     // normalizedContentSize = baseMapSize * contentScale * density
     // 所以 originalCoord = contentCoord / (contentScale * density)
     float scaleFactor = contentScale * density;

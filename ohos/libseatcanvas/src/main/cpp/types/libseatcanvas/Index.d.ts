@@ -119,7 +119,7 @@ export declare namespace seatcanvas {
 
     /**
      * 缩放到指定区域
-     * @param bounds 原始内容的区域，应该是由 seatRegionByPoint 获得的 bounds
+     * @param bounds 原始内容的区域
      * @param animated 是否需要动画
      * @param padding 区域周围的边距（在内容坐标系中），默认为 0
      * @param duration 动画持续时间（毫秒），仅在 animated 为 true 时有效，默认 300ms

@@ -1,13 +1,13 @@
 //
-//  SeatRegionNameLayerTree.cpp
+//  SeatZoneNameLayerTree.cpp
 //  SeatCanvas
 //
 //  Created by king on 2025/11/12.
 //
 
-#include "SeatRegionNameLayerTree.hpp"
+#include "SeatZoneNameLayerTree.hpp"
 
-#include "core/layers/SeatRegionLayer.hpp"
+#include "core/layers/SeatZoneLayer.hpp"
 #include "core/renderer/SeatCanvasCoreRendererState.hpp"
 #include "core/svg/ConvertSVGLayer.hpp"
 
@@ -25,8 +25,8 @@
 
 namespace kk::drawers {
 
-SeatRegionNameLayerTree::SeatRegionNameLayerTree()
-    : kk::drawers::Drawer("SeatRegionNameLayerTree")
+SeatZoneNameLayerTree::SeatZoneNameLayerTree()
+    : kk::drawers::Drawer("SeatZoneNameLayerTree")
     , _root(nullptr)
     , _textRootLayer(nullptr)
     , _displayList(std::make_unique<tgfx::DisplayList>()) {
@@ -35,11 +35,11 @@ SeatRegionNameLayerTree::SeatRegionNameLayerTree()
     _displayList->setRenderMode(tgfx::RenderMode::Partial);
 };
 
-SeatRegionNameLayerTree::~SeatRegionNameLayerTree() {
+SeatZoneNameLayerTree::~SeatZoneNameLayerTree() {
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
 }
 
-void SeatRegionNameLayerTree::setTextRootLayer(std::shared_ptr<tgfx::Layer> layer, const tgfx::Size &baseMapSize) {
+void SeatZoneNameLayerTree::setTextRootLayer(std::shared_ptr<tgfx::Layer> layer, const tgfx::Size &baseMapSize) {
     if (_textRootLayer != nullptr && _textRootLayer == layer) {
         return;
     }
@@ -49,7 +49,7 @@ void SeatRegionNameLayerTree::setTextRootLayer(std::shared_ptr<tgfx::Layer> laye
     _rebuildLayer = true;
 }
 
-tgfx::Point SeatRegionNameLayerTree::globalToLocal(const tgfx::Point &globalPoint) const {
+tgfx::Point SeatZoneNameLayerTree::globalToLocal(const tgfx::Point &globalPoint) const {
     if (_root == nullptr) {
         return tgfx::Point::Zero();
     }
@@ -57,7 +57,7 @@ tgfx::Point SeatRegionNameLayerTree::globalToLocal(const tgfx::Point &globalPoin
     return local;
 }
 
-tgfx::Point SeatRegionNameLayerTree::localToGlobal(const tgfx::Point &localPoint) const {
+tgfx::Point SeatZoneNameLayerTree::localToGlobal(const tgfx::Point &localPoint) const {
     if (_root == nullptr) {
         return tgfx::Point::Zero();
     }
@@ -65,11 +65,11 @@ tgfx::Point SeatRegionNameLayerTree::localToGlobal(const tgfx::Point &localPoint
     return global;
 }
 
-bool SeatRegionNameLayerTree::hasContentChanged() const {
+bool SeatZoneNameLayerTree::hasContentChanged() const {
     return _displayList->hasContentChanged();
 }
 
-void SeatRegionNameLayerTree::prepare(tgfx::Canvas *canvas, const kk::renderer::SeatCanvasCoreRendererState *state, bool force) {
+void SeatZoneNameLayerTree::prepare(tgfx::Canvas *canvas, const kk::renderer::SeatCanvasCoreRendererState *state, bool force) {
 
     if (updateContentSize(state) || force || _rebuildLayer) {
         buildLayerTree(canvas, state);
@@ -81,7 +81,7 @@ void SeatRegionNameLayerTree::prepare(tgfx::Canvas *canvas, const kk::renderer::
     _displayList->setContentOffset(contentOffset.x, contentOffset.y);
 }
 
-bool SeatRegionNameLayerTree::updateContentSize(const kk::renderer::SeatCanvasCoreRendererState *state) {
+bool SeatZoneNameLayerTree::updateContentSize(const kk::renderer::SeatCanvasCoreRendererState *state) {
     auto normalizedContentSize = state->getNormalizedContentSize();
     if (_contentSize == normalizedContentSize) {
         return false;
@@ -91,7 +91,7 @@ bool SeatRegionNameLayerTree::updateContentSize(const kk::renderer::SeatCanvasCo
     return true;
 }
 
-void SeatRegionNameLayerTree::buildLayerTree(tgfx::Canvas *canvas, const kk::renderer::SeatCanvasCoreRendererState *state) {
+void SeatZoneNameLayerTree::buildLayerTree(tgfx::Canvas *canvas, const kk::renderer::SeatCanvasCoreRendererState *state) {
 
     if (_root) {
         _root->removeFromParent();
@@ -114,7 +114,7 @@ void SeatRegionNameLayerTree::buildLayerTree(tgfx::Canvas *canvas, const kk::ren
     _rebuildLayer = false;
 }
 
-void SeatRegionNameLayerTree::updateRootMatrix(tgfx::Canvas *canvas, const kk::renderer::SeatCanvasCoreRendererState *state) {
+void SeatZoneNameLayerTree::updateRootMatrix(tgfx::Canvas *canvas, const kk::renderer::SeatCanvasCoreRendererState *state) {
     auto limitSize = state->getNormalizedContentSize();
     if (_root == nullptr) {
         return;
@@ -136,13 +136,13 @@ void SeatRegionNameLayerTree::updateRootMatrix(tgfx::Canvas *canvas, const kk::r
     _root->setMatrix(finalMatrix);
 }
 
-void SeatRegionNameLayerTree::onVisible(bool visible) {
+void SeatZoneNameLayerTree::onVisible(bool visible) {
     if (_root) {
         _root->setVisible(visible);
     }
 }
 
-void SeatRegionNameLayerTree::onDraw(tgfx::Canvas *canvas, const kk::renderer::SeatCanvasCoreRendererState *state) {
+void SeatZoneNameLayerTree::onDraw(tgfx::Canvas *canvas, const kk::renderer::SeatCanvasCoreRendererState *state) {
     auto surface = canvas->getSurface();
     _displayList->render(surface, false);
 }

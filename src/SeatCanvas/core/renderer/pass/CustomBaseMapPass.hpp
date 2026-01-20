@@ -61,7 +61,7 @@ class CustomBaseMapPass : public CustomRenderPass {
     /// CPU 侧可见性裁剪：获取可见的区域网格信息数组
     /// @param state 渲染状态
     /// @return 可见的区域网格信息数组索引（按原始顺序）
-    std::vector<size_t> getVisibleRegionMesheIndices(const SeatCanvasCoreRendererState *state) const;
+    std::vector<size_t> getVisibleZoneMesheIndices(const SeatCanvasCoreRendererState *state) const;
 
   private:
     struct {

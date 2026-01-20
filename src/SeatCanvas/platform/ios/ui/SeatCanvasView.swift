@@ -197,15 +197,6 @@ extension SeatCanvasView {
         location.x *= contentScaleFactor
         location.y *= contentScaleFactor
         renderer?.handTap(location: location)
-//        let location = gesture.location(in: renderView)
-//        let locationPx = convertToCanvas(location)
-//        var hitTest: kk.HitTestSeatRegionResult = .init()
-//        guard kk.SeatCanvasCoreRendererGetSeatRegionByPoint(rendererCore, locationPx, &hitTest), hitTest.valid() else {
-//            return
-//        }
-//
-//        print("hitTest: \(hitTest.zoneId) \(hitTest.bounds) ")
-//        kk.SeatCanvasCoreRendererZoomToRect(rendererCore, hitTest.bounds, true, 20, 300)
     }
 
     @objc

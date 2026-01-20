@@ -29,7 +29,7 @@ class Layer;
 
 namespace kk::layer {
 class BaseMapRootLayer;
-class SeatRegionLayer;
+class SeatZoneLayer;
 class SeatTextLayer;
 };  // namespace kk::layer
 
@@ -64,12 +64,12 @@ std::shared_ptr<tgfx::Layer> convertSVGDomTextNodeToLayer(std::shared_ptr<tgfx::
 // 内部函数
 std::shared_ptr<tgfx::Layer> convertSVGNodeToLayer(tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext, const ConvertSVGLayerOptions &options);
 std::shared_ptr<tgfx::Layer> convertGroup(const ConvertSVGLayerOptions &options, tgfx::SVGGroup *node, const tgfx::SVGLengthContext &lengthContext);
-std::shared_ptr<kk::layer::SeatRegionLayer> convertLine(tgfx::SVGLine *node, const tgfx::SVGLengthContext &lengthContext);
-std::shared_ptr<kk::layer::SeatRegionLayer> convertCircle(tgfx::SVGCircle *node, const tgfx::SVGLengthContext &lengthContext);
-std::shared_ptr<kk::layer::SeatRegionLayer> convertEllipse(tgfx::SVGEllipse *node, const tgfx::SVGLengthContext &lengthContext);
-std::shared_ptr<kk::layer::SeatRegionLayer> convertPath(tgfx::SVGPath *node, const tgfx::SVGLengthContext &lengthContext);
-std::shared_ptr<kk::layer::SeatRegionLayer> convertPoly(tgfx::SVGPoly *node, const tgfx::SVGLengthContext &lengthContext);
-std::shared_ptr<kk::layer::SeatRegionLayer> convertRect(tgfx::SVGRect *node, const tgfx::SVGLengthContext &lengthContext);
+std::shared_ptr<kk::layer::SeatZoneLayer> convertLine(tgfx::SVGLine *node, const tgfx::SVGLengthContext &lengthContext);
+std::shared_ptr<kk::layer::SeatZoneLayer> convertCircle(tgfx::SVGCircle *node, const tgfx::SVGLengthContext &lengthContext);
+std::shared_ptr<kk::layer::SeatZoneLayer> convertEllipse(tgfx::SVGEllipse *node, const tgfx::SVGLengthContext &lengthContext);
+std::shared_ptr<kk::layer::SeatZoneLayer> convertPath(tgfx::SVGPath *node, const tgfx::SVGLengthContext &lengthContext);
+std::shared_ptr<kk::layer::SeatZoneLayer> convertPoly(tgfx::SVGPoly *node, const tgfx::SVGLengthContext &lengthContext);
+std::shared_ptr<kk::layer::SeatZoneLayer> convertRect(tgfx::SVGRect *node, const tgfx::SVGLengthContext &lengthContext);
 std::shared_ptr<kk::layer::SeatTextLayer> convertText(tgfx::SVGText *node, const tgfx::SVGLengthContext &lengthContext);
 
 };  // namespace kk::svg

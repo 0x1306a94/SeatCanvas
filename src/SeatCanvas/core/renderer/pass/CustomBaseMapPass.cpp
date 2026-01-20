@@ -114,7 +114,7 @@ bool CustomBaseMapPass::onDraw(tgfx::CommandEncoder *encoder, const SeatCanvasCo
         return false;
     }
 
-    auto visibleIndices = getVisibleRegionMesheIndices(state);
+    auto visibleIndices = getVisibleZoneMesheIndices(state);
     if (visibleIndices.empty()) {
         return false;
     }
@@ -337,17 +337,17 @@ bool CustomBaseMapPass::updateFillVBOBuffer() {
         return false;
     }
 
-    const auto &ZoneMeshInfos = meshBuilder->getZoneMeshInfos();
+    const auto &zoneMeshInfos = meshBuilder->getZoneMeshInfos();
     int32_t index = -1;
-    for (const auto &regionMesh : ZoneMeshInfos) {
-        auto drawRange = meshBuilder->findRegionDrawRangeByIndex(++index);
+    for (const auto &zoneMesh : zoneMeshInfos) {
+        auto drawRange = meshBuilder->findZoneDrawRangeByIndex(++index);
         if (!drawRange) {
             continue;
         }
 
         auto offset = drawRange->vertexOffset;
-        auto &fillVertices = regionMesh->fillVertices;
-        auto &strokeVertices = regionMesh->strokeVertices;
+        auto &fillVertices = zoneMesh->fillVertices;
+        auto &strokeVertices = zoneMesh->strokeVertices;
         auto fillColorIndex = index * 2;
         auto strokeColorIndex = fillColorIndex + 1;
         for (auto &vertext : fillVertices) {
@@ -358,7 +358,7 @@ bool CustomBaseMapPass::updateFillVBOBuffer() {
             vertext.colorIndex = strokeColorIndex;
         }
 
-        if (regionMesh->strokeOnTop) {
+        if (zoneMesh->strokeOnTop) {
             if (!fillVertices.empty()) {
                 std::memcpy(static_cast<void *>((ptr + offset)), fillVertices.data(), sizeof(BaseMapZoneVertex) * fillVertices.size());
                 offset += fillVertices.size();
@@ -425,15 +425,15 @@ bool CustomBaseMapPass::prepareColorTexture(tgfx::GPU *gpu) {
 }
 
 bool CustomBaseMapPass::updateColorTexture(tgfx::GPU *gpu, const SeatCanvasCoreRendererState *state) {
-    const auto &ZoneMeshInfos = meshBuilder->getZoneMeshInfos();
-    if (ZoneMeshInfos.empty()) {
+    const auto &zoneMeshInfos = meshBuilder->getZoneMeshInfos();
+    if (zoneMeshInfos.empty()) {
         return false;
     }
 
-    constexpr int kMaxTextureWidth = 512;
-    int colorCount = static_cast<int>(ZoneMeshInfos.size() * 2);
-    int textureWidth = std::min(colorCount, kMaxTextureWidth);
-    int textureHeight = (colorCount + kMaxTextureWidth - 1) / kMaxTextureWidth;
+    constexpr int maxTextureWidth = 512;
+    int colorCount = static_cast<int>(zoneMeshInfos.size() * 2);
+    int textureWidth = std::min(colorCount, maxTextureWidth);
+    int textureHeight = (colorCount + maxTextureWidth - 1) / maxTextureWidth;
 
     if (!colorTexture || colorTexture->width() != textureWidth || colorTexture->height() != textureHeight) {
         tgfx::TextureDescriptor desc{
@@ -454,11 +454,11 @@ bool CustomBaseMapPass::updateColorTexture(tgfx::GPU *gpu, const SeatCanvasCoreR
     std::vector<uint8_t> pixelData(textureHeight * rowBytes);
     std::fill(pixelData.begin(), pixelData.end(), 0);
 
-    for (size_t index = 0; index < ZoneMeshInfos.size(); index++) {
-        const auto &regionMesh = ZoneMeshInfos[index];
-        auto fillColorToUse = regionMesh->fillColor;
-        if (colorState == kk::BaseMapColorState::Rainbow && regionMesh->priceColor) {
-            fillColorToUse = regionMesh->priceColor;
+    for (size_t index = 0; index < zoneMeshInfos.size(); index++) {
+        const auto &zoneMesh = zoneMeshInfos[index];
+        auto fillColorToUse = zoneMesh->fillColor;
+        if (colorState == kk::BaseMapColorState::Rainbow && zoneMesh->priceColor) {
+            fillColorToUse = zoneMesh->priceColor;
         }
 
         auto fillColorIndex = index * 2;
@@ -469,15 +469,15 @@ bool CustomBaseMapPass::updateColorTexture(tgfx::GPU *gpu, const SeatCanvasCoreR
             int col = static_cast<int>(fillColorIndex % textureWidth);
             size_t pixelIndex = (row * textureWidth + col) * 4;
             auto &color = fillColorToUse.value();
-            auto additionalAlpha = regionMesh->additionalAlpha;
+            auto additionalAlpha = zoneMesh->additionalAlpha;
             pixelData[pixelIndex + 0] = static_cast<uint8_t>(color.red * 255.0f);
             pixelData[pixelIndex + 1] = static_cast<uint8_t>(color.green * 255.0f);
             pixelData[pixelIndex + 2] = static_cast<uint8_t>(color.blue * 255.0f);
             pixelData[pixelIndex + 3] = static_cast<uint8_t>(color.alpha * 255.0f * additionalAlpha);
         }
 
-        if (regionMesh->strokeColor) {
-            float strokeAlpha = hairlineStrokeAlpha(state, regionMesh->strokeWidth);
+        if (zoneMesh->strokeColor) {
+            float strokeAlpha = hairlineStrokeAlpha(state, zoneMesh->strokeWidth);
             if (strokeAlpha <= 0.0f) {
                 continue;
             }
@@ -485,7 +485,7 @@ bool CustomBaseMapPass::updateColorTexture(tgfx::GPU *gpu, const SeatCanvasCoreR
             int row = static_cast<int>(strokeColorIndex / textureWidth);
             int col = static_cast<int>(strokeColorIndex % textureWidth);
             size_t pixelIndex = (row * textureWidth + col) * 4;
-            auto &color = regionMesh->strokeColor.value();
+            auto &color = zoneMesh->strokeColor.value();
 
             pixelData[pixelIndex + 0] = static_cast<uint8_t>(color.red * 255.0f);
             pixelData[pixelIndex + 1] = static_cast<uint8_t>(color.green * 255.0f);
@@ -527,14 +527,14 @@ void CustomBaseMapPass::renderFill(std::shared_ptr<tgfx::RenderPass> &renderPass
         }
 
         // 获取起始区域的顶点偏移
-        auto startDrawRange = meshBuilder->findRegionDrawRangeByIndex(startIndex);
+        auto startDrawRange = meshBuilder->findZoneDrawRangeByIndex(startIndex);
         if (!startDrawRange) {
             ++i;
             continue;
         }
 
         // 获取结束区域的顶点偏移和顶点数，用于计算连续段的总顶点数
-        auto endDrawRange = meshBuilder->findRegionDrawRangeByIndex(endIndex);
+        auto endDrawRange = meshBuilder->findZoneDrawRangeByIndex(endIndex);
         if (!endDrawRange) {
             ++i;
             continue;
@@ -586,7 +586,7 @@ float CustomBaseMapPass::hairlineStrokeAlpha(const SeatCanvasCoreRendererState *
     return strokeAlpha;
 }
 
-std::vector<size_t> CustomBaseMapPass::getVisibleRegionMesheIndices(const SeatCanvasCoreRendererState *state) const {
+std::vector<size_t> CustomBaseMapPass::getVisibleZoneMesheIndices(const SeatCanvasCoreRendererState *state) const {
     if (!meshBuilder || !state) {
         return {};
     }
@@ -603,7 +603,7 @@ std::vector<size_t> CustomBaseMapPass::getVisibleRegionMesheIndices(const SeatCa
     // 查找与可见区域相交的所有区域
     const auto &ZoneMeshInfos = meshBuilder->getZoneMeshInfos();
     std::vector<size_t> visibleIndices{};
-    meshBuilder->findRegionsIntersectingRect(visibleRect, &visibleIndices);
+    meshBuilder->findZoneIntersectingRect(visibleRect, &visibleIndices);
     return visibleIndices;
 }
 };  // namespace kk::renderer

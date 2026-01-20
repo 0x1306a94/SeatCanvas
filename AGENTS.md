@@ -56,7 +56,7 @@ SeatCanvas/
 
 **关键方法**: `setBaseMapConfig()`, `setStyleKeyToConfigFromJSON()`, `handleTap/Pan/Pinch()`, `zoomToRect()`, `start/stop()`, `draw()`
 
-**内部组件**: `CustomBaseMapPass`, `CustomSeatPass`, `SeatRegionMeshManager`, `SeatStyleAtlasManager`, `ElasticZoomPanController`, `Animator`
+**内部组件**: `CustomBaseMapPass`, `CustomSeatPass`, `SeatStyleAtlasManager`, `ElasticZoomPanController`, `Animator`
 
 #### 2. PlatformView
 

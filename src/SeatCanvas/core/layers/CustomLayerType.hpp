@@ -14,8 +14,8 @@ namespace kk::layer {
 /// 自定义 Layer 类型
 enum class CustomLayerType {
     BaseMapRoot = static_cast<int>(tgfx::LayerType::Solid) + 100,  ///< 底图根节点
-    Region = static_cast<int>(tgfx::LayerType::Solid) + 101,       ///< 区域
-    RegionName = static_cast<int>(tgfx::LayerType::Solid) + 102,   ///< 区域名称
+    Zone = static_cast<int>(tgfx::LayerType::Solid) + 101,         ///< 区域
+    ZoneName = static_cast<int>(tgfx::LayerType::Solid) + 102,     ///< 区域名称
 };
 };  // namespace kk::layer
 

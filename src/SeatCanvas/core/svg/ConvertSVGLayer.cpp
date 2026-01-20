@@ -9,8 +9,8 @@
 
 #include "core/FontManager.hpp"
 #include "core/layers/BaseMapRootLayer.hpp"
-#include "core/layers/SeatRegionLayer.hpp"
 #include "core/layers/SeatTextLayer.hpp"
+#include "core/layers/SeatZoneLayer.hpp"
 
 #include <tgfx/core/Path.h>
 #include <tgfx/core/Rect.h>
@@ -347,7 +347,7 @@ std::shared_ptr<tgfx::Layer> convertSVGDomTextNodeToLayer(std::shared_ptr<tgfx::
         }
 
         auto type = static_cast<kk::layer::CustomLayerType>(layer->type());
-        if (type != kk::layer::CustomLayerType::RegionName) {
+        if (type != kk::layer::CustomLayerType::ZoneName) {
             continue;
         }
 
@@ -400,7 +400,7 @@ std::shared_ptr<tgfx::Layer> convertGroup(const ConvertSVGLayerOptions &options,
     return root;
 }
 
-std::shared_ptr<kk::layer::SeatRegionLayer> convertLine(tgfx::SVGLine *node, const tgfx::SVGLengthContext &lengthContext) {
+std::shared_ptr<kk::layer::SeatZoneLayer> convertLine(tgfx::SVGLine *node, const tgfx::SVGLengthContext &lengthContext) {
     const auto x1 = lengthContext.resolve(node->getX1(), tgfx::SVGLengthContext::LengthType::Horizontal);
     const auto y1 = lengthContext.resolve(node->getY1(), tgfx::SVGLengthContext::LengthType::Vertical);
     const auto x2 = lengthContext.resolve(node->getX2(), tgfx::SVGLengthContext::LengthType::Horizontal);
@@ -410,13 +410,13 @@ std::shared_ptr<kk::layer::SeatRegionLayer> convertLine(tgfx::SVGLine *node, con
     path.lineTo(x2, y2);
     path.transform(node->getTransform());
 
-    auto shape = kk::layer::SeatRegionLayer::Make();
+    auto shape = kk::layer::SeatZoneLayer::Make();
     shape->setPath(path);
     applyShapeLayerStyle(shape.get(), node, lengthContext);
     return shape;
 }
 
-std::shared_ptr<kk::layer::SeatRegionLayer> convertCircle(tgfx::SVGCircle *node, const tgfx::SVGLengthContext &lengthContext) {
+std::shared_ptr<kk::layer::SeatZoneLayer> convertCircle(tgfx::SVGCircle *node, const tgfx::SVGLengthContext &lengthContext) {
     const auto cx = lengthContext.resolve(node->getCx(), tgfx::SVGLengthContext::LengthType::Horizontal);
     const auto cy = lengthContext.resolve(node->getCy(), tgfx::SVGLengthContext::LengthType::Vertical);
     const auto r = lengthContext.resolve(node->getR(), tgfx::SVGLengthContext::LengthType::Other);
@@ -425,13 +425,13 @@ std::shared_ptr<kk::layer::SeatRegionLayer> convertCircle(tgfx::SVGCircle *node,
     path.addOval(tgfx::Rect::MakeXYWH(cx - r, cy - r, 2 * r, 2 * r));
     path.transform(node->getTransform());
 
-    auto shape = kk::layer::SeatRegionLayer::Make();
+    auto shape = kk::layer::SeatZoneLayer::Make();
     shape->setPath(path);
     applyShapeLayerStyle(shape.get(), node, lengthContext);
     return shape;
 }
 
-std::shared_ptr<kk::layer::SeatRegionLayer> convertEllipse(tgfx::SVGEllipse *node, const tgfx::SVGLengthContext &lengthContext) {
+std::shared_ptr<kk::layer::SeatZoneLayer> convertEllipse(tgfx::SVGEllipse *node, const tgfx::SVGLengthContext &lengthContext) {
     const auto cx = lengthContext.resolve(node->getCx(), tgfx::SVGLengthContext::LengthType::Horizontal);
     const auto cy = lengthContext.resolve(node->getCy(), tgfx::SVGLengthContext::LengthType::Vertical);
     const auto [rx, ry] = lengthContext.resolveOptionalRadii(node->getRx(), node->getRy());
@@ -444,14 +444,14 @@ std::shared_ptr<kk::layer::SeatRegionLayer> convertEllipse(tgfx::SVGEllipse *nod
     path.addOval(tgfx::Rect::MakeXYWH(cx - rx, cy - ry, rx * 2, ry * 2));
     path.transform(node->getTransform());
 
-    auto shape = kk::layer::SeatRegionLayer::Make();
+    auto shape = kk::layer::SeatZoneLayer::Make();
     shape->setPath(path);
     applyShapeLayerStyle(shape.get(), node, lengthContext);
     return shape;
 }
 
-std::shared_ptr<kk::layer::SeatRegionLayer> convertPath(tgfx::SVGPath *node, const tgfx::SVGLengthContext &lengthContext) {
-    auto shape = kk::layer::SeatRegionLayer::Make();
+std::shared_ptr<kk::layer::SeatZoneLayer> convertPath(tgfx::SVGPath *node, const tgfx::SVGLengthContext &lengthContext) {
+    auto shape = kk::layer::SeatZoneLayer::Make();
 
     auto path = node->getShapePath();
     auto clipRule = node->getClipRule().get();
@@ -464,7 +464,7 @@ std::shared_ptr<kk::layer::SeatRegionLayer> convertPath(tgfx::SVGPath *node, con
     return shape;
 }
 
-std::shared_ptr<kk::layer::SeatRegionLayer> convertPoly(tgfx::SVGPoly *node, const tgfx::SVGLengthContext &lengthContext) {
+std::shared_ptr<kk::layer::SeatZoneLayer> convertPoly(tgfx::SVGPoly *node, const tgfx::SVGLengthContext &lengthContext) {
     auto points = node->getPoints();
     if (points.empty()) {
         return nullptr;
@@ -483,13 +483,13 @@ std::shared_ptr<kk::layer::SeatRegionLayer> convertPoly(tgfx::SVGPoly *node, con
         path.setFillType(clipRule->asFillType());
     }
 
-    auto shape = kk::layer::SeatRegionLayer::Make();
+    auto shape = kk::layer::SeatZoneLayer::Make();
     shape->setPath(path);
     applyShapeLayerStyle(shape.get(), node, lengthContext);
     return shape;
 }
 
-std::shared_ptr<kk::layer::SeatRegionLayer> convertRect(tgfx::SVGRect *node, const tgfx::SVGLengthContext &lengthContext) {
+std::shared_ptr<kk::layer::SeatZoneLayer> convertRect(tgfx::SVGRect *node, const tgfx::SVGLengthContext &lengthContext) {
     const auto rect = lengthContext.resolveRect(node->getX(), node->getY(), node->getWidth(), node->getHeight());
     const auto [rx, ry] = lengthContext.resolveOptionalRadii(node->getRx(), node->getRy());
 
@@ -500,7 +500,7 @@ std::shared_ptr<kk::layer::SeatRegionLayer> convertRect(tgfx::SVGRect *node, con
     path.addRRect(rrect);
     path.transform(node->getTransform());
 
-    auto shape = kk::layer::SeatRegionLayer::Make();
+    auto shape = kk::layer::SeatZoneLayer::Make();
     shape->setPath(path);
     applyShapeLayerStyle(shape.get(), node, lengthContext);
     return shape;

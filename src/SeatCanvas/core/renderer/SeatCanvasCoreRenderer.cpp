@@ -37,11 +37,11 @@
 #include "core/UniqueID.h"
 #include "core/animation/Animator.hpp"
 #include "core/drawers/SeatOverlayLayerTree.hpp"
-#include "core/drawers/SeatRegionNameLayerTree.hpp"
+#include "core/drawers/SeatZoneNameLayerTree.hpp"
 #include "core/gesture/ElasticZoomPanController.hpp"
 #include "core/layers/BaseMapRootLayer.hpp"
-#include "core/layers/SeatRegionLayer.hpp"
 #include "core/layers/SeatTextLayer.hpp"
+#include "core/layers/SeatZoneLayer.hpp"
 #include "core/renderer/BaseMapMeshBuilder.hpp"
 #include "core/renderer/pass/CustomBaseMapPass.hpp"
 #include "core/renderer/pass/CustomSeatPass.hpp"
@@ -69,10 +69,10 @@ SeatCanvasCoreRenderer::SeatCanvasCoreRenderer(
     , _platformView(std::move(platformView))
     , _zoomPanController(std::move(zoomPanController))
     , _state(std::make_unique<SeatCanvasCoreRendererState>())
-    , customBaseMapPass(std::make_unique<CustomBaseMapPass>())
-    , customSeatPass(std::make_unique<CustomSeatPass>())
+    , _customBaseMapPass(std::make_unique<CustomBaseMapPass>())
+    , _customSeatPass(std::make_unique<CustomSeatPass>())
     , _seatAtlasManager(nullptr)
-    , _seatRegionNameLayer(std::make_unique<kk::drawers::SeatRegionNameLayerTree>())
+    , _seatZoneNameLayer(std::make_unique<kk::drawers::SeatZoneNameLayerTree>())
     , _overlayLayer(std::make_unique<kk::drawers::SeatOverlayLayerTree>())
     , _animator(std::make_unique<kk::animation::Animator>())
     , _frameMetrics(std::make_unique<RenderFrameMetrics>()) {
@@ -454,15 +454,15 @@ void SeatCanvasCoreRenderer::draw(bool force) {
 
     auto statePtr = _state.get();
 
-    PROFILE_STAGE_START(group, prepareRegionName, "Prepare Region Name");
-    _seatRegionNameLayer->prepare(canvas, statePtr, force);
-    PROFILE_STAGE_END(group, prepareRegionName);
+    PROFILE_STAGE_START(group, prepareZoneName, "Prepare Zone Name");
+    _seatZoneNameLayer->prepare(canvas, statePtr, force);
+    PROFILE_STAGE_END(group, prepareZoneName);
 
     PROFILE_STAGE_START(group, prepareMini, "Prepare Overlay");
     _overlayLayer->prepare(canvas, statePtr, force);
     PROFILE_STAGE_END(group, prepareMini);
 
-    bool hasContentChanged = _seatRegionNameLayer->hasContentChanged() || _overlayLayer->hasContentChanged();
+    bool hasContentChanged = _seatZoneNameLayer->hasContentChanged() || _overlayLayer->hasContentChanged();
     auto skipCurrentFrame = (!hasContentChanged && !force && !_invalidate);
     if (skipCurrentFrame) {
         PROFILE_GROUP_DISABLE_AUTO_LOG(group)
@@ -479,18 +479,18 @@ void SeatCanvasCoreRenderer::draw(bool force) {
     PROFILE_STAGE_START(group, customPass, "Custom Pass");
     executeCustomRenderPass(context, statePtr);
     PROFILE_STAGE_END(group, customPass);
-    if (auto baseMapImage = customBaseMapPass->outputImage(); baseMapImage) {
+    if (auto baseMapImage = _customBaseMapPass->outputImage(); baseMapImage) {
         canvas->drawImage(baseMapImage);
     }
 
-    PROFILE_STAGE_START(group, canvasRengionName, "Canvas Region Name");
+    PROFILE_STAGE_START(group, canvasZoneName, "Canvas Zone Name");
     canvas->save();
-    _seatRegionNameLayer->draw(canvas, statePtr);
+    _seatZoneNameLayer->draw(canvas, statePtr);
     canvas->restore();
-    PROFILE_STAGE_END(group, canvasRengionName);
+    PROFILE_STAGE_END(group, canvasZoneName);
 
-    if (shouldAutoDrawSeat() && customSeatPass->hasData()) {
-        if (auto seatImage = customSeatPass->outputImage(); seatImage) {
+    if (shouldAutoDrawSeat() && _customSeatPass->hasData()) {
+        if (auto seatImage = _customSeatPass->outputImage(); seatImage) {
             canvas->drawImage(seatImage);
         }
     }
@@ -524,8 +524,8 @@ bool SeatCanvasCoreRenderer::executeCustomRenderPass(tgfx::Context *context, con
     }
 
     // 通过 IContextAware 接口统一更新 Context
-    customBaseMapPass->attachContext(context);
-    customSeatPass->attachContext(context);
+    _customBaseMapPass->attachContext(context);
+    _customSeatPass->attachContext(context);
 
     auto gpu = context->gpu();
     if (gpu == nullptr) {
@@ -537,12 +537,12 @@ bool SeatCanvasCoreRenderer::executeCustomRenderPass(tgfx::Context *context, con
         return false;
     }
 
-    auto result = customBaseMapPass->onDraw(encoder.get(), state);
-    if (shouldAutoDrawSeat() && customSeatPass->hasData()) {
+    auto result = _customBaseMapPass->onDraw(encoder.get(), state);
+    if (shouldAutoDrawSeat() && _customSeatPass->hasData()) {
         auto atlasTexture = _seatAtlasManager->getAtlasTexture();
-        customSeatPass->setAtlasTexture(atlasTexture);
-        customSeatPass->setSeatSize(_seatSize);
-        result &= customSeatPass->onDraw(encoder.get(), state);
+        _customSeatPass->setAtlasTexture(atlasTexture);
+        _customSeatPass->setSeatSize(_seatSize);
+        result &= _customSeatPass->onDraw(encoder.get(), state);
     }
 
     auto commandBuffer = encoder->finish();
@@ -806,23 +806,23 @@ void SeatCanvasCoreRenderer::updateUseBaseMapConfig(std::shared_ptr<kk::BaseMapC
     if (config == nullptr) {
         setBaseMapLayer(tgfx::Size::MakeEmpty());
         setMiniMapLayer(nullptr);
-        _seatRegionNameLayer->setTextRootLayer(nullptr, {});
+        _seatZoneNameLayer->setTextRootLayer(nullptr, {});
         _useBaseMapConfig.reset();
 
         applyBaseMapColorState(kk::BaseMapColorState::Original);
-        customBaseMapPass->updateMeshBuilder(nullptr);
-        customSeatPass->clearSeats();
+        _customBaseMapPass->updateMeshBuilder(nullptr);
+        _customSeatPass->clearSeats();
     } else {
         setBaseMapLayer(config->baseMapSize());
-        _seatRegionNameLayer->setTextRootLayer(config->textLayer(), config->baseMapSize());
+        _seatZoneNameLayer->setTextRootLayer(config->textLayer(), config->baseMapSize());
         setMiniMapLayer(config->minimapLayer());
         _useBaseMapConfig = config;
 
         applyBaseMapColorState(kk::BaseMapColorState::Rainbow);
         applySavedZoneDataColors(config->meshBuilder());
-        customBaseMapPass->updateMeshBuilder(config->meshBuilder());
+        _customBaseMapPass->updateMeshBuilder(config->meshBuilder());
 
-        customSeatPass->clearSeats();
+        _customSeatPass->clearSeats();
     }
 
     handleBaseMapChanged();
@@ -856,7 +856,7 @@ void SeatCanvasCoreRenderer::setSelectedzoneId(const std::string &zoneId) {
 
 /// 为区域创建虚拟的 BaseMapLayer
 /// @param zoneId 区域ID
-std::shared_ptr<kk::layer::BaseMapRootLayer> SeatCanvasCoreRenderer::buildVirtualBaseMapLayerForRegion(const std::string &zoneId) {
+std::shared_ptr<kk::layer::BaseMapRootLayer> SeatCanvasCoreRenderer::buildVirtualBaseMapLayerForZone(const std::string &zoneId) {
     return nullptr;
 }
 
@@ -1063,7 +1063,7 @@ void SeatCanvasCoreRenderer::prepareSeatIfNeeded() {
      * 所以当 zoomScale < zoomScale50 时，应该隐藏座位
      */
     if (zoomScale < _zoomLevelConfig.zoomScale50) {
-        customSeatPass->clearSeats();
+        _customSeatPass->clearSeats();
         if (_autoChangeBaseMapColorState) {
             applyBaseMapColorState(kk::BaseMapColorState::Rainbow);
         }
@@ -1075,13 +1075,13 @@ void SeatCanvasCoreRenderer::prepareSeatIfNeeded() {
     }
 
     if (!shouldAutoDrawSeat()) {
-        customSeatPass->clearSeats();
+        _customSeatPass->clearSeats();
         return;
     }
 
     auto visibleOriginalRect = getVisibleOriginalRect();
     if (visibleOriginalRect.isEmpty()) {
-        customSeatPass->clearSeats();
+        _customSeatPass->clearSeats();
         return;
     }
 
@@ -1090,24 +1090,24 @@ void SeatCanvasCoreRenderer::prepareSeatIfNeeded() {
      */
     visibleOriginalRect.outset(60, 60);
 
-    auto regions = meshBuilder->findRegionsIntersectingRect(visibleOriginalRect);
-    if (regions.empty()) {
-        customSeatPass->clearSeats();
+    auto zones = meshBuilder->findZoneIntersectingRect(visibleOriginalRect);
+    if (zones.empty()) {
+        _customSeatPass->clearSeats();
         return;
     }
 
     std::vector<SeatInstanceData> instances{};
-    for (const auto &region : regions) {
-        if (!region) {
+    for (const auto &zone : zones) {
+        if (!zone) {
             continue;
         }
 
-        auto iter = _seatDataMap.find(region->zoneId);
+        auto iter = _seatDataMap.find(zone->zoneId);
         if (iter == _seatDataMap.end()) {
             continue;
         }
 
-        auto partial = !visibleOriginalRect.contains(region->fillBounds);
+        auto partial = !visibleOriginalRect.contains(zone->fillBounds);
         for (const auto &seat : iter->second) {
             if (partial && !tgfx::Rect::Intersects(visibleOriginalRect, tgfx::Rect::MakeXYWH(seat.x, seat.y, _seatSize, _seatSize))) {
                 continue;
@@ -1120,7 +1120,7 @@ void SeatCanvasCoreRenderer::prepareSeatIfNeeded() {
         }
     }
 
-    customSeatPass->updateSeats(std::move(instances));
+    _customSeatPass->updateSeats(std::move(instances));
 }
 
 void SeatCanvasCoreRenderer::handleZoomBack() {
@@ -1241,12 +1241,12 @@ void SeatCanvasCoreRenderer::handleSeatSelectionAtLocation(const tgfx::Point &lo
     // 转换为原始坐标系
     auto normalizedContentLocation = convertScreenToContent(location, contentOffset, zoomScale);
     auto originalLocation = convertNormalizedContentToOriginal(normalizedContentLocation);
-    auto regionInfo = meshBuilder->findRegionContainingPoint(originalLocation);
-    if (!regionInfo) {
+    auto zoneInfo = meshBuilder->findZoneContainingPoint(originalLocation);
+    if (!zoneInfo) {
         return;
     }
 
-    auto iter = _seatDataMap.find(regionInfo->zoneId);
+    auto iter = _seatDataMap.find(zoneInfo->zoneId);
     if (iter == _seatDataMap.end()) {
         return;
     }
@@ -1259,18 +1259,18 @@ void SeatCanvasCoreRenderer::handleSeatSelectionAtLocation(const tgfx::Point &lo
 
         if (seatInfo.selected) {
             seatInfo.selected = false;
-            _delegate->didDeselectSeat(_coreID, regionInfo->zoneId, seatInfo.seatId);
+            _delegate->didDeselectSeat(_coreID, zoneInfo->zoneId, seatInfo.seatId);
             invalidateContent();
         } else {
-            auto canSelected = _delegate->shouldSelectSeat(_coreID, regionInfo->zoneId, seatInfo.seatId);
+            auto canSelected = _delegate->shouldSelectSeat(_coreID, zoneInfo->zoneId, seatInfo.seatId);
             if (!canSelected) {
                 return;
             }
             seatInfo.selected = true;
-            _delegate->didSelectSeat(_coreID, regionInfo->zoneId, seatInfo.seatId);
+            _delegate->didSelectSeat(_coreID, zoneInfo->zoneId, seatInfo.seatId);
             invalidateContent();
         }
-        customSeatPass->clearSeats();
+        _customSeatPass->clearSeats();
         showMinimapWithoutAnimation();
         return;
     }
@@ -1300,8 +1300,8 @@ void SeatCanvasCoreRenderer::handleAutoZoomOnTap(const tgfx::Point &location) {
     auto originalLocation = convertScreenToOriginal(location);
 
     // 在 meshBuilder 中查找区域
-    auto regionInfo = meshBuilder->findRegionContainingPoint(originalLocation);
-    if (!regionInfo) {
+    auto zoneInfo = meshBuilder->findZoneContainingPoint(originalLocation);
+    if (!zoneInfo) {
         // 点击位置不在任何区域内
         scrollViewWithLocation(location);
         return;
@@ -1315,8 +1315,8 @@ void SeatCanvasCoreRenderer::handleAutoZoomOnTap(const tgfx::Point &location) {
     }
 
     // 使用找到的区域进行缩放
-    if (!regionInfo->zoneId.empty()) {
-        scrollViewWithRegion(regionInfo->zoneId);
+    if (!zoneInfo->zoneId.empty()) {
+        scrollViewWithZone(zoneInfo->zoneId);
         return;
     }
 
@@ -1389,7 +1389,7 @@ void SeatCanvasCoreRenderer::scrollViewWithLocation(const tgfx::Point &location)
     }
 }
 
-void SeatCanvasCoreRenderer::scrollViewWithRegion(const std::string &zoneId) {
+void SeatCanvasCoreRenderer::scrollViewWithZone(const std::string &zoneId) {
     if (zoneId.empty()) {
         return;
     }
@@ -1408,12 +1408,12 @@ void SeatCanvasCoreRenderer::scrollViewWithRegion(const std::string &zoneId) {
         return;
     }
 
-    auto regionInfo = meshBuilder->findRegionById(zoneId);
-    if (!regionInfo) {
+    auto zoneInfo = meshBuilder->findZoneById(zoneId);
+    if (!zoneInfo) {
         return;
     }
 
-    auto bounds = regionInfo->fillBounds;
+    auto bounds = zoneInfo->fillBounds;
     if (bounds.isEmpty()) {
         return;
     }
@@ -1445,11 +1445,11 @@ void SeatCanvasCoreRenderer::scrollViewWithRegion(const std::string &zoneId) {
     }
 
     // ---------------- 3. 计算目标缩放比例 ----------------
-    float contentRegionWidth = std::fmax(1.0f, contentBounds.width());
-    float contentRegionHeight = std::fmax(1.0f, contentBounds.height());
+    float contentZoneWidth = std::fmax(1.0f, contentBounds.width());
+    float contentZoneHeight = std::fmax(1.0f, contentBounds.height());
 
-    float scaleX = effectiveWidth / contentRegionWidth;
-    float scaleY = effectiveHeight / contentRegionHeight;
+    float scaleX = effectiveWidth / contentZoneWidth;
+    float scaleY = effectiveHeight / contentZoneHeight;
     float targetZoomScale = std::min(scaleX, scaleY);
     targetZoomScale = std::max(_zoomLevelConfig.zoomScale50, targetZoomScale);
 
@@ -1459,8 +1459,8 @@ void SeatCanvasCoreRenderer::scrollViewWithRegion(const std::string &zoneId) {
     targetZoomScale = std::clamp(targetZoomScale, minZoom, maxZoom);
 
     // ---------------- 4. 计算区域在目标缩放下的尺寸 ----------------
-    float scaledRegionWidth = contentRegionWidth * targetZoomScale;
-    float scaledRegionHeight = contentRegionHeight * targetZoomScale;
+    float scaledZoneWidth = contentZoneWidth * targetZoomScale;
+    float scaledZoneHeight = contentZoneHeight * targetZoomScale;
 
     // ---------------- 5. 根据区域位置计算目标屏幕位置 ----------------
     // 计算区域在规范化内容中的相对位置 (0~1)
@@ -1479,8 +1479,8 @@ void SeatCanvasCoreRenderer::scrollViewWithRegion(const std::string &zoneId) {
     // - 区域靠左时（relativeX 小），将区域放在视口左侧
     // - 区域靠右时（relativeX 大），将区域放在视口右侧
     // - 区域居中时，将区域放在视口中心
-    float leftBound = contentInset.left + scaledRegionWidth / 2 + contentInset.left;
-    float rightBound = viewport.width - contentInset.right - scaledRegionWidth / 2 - contentInset.right;
+    float leftBound = contentInset.left + scaledZoneWidth / 2 + contentInset.left;
+    float rightBound = viewport.width - contentInset.right - scaledZoneWidth / 2 - contentInset.right;
     float centerX = contentInset.left + effectiveWidth / 2;
 
     // 如果区域太大无法留边距，则居中显示
@@ -1492,8 +1492,8 @@ void SeatCanvasCoreRenderer::scrollViewWithRegion(const std::string &zoneId) {
     }
 
     // Y 轴：同样的逻辑
-    float topBound = contentInset.top + scaledRegionHeight / 2 + contentInset.top;
-    float bottomBound = viewport.height - contentInset.bottom - scaledRegionHeight / 2 - contentInset.bottom;
+    float topBound = contentInset.top + scaledZoneHeight / 2 + contentInset.top;
+    float bottomBound = viewport.height - contentInset.bottom - scaledZoneHeight / 2 - contentInset.bottom;
     float centerY = contentInset.top + effectiveHeight / 2;
 
     if (topBound >= bottomBound) {
@@ -1735,17 +1735,17 @@ void SeatCanvasCoreRenderer::applyBaseMapColorState(BaseMapColorState toState) {
         }
     }
 
-    customBaseMapPass->updateColorState(toState);
+    _customBaseMapPass->updateColorState(toState);
     _baseMapColorState = toState;
 }
 
-void SeatCanvasCoreRenderer::setZoneData(const kk::SeatZoneData &regionData) {
-    if (!regionData.isValid()) {
+void SeatCanvasCoreRenderer::setZoneData(const kk::SeatZoneData &zoneData) {
+    if (!zoneData.isValid()) {
         return;
     }
 
     // 保存数据到映射表（无论 config 是否存在，都要保存）
-    _regionDataMap[regionData.zoneId] = regionData;
+    _zoneDataMap[zoneData.zoneId] = zoneData;
 
     // 尝试更新 meshBuilder 中的颜色配置
     auto config = _useBaseMapConfig.lock();
@@ -1758,7 +1758,7 @@ void SeatCanvasCoreRenderer::setZoneData(const kk::SeatZoneData &regionData) {
         return;
     }
 
-    auto zoneMeshInfo = meshBuilder->findRegionById(regionData.zoneId);
+    auto zoneMeshInfo = meshBuilder->findZoneById(zoneData.zoneId);
     if (!zoneMeshInfo) {
         return;
     }
@@ -1766,9 +1766,9 @@ void SeatCanvasCoreRenderer::setZoneData(const kk::SeatZoneData &regionData) {
     // 更新颜色配置，只有真正改变时才触发重绘
     bool colorChanged = false;
 
-    if (regionData.color.has_value()) {
-        if (zoneMeshInfo->fillColor != regionData.color) {
-            zoneMeshInfo->fillColor = regionData.color;
+    if (zoneData.color.has_value()) {
+        if (zoneMeshInfo->fillColor != zoneData.color) {
+            zoneMeshInfo->fillColor = zoneData.color;
             colorChanged = true;
         }
     } else {
@@ -1778,9 +1778,9 @@ void SeatCanvasCoreRenderer::setZoneData(const kk::SeatZoneData &regionData) {
         }
     }
 
-    if (regionData.priceColor.has_value()) {
-        if (zoneMeshInfo->priceColor != regionData.priceColor) {
-            zoneMeshInfo->priceColor = regionData.priceColor;
+    if (zoneData.priceColor.has_value()) {
+        if (zoneMeshInfo->priceColor != zoneData.priceColor) {
+            zoneMeshInfo->priceColor = zoneData.priceColor;
             colorChanged = true;
         }
     } else {
@@ -1796,13 +1796,13 @@ void SeatCanvasCoreRenderer::setZoneData(const kk::SeatZoneData &regionData) {
 }
 
 void SeatCanvasCoreRenderer::applySavedZoneDataColors(std::shared_ptr<BaseMapMeshBuilder> meshBuilder) {
-    if (!meshBuilder || _regionDataMap.empty()) {
+    if (!meshBuilder || _zoneDataMap.empty()) {
         return;
     }
 
     bool anyColorChanged = false;
-    for (const auto &[zoneId, zoneData] : _regionDataMap) {
-        auto zoneMeshInfo = meshBuilder->findRegionById(zoneId);
+    for (const auto &[zoneId, zoneData] : _zoneDataMap) {
+        auto zoneMeshInfo = meshBuilder->findZoneById(zoneId);
         if (!zoneMeshInfo) {
             continue;
         }
@@ -1843,7 +1843,7 @@ void SeatCanvasCoreRenderer::setSeatData(const std::string &zoneId, const std::v
     }
 
     _seatDataMap[zoneId] = seats;
-    customSeatPass->clearSeats();
+    _customSeatPass->clearSeats();
     invalidateContent();
 }
 
@@ -1860,7 +1860,7 @@ void SeatCanvasCoreRenderer::updateSeatStatus(const std::string &zoneId, const s
     for (auto &seatInfo : iter->second) {
         if (seatInfo.seatId == seatId) {
             seatInfo.status = status;
-            customSeatPass->clearSeats();
+            _customSeatPass->clearSeats();
             invalidateContent();
             return;
         }
@@ -1874,10 +1874,10 @@ void SeatCanvasCoreRenderer::clearSeatData() {
         allzoneIds.insert(zoneId);
     }
 
-    _regionDataMap.clear();
+    _zoneDataMap.clear();
     _seatDataMap.clear();
 
-    customSeatPass->clearSeats();
+    _customSeatPass->clearSeats();
 
     invalidateContent();
 }

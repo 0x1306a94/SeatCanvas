@@ -9,27 +9,27 @@
 
 namespace kk::renderer {
 
-void BaseMapMeshBuilder::addZoneMeshInfo(std::shared_ptr<ZoneMeshInfo> regionInfo) {
-    if (!regionInfo || !regionInfo->isValid()) {
+void BaseMapMeshBuilder::addZoneMeshInfo(std::shared_ptr<ZoneMeshInfo> zoneInfo) {
+    if (!zoneInfo || !zoneInfo->isValid()) {
         return;
     }
 
-    ZoneMeshInfos.push_back(regionInfo);
-    auto vertexCount = static_cast<uint32_t>(regionInfo->fillVertices.size() + regionInfo->strokeVertices.size());
+    zoneMeshInfos.push_back(zoneInfo);
+    auto vertexCount = static_cast<uint32_t>(zoneInfo->fillVertices.size() + zoneInfo->strokeVertices.size());
     drawRanges.push_back({vertexOffset, vertexCount});
 
-    assert(ZoneMeshInfos.size() == drawRanges.size());
+    assert(zoneMeshInfos.size() == drawRanges.size());
 
     totalVertexCount += vertexCount;
     vertexOffset = totalVertexCount;
 
-    if (!regionInfo->zoneId.empty()) {
-        zoneIdToMeshInfo[regionInfo->zoneId] = regionInfo;
-        zoneIdToIndex[regionInfo->zoneId] = ZoneMeshInfos.size() - 1;
+    if (!zoneInfo->zoneId.empty()) {
+        zoneIdToMeshInfo[zoneInfo->zoneId] = zoneInfo;
+        zoneIdToIndex[zoneInfo->zoneId] = zoneMeshInfos.size() - 1;
     }
 }
 
-std::optional<BaseMapMeshBuilder::RegionDrawRange> BaseMapMeshBuilder::findRegionDrawRangeById(const std::string &zoneId) const {
+std::optional<BaseMapMeshBuilder::ZoneDrawRange> BaseMapMeshBuilder::findZoneDrawRangeById(const std::string &zoneId) const {
     if (zoneId.empty()) {
         return std::nullopt;
     }
@@ -37,17 +37,17 @@ std::optional<BaseMapMeshBuilder::RegionDrawRange> BaseMapMeshBuilder::findRegio
     if (iter == zoneIdToIndex.end()) {
         return std::nullopt;
     }
-    return findRegionDrawRangeByIndex(iter->second);
+    return findZoneDrawRangeByIndex(iter->second);
 }
 
-std::optional<BaseMapMeshBuilder::RegionDrawRange> BaseMapMeshBuilder::findRegionDrawRangeByIndex(size_t index) const {
+std::optional<BaseMapMeshBuilder::ZoneDrawRange> BaseMapMeshBuilder::findZoneDrawRangeByIndex(size_t index) const {
     if (drawRanges.empty() || index >= drawRanges.size()) {
         return std::nullopt;
     }
     return {drawRanges[index]};
 }
 
-std::shared_ptr<ZoneMeshInfo> BaseMapMeshBuilder::findRegionById(const std::string &zoneId) const {
+std::shared_ptr<ZoneMeshInfo> BaseMapMeshBuilder::findZoneById(const std::string &zoneId) const {
     if (zoneId.empty()) {
         return nullptr;
     }
@@ -60,7 +60,7 @@ std::shared_ptr<ZoneMeshInfo> BaseMapMeshBuilder::findRegionById(const std::stri
     return nullptr;
 }
 
-std::vector<std::shared_ptr<ZoneMeshInfo>> BaseMapMeshBuilder::findRegionsIntersectingRect(const tgfx::Rect &rect, std::vector<size_t> *visibleIndices) const {
+std::vector<std::shared_ptr<ZoneMeshInfo>> BaseMapMeshBuilder::findZoneIntersectingRect(const tgfx::Rect &rect, std::vector<size_t> *visibleIndices) const {
     std::vector<std::shared_ptr<ZoneMeshInfo>> result;
 
     if (visibleIndices != nullptr) {
@@ -68,14 +68,14 @@ std::vector<std::shared_ptr<ZoneMeshInfo>> BaseMapMeshBuilder::findRegionsInters
     }
 
     int32_t index = -1;
-    for (const auto &regionInfo : ZoneMeshInfos) {
+    for (const auto &zoneInfo : zoneMeshInfos) {
         ++index;
 
-        if (!regionInfo) {
+        if (!zoneInfo) {
             continue;
         }
-        if (tgfx::Rect::Intersects(rect, regionInfo->fillBounds) || tgfx::Rect::Intersects(rect, regionInfo->strokeBounds)) {
-            result.push_back(regionInfo);
+        if (tgfx::Rect::Intersects(rect, zoneInfo->fillBounds) || tgfx::Rect::Intersects(rect, zoneInfo->strokeBounds)) {
+            result.push_back(zoneInfo);
             if (visibleIndices != nullptr) {
                 visibleIndices->push_back(static_cast<size_t>(index));
             }
@@ -85,33 +85,25 @@ std::vector<std::shared_ptr<ZoneMeshInfo>> BaseMapMeshBuilder::findRegionsInters
     return result;
 }
 
-std::shared_ptr<ZoneMeshInfo> BaseMapMeshBuilder::findRegionContainingPoint(const tgfx::Point &point) const {
+std::shared_ptr<ZoneMeshInfo> BaseMapMeshBuilder::findZoneContainingPoint(const tgfx::Point &point) const {
     // 从后往前查找，返回最上层的区域（最后添加的）
-    for (auto iter = ZoneMeshInfos.rbegin(); iter != ZoneMeshInfos.rend(); ++iter) {
-        const auto &regionInfo = *iter;
-        if (!regionInfo || !regionInfo->path) {
+    for (auto iter = zoneMeshInfos.rbegin(); iter != zoneMeshInfos.rend(); ++iter) {
+        const auto &zoneInfo = *iter;
+        if (!zoneInfo || !zoneInfo->path) {
             continue;
         }
 
         // 1. 先用 bounds 进行粗略过滤（快速剔除）
-        if (!regionInfo->fillBounds.contains(point.x, point.y)) {
+        if (!zoneInfo->fillBounds.contains(point.x, point.y)) {
             continue;
         }
 
         // 2. 使用 Path 进行精确 hit-test
-        if (regionInfo->path->contains(point.x, point.y)) {
-            return regionInfo;
+        if (zoneInfo->path->contains(point.x, point.y)) {
+            return zoneInfo;
         }
     }
 
-    return nullptr;
-}
-
-const tgfx::Path *BaseMapMeshBuilder::getRegionPath(const std::string &zoneId) const {
-    auto regionInfo = findRegionById(zoneId);
-    if (regionInfo && regionInfo->path) {
-        return regionInfo->path.get();
-    }
     return nullptr;
 }
 

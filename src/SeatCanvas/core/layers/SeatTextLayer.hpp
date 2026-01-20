@@ -28,7 +28,7 @@ class SeatTextLayer : public tgfx::Layer {
     virtual ~SeatTextLayer() override = default;
 
     tgfx::LayerType type() const override {
-        return static_cast<tgfx::LayerType>(CustomLayerType::RegionName);
+        return static_cast<tgfx::LayerType>(CustomLayerType::ZoneName);
     }
 
     const std::shared_ptr<tgfx::TextBlob> textBlob() const {

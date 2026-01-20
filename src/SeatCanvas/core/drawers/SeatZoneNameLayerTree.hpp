@@ -1,12 +1,12 @@
 //
-//  SeatRegionNameLayerTree.hpp
+//  SeatZoneNameLayerTree.hpp
 //  SeatCanvas
 //
 //  Created by king on 2025/11/12.
 //
 
-#ifndef SeatRegionNameLayerTree_hpp
-#define SeatRegionNameLayerTree_hpp
+#ifndef SeatZoneNameLayerTree_hpp
+#define SeatZoneNameLayerTree_hpp
 
 #include "Drawer.hpp"
 
@@ -21,11 +21,11 @@ class DisplayList;
 };  // namespace tgfx
 
 namespace kk::drawers {
-class SeatRegionNameLayerTree : public kk::drawers::Drawer {
+class SeatZoneNameLayerTree : public kk::drawers::Drawer {
   public:
-    explicit SeatRegionNameLayerTree();
+    explicit SeatZoneNameLayerTree();
 
-    virtual ~SeatRegionNameLayerTree();
+    virtual ~SeatZoneNameLayerTree();
 
     void setTextRootLayer(std::shared_ptr<tgfx::Layer> layer, const tgfx::Size &baseMapSize);
 
@@ -57,4 +57,4 @@ class SeatRegionNameLayerTree : public kk::drawers::Drawer {
 };
 };  // namespace kk::drawers
 
-#endif /* SeatRegionNameLayerTree_hpp */
+#endif /* SeatZoneNameLayerTree_hpp */

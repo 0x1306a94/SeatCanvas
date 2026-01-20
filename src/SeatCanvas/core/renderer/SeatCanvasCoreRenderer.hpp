@@ -56,7 +56,7 @@ class BaseMapRootLayer;
 };
 
 namespace kk::drawers {
-class SeatRegionNameLayerTree;
+class SeatZoneNameLayerTree;
 class SeatOverlayLayerTree;
 };  // namespace kk::drawers
 
@@ -214,8 +214,8 @@ class SeatCanvasCoreRenderer {
 
     /// 设置区域数据
     /// 用于设置区域的显示信息（区域颜色和价格颜色）
-    /// @param regionData 区域数据，包含 zoneId, regionColor, priceColor
-    void setZoneData(const kk::SeatZoneData &regionData);
+    /// @param zoneData 区域数据，包含 zoneId, zoneColor, priceColor
+    void setZoneData(const kk::SeatZoneData &zoneData);
 
     /// 设置某个区域的座位数据
     /// @param zoneId 区域ID
@@ -250,7 +250,7 @@ class SeatCanvasCoreRenderer {
 
     /// 为区域创建虚拟的 BaseMapLayer
     /// @param zoneId 区域ID
-    std::shared_ptr<kk::layer::BaseMapRootLayer> buildVirtualBaseMapLayerForRegion(const std::string &zoneId);
+    std::shared_ptr<kk::layer::BaseMapRootLayer> buildVirtualBaseMapLayerForZone(const std::string &zoneId);
 
     /// 内部方法，根据原始尺寸更新内容缩放比例（用于规范化内容尺寸）
     void updateContentScale();
@@ -286,7 +286,7 @@ class SeatCanvasCoreRenderer {
     /// @param location 缩放目标位置（viewport 坐标系，像素单位）
     void scrollViewWithLocation(const tgfx::Point &location);
 
-    void scrollViewWithRegion(const std::string &zoneId);
+    void scrollViewWithZone(const std::string &zoneId);
 
     void zoomToPoint(const tgfx::Point &location, float scale, bool animated = true, float padding = 0.0f, double durationMs = 300.0);
 
@@ -308,10 +308,10 @@ class SeatCanvasCoreRenderer {
     std::unique_ptr<PlatformView> _platformView;
     std::unique_ptr<kk::gesture::ElasticZoomPanController> _zoomPanController;
     std::unique_ptr<SeatCanvasCoreRendererState> _state;
-    std::unique_ptr<CustomBaseMapPass> customBaseMapPass;
-    std::unique_ptr<CustomSeatPass> customSeatPass;
+    std::unique_ptr<CustomBaseMapPass> _customBaseMapPass;
+    std::unique_ptr<CustomSeatPass> _customSeatPass;
     std::unique_ptr<SeatStyleAtlasManager> _seatAtlasManager;
-    std::unique_ptr<kk::drawers::SeatRegionNameLayerTree> _seatRegionNameLayer;
+    std::unique_ptr<kk::drawers::SeatZoneNameLayerTree> _seatZoneNameLayer;
     std::unique_ptr<kk::drawers::SeatOverlayLayerTree> _overlayLayer;
     std::unique_ptr<kk::animation::Animator> _animator;
     std::unique_ptr<RenderFrameMetrics> _frameMetrics;
@@ -334,7 +334,7 @@ class SeatCanvasCoreRenderer {
     kk::ZoomLevelConfig _zoomLevelConfig = {};
     uint32_t _minimapAnimationId = {0};
 
-    std::unordered_map<std::string, kk::SeatZoneData> _regionDataMap = {};
+    std::unordered_map<std::string, kk::SeatZoneData> _zoneDataMap = {};
     std::unordered_map<std::string, std::vector<kk::SeatData>> _seatDataMap = {};
     float _seatSize = {36.0f};
 };
