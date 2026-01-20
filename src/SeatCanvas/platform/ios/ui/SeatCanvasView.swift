@@ -105,6 +105,17 @@ public class SeatCanvasView: UIView {
         renderer?.clearHighlightedZones()
     }
 
+    /// 座位大小
+    @objc
+    public var seatSize: CGFloat {
+        get {
+            renderer?.seatSize ?? 36.0
+        }
+        set {
+            renderer?.seatSize = newValue
+        }
+    }
+
     deinit {
         NotificationCenter.default.removeObserver(self, name: UIApplication.didEnterBackgroundNotification, object: nil)
         NotificationCenter.default.removeObserver(self, name: UIApplication.willEnterForegroundNotification, object: nil)

@@ -125,6 +125,17 @@ export class SeatCanvasViewController {
   }
 
   /**
+   * 座位大小
+   */
+  get seatSize(): number {
+    return this.jView.getSeatSize();
+  }
+
+  set seatSize(value: number) {
+    this.jView.setSeatSize(value);
+  }
+
+  /**
    * 释放内部 C++ 资源， 调用后将不能在继续使用当前对象
    */
   release() {

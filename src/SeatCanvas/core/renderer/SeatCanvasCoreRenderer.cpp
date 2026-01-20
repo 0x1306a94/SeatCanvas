@@ -187,6 +187,19 @@ void SeatCanvasCoreRenderer::setBackgroundColor(const tgfx::Color &color) {
     invalidateContent();
 }
 
+float SeatCanvasCoreRenderer::getSeatSize() const {
+    return _seatSize;
+}
+
+void SeatCanvasCoreRenderer::setSeatSize(float seatSize) {
+    if (_seatSize == seatSize) {
+        return;
+    }
+    _seatSize = seatSize;
+    _customSeatPass->setSeatSize(_seatSize);
+    invalidateContent();
+}
+
 void SeatCanvasCoreRenderer::setHighlightedZoneIds(const std::vector<std::string> &zoneIds,
                                                    float nonHighlightedAlpha) {
     auto config = _useBaseMapConfig.lock();
@@ -502,7 +515,7 @@ void SeatCanvasCoreRenderer::draw(bool force) {
     }
 
     PROFILE_STAGE_START(group, prepareSeat, "Prepare Seat");
-    _seatAtlasManager->update(statePtr->getDensity(), {36.0f, 36.0f});
+    _seatAtlasManager->update(statePtr->getDensity(), {_seatSize, _seatSize});
     prepareSeatIfNeeded();
     PROFILE_STAGE_END(group, prepareSeat);
 

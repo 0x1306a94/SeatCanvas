@@ -266,6 +266,18 @@ Java_com_libseatcanvas_SeatCanvasView_nativeClearHighlightedZones(JNIEnv *env, j
     renderer->clearHighlightedZones();
 }
 
+JNIEXPORT jfloat JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeGetSeatSize(JNIEnv *env, jobject thiz) {
+    GetCPPObjectOrReturnValue(env, thiz, renderer, 36.0f);
+    return renderer->getSeatSize();
+}
+
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeSetSeatSize(JNIEnv *env, jobject thiz, jfloat seatSize) {
+    GetCPPObjectOrReturn(env, thiz, renderer);
+    renderer->setSeatSize(seatSize);
+}
+
 JNIEXPORT void JNICALL
 Java_com_libseatcanvas_SeatCanvasView_nativeHandleTap(JNIEnv *env, jobject thiz, jfloat x,
                                                       jfloat y) {

@@ -251,6 +251,21 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         nativeClearHighlightedZones()
     }
 
+    /**
+     * 座位大小
+     */
+    var seatSize: Float
+        get() {
+            if (nativeInitialized()) {
+                return nativeGetSeatSize()
+            } else {
+                return 36.0f
+            }
+        }
+        set(value) {
+            if (nativeInitialized()) nativeSetSeatSize(value)
+        }
+
     private fun zoomToRect(
         bounds: Rect,
         animated: Boolean = true,
@@ -307,8 +322,14 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
     private external fun nativeSetSeatStyleJSONConfig(data: ByteArray?, len: Int)
     private external fun nativeUpdateSeatZones(zones: Array<SeatZoneData>)
     private external fun nativeUpdateSeats(zoneId: String, seats: Array<SeatData>)
-    private external fun nativeSetHighlightedZoneIds(zoneIds: Array<String>, nonHighlightedAlpha: Float)
+    private external fun nativeSetHighlightedZoneIds(
+        zoneIds: Array<String>,
+        nonHighlightedAlpha: Float
+    )
+
     private external fun nativeClearHighlightedZones()
+    private external fun nativeGetSeatSize(): Float
+    private external fun nativeSetSeatSize(seatSize: Float)
     private external fun nativeHandleTap(x: Float, y: Float)
     private external fun nativeHandlePan(state: Int, tx: Float, ty: Float, timestampMs: Double)
     private external fun nativeHandlePinch(state: Int, scale: Float, cx: Float, cy: Float)

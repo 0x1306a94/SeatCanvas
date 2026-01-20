@@ -181,6 +181,17 @@ void SeatCanvasCoreRendererSetHighlightedZoneIds(CPPObject *_Nonnull cppObject, 
 /// - Parameter cppObject: C++渲染器实例
 void SeatCanvasCoreRendererClearHighlightedZones(CPPObject *_Nonnull cppObject);
 
+/// 获取座位大小
+/// - Parameter cppObject: C++渲染器实例
+/// - Returns: 座位大小
+CGFloat SeatCanvasCoreRendererGetSeatSize(CPPObject *_Nonnull cppObject);
+
+/// 设置座位大小
+/// - Parameters:
+///   - cppObject: C++渲染器实例
+///   - seatSize: 座位大小
+void SeatCanvasCoreRendererSetSeatSize(CPPObject *_Nonnull cppObject, CGFloat seatSize);
+
 /// 获取缩放级别
 /// - Parameter cppObject: C++渲染器实例
 /// - Returns: 缩放级别

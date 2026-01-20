@@ -109,6 +109,9 @@ class SeatCanvasCoreRenderer {
     const tgfx::Color &getBackgroundColor() const;
     void setBackgroundColor(const tgfx::Color &color);
 
+    float getSeatSize() const;
+    void setSeatSize(float seatSize);
+
     /// 高亮指定区域：高亮区域 additionalAlpha=1.0f，其余为 nonHighlightedAlpha
     /// @param zoneIds 高亮区域的 ID 集合
     /// @param nonHighlightedAlpha 非高亮区域的 additionalAlpha

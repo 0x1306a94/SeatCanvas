@@ -101,6 +101,18 @@ export declare namespace seatcanvas {
     getCanvasColor(): number;
 
     /**
+     * 获取座位大小
+     * @returns 座位大小
+     */
+    getSeatSize(): number;
+
+    /**
+     * 设置座位大小
+     * @param seatSize 座位大小
+     */
+    setSeatSize(seatSize: number): void;
+
+    /**
      * 高亮指定区域：高亮区域 additionalAlpha=1.0，其余为 nonHighlightedAlpha
      * @param zoneIds 高亮区域的 ID 集合
      * @param nonHighlightedAlpha 非高亮区域的 additionalAlpha

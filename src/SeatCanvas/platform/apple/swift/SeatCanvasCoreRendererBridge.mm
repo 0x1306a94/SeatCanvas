@@ -306,6 +306,16 @@ void SeatCanvasCoreRendererClearHighlightedZones(CPPObject *_Nonnull cppObject) 
     renderer->clearHighlightedZones();
 }
 
+CGFloat SeatCanvasCoreRendererGetSeatSize(CPPObject *_Nonnull cppObject) {
+    GetCPPObjectOrReturnValue(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer, 36.0);
+    return static_cast<CGFloat>(renderer->getSeatSize());
+}
+
+void SeatCanvasCoreRendererSetSeatSize(CPPObject *_Nonnull cppObject, CGFloat seatSize) {
+    GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
+    renderer->setSeatSize(static_cast<float>(seatSize));
+}
+
 ZoomLevel SeatCanvasCoreRendererGetZoomLevel(CPPObject *_Nonnull cppObject) {
     ZoomLevel zoom{};
     GetCPPObjectOrReturnValue(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer, zoom);

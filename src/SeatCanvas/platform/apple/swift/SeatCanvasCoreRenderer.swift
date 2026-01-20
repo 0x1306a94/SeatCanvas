@@ -162,6 +162,21 @@ extension SeatCanvasCoreRenderer {
         kk.bridge.SeatCanvasCoreRendererClearHighlightedZones(cppObject)
     }
 
+    var seatSize: CGFloat {
+        get {
+            guard let cppObject = cppObject else {
+                return 36.0
+            }
+            return kk.bridge.SeatCanvasCoreRendererGetSeatSize(cppObject)
+        }
+        set {
+            guard let cppObject = cppObject else {
+                return
+            }
+            kk.bridge.SeatCanvasCoreRendererSetSeatSize(cppObject, newValue)
+        }
+    }
+
     func updateSeatZoneDatas(zones: [SeatZoneData]) {
         guard let cppObject = cppObject else {
             return

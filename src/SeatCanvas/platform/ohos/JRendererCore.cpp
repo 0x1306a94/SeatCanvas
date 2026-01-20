@@ -379,6 +379,50 @@ static napi_value ClearHighlightedZones(napi_env env, napi_callback_info info) {
     return nullptr;
 }
 
+static napi_value GetSeatSize(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+    napi_value jsView = nullptr;
+    size_t argc = 0;
+    napi_value args[1] = {nullptr};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr) {
+        napi_value def = nullptr;
+        napi_create_double(env, 36.0, &def);
+        return def;
+    }
+    auto *renderer = view->internalRenderer();
+    if (renderer == nullptr) {
+        napi_value def = nullptr;
+        napi_create_double(env, 36.0, &def);
+        return def;
+    }
+    napi_value result = nullptr;
+    napi_create_double(env, renderer->getSeatSize(), &result);
+    return result;
+}
+
+static napi_value SetSeatSize(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+    napi_value jsView = nullptr;
+    size_t argc = 1;
+    napi_value args[1] = {nullptr};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr || argc < 1) {
+        return nullptr;
+    }
+    double seatSize = 36.0;
+    napi_get_value_double(env, args[0], &seatSize);
+    auto *renderer = view->internalRenderer();
+    if (renderer != nullptr) {
+        renderer->setSeatSize(static_cast<float>(seatSize));
+    }
+    return nullptr;
+}
+
 static napi_value Release(napi_env env, napi_callback_info info) {
     kk::js::NapiEnvHolder::setEnv(env);
     napi_value jsView = nullptr;
@@ -734,6 +778,8 @@ bool JRendererCore::Init(napi_env env, napi_value exports) {
         JS_DEFAULT_METHOD_ENTRY(stop, Stop),
         JS_DEFAULT_METHOD_ENTRY(setCanvasColor, SetCanvasColor),
         JS_DEFAULT_METHOD_ENTRY(getCanvasColor, GetCanvasColor),
+        JS_DEFAULT_METHOD_ENTRY(getSeatSize, GetSeatSize),
+        JS_DEFAULT_METHOD_ENTRY(setSeatSize, SetSeatSize),
         JS_DEFAULT_METHOD_ENTRY(setHighlightedZoneIds, SetHighlightedZoneIds),
         JS_DEFAULT_METHOD_ENTRY(clearHighlightedZones, ClearHighlightedZones),
         JS_DEFAULT_METHOD_ENTRY(release, Release),
