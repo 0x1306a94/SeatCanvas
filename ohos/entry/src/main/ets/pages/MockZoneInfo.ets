@@ -7,7 +7,7 @@ export interface MockZoneInfo {
   w: number;
   h: number;
   color?: string;
-  pirceColor?: string;
+  priceColor?: string;
 }
 
 export class MockZoneInfoHelper {
@@ -16,6 +16,6 @@ export class MockZoneInfoHelper {
   }
 
   static getPriceColor(zone: MockZoneInfo): string | undefined {
-    return zone.pirceColor ? ColorExtensions.colorFromArgbHex(zone.pirceColor) || undefined : undefined;
+    return zone.priceColor ? ColorExtensions.colorFromArgbHex(zone.priceColor) || undefined : undefined;
   }
 }

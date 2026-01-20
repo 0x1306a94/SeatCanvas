@@ -162,7 +162,7 @@ SeatCanvasSample.bundle/
     "w": 289,
     "h": 329,
     "color": "#FFFFFFFF",
-    "pirceColor": "#DF0AEEFF"
+    "priceColor": "#DF0AEEFF"
   }
 ]
 ```

@@ -229,6 +229,28 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         nativeUpdateSeats(zoneId, seats)
     }
 
+    /**
+     * 高亮指定区域：高亮区域 additionalAlpha=1.0，其余为 nonHighlightedAlpha
+     * @param zoneIds 高亮区域的 ID 集合
+     * @param nonHighlightedAlpha 非高亮区域的 additionalAlpha
+     */
+    fun setHighlightedZoneIds(zoneIds: Array<String>, nonHighlightedAlpha: Float) {
+        if (!nativeInitialized()) {
+            return
+        }
+        nativeSetHighlightedZoneIds(zoneIds, nonHighlightedAlpha)
+    }
+
+    /**
+     * 清除高亮，将所有区域 additionalAlpha 重置为 1.0
+     */
+    fun clearHighlightedZones() {
+        if (!nativeInitialized()) {
+            return
+        }
+        nativeClearHighlightedZones()
+    }
+
     private fun zoomToRect(
         bounds: Rect,
         animated: Boolean = true,
@@ -285,6 +307,8 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
     private external fun nativeSetSeatStyleJSONConfig(data: ByteArray?, len: Int)
     private external fun nativeUpdateSeatZones(zones: Array<SeatZoneData>)
     private external fun nativeUpdateSeats(zoneId: String, seats: Array<SeatData>)
+    private external fun nativeSetHighlightedZoneIds(zoneIds: Array<String>, nonHighlightedAlpha: Float)
+    private external fun nativeClearHighlightedZones()
     private external fun nativeHandleTap(x: Float, y: Float)
     private external fun nativeHandlePan(state: Int, tx: Float, ty: Float, timestampMs: Double)
     private external fun nativeHandlePinch(state: Int, scale: Float, cx: Float, cy: Float)

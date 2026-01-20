@@ -90,6 +90,21 @@ public class SeatCanvasView: UIView {
         renderer?.invalidateContent()
     }
 
+    /// 高亮指定区域：高亮区域 additionalAlpha=1.0，其余为 nonHighlightedAlpha
+    /// - Parameters:
+    ///   - zoneIds: 高亮区域的 ID 集合
+    ///   - nonHighlightedAlpha: 非高亮区域的 additionalAlpha
+    @objc
+    public func setHighlightedZoneIds(_ zoneIds: [String], nonHighlightedAlpha: Float) {
+        renderer?.setHighlightedZoneIds(zoneIds, nonHighlightedAlpha: nonHighlightedAlpha)
+    }
+
+    /// 清除高亮，将所有区域 additionalAlpha 重置为 1.0
+    @objc
+    public func clearHighlightedZones() {
+        renderer?.clearHighlightedZones()
+    }
+
     deinit {
         NotificationCenter.default.removeObserver(self, name: UIApplication.didEnterBackgroundNotification, object: nil)
         NotificationCenter.default.removeObserver(self, name: UIApplication.willEnterForegroundNotification, object: nil)

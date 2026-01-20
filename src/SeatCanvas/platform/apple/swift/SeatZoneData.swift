@@ -12,10 +12,10 @@ import UIKit
 public class SeatZoneData: NSObject {
     public var zoneId: String
     public var color: UIColor?
-    public var pirceColor: UIColor?
-    public init(zoneId: String, color: UIColor? = nil, pirceColor: UIColor? = nil) {
+    public var priceColor: UIColor?
+    public init(zoneId: String, color: UIColor? = nil, priceColor: UIColor? = nil) {
         self.zoneId = zoneId
         self.color = color
-        self.pirceColor = pirceColor
+        self.priceColor = priceColor
     }
 }

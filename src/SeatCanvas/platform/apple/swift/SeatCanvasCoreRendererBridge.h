@@ -12,6 +12,7 @@
 #import "core/parser/BaseMapFormat.hpp"
 
 #import <CoreGraphics/CGGeometry.h>
+#import <Foundation/Foundation.h>
 #import <QuartzCore/CAEAGLLayer.h>
 #import <UIKit/UIColor.h>
 #import <UIKit/UIImage.h>
@@ -169,6 +170,17 @@ void SeatCanvasCoreRendererSetBackgroundColor(CPPObject *_Nonnull cppObject, UIC
 /// - Returns: 内容大小
 UIColor *SeatCanvasCoreRendererGetBackgroundColor(CPPObject *_Nonnull cppObject);
 
+/// 高亮指定区域：高亮区域 additionalAlpha=1.0f，其余为 nonHighlightedAlpha
+/// - Parameters:
+///   - cppObject: C++渲染器实例
+///   - zoneIds: 高亮区域的 ID 集合
+///   - nonHighlightedAlpha: 非高亮区域的 additionalAlpha，默认 0.6f
+void SeatCanvasCoreRendererSetHighlightedZoneIds(CPPObject *_Nonnull cppObject, NSArray<NSString *> *_Nonnull zoneIds, float nonHighlightedAlpha);
+
+/// 清除高亮，将所有区域 additionalAlpha 重置为 1.0f
+/// - Parameter cppObject: C++渲染器实例
+void SeatCanvasCoreRendererClearHighlightedZones(CPPObject *_Nonnull cppObject);
+
 /// 获取缩放级别
 /// - Parameter cppObject: C++渲染器实例
 /// - Returns: 缩放级别
@@ -227,4 +239,4 @@ CGRect SeatCanvasCoreRendererGetVisibleContentRect(CPPObject *_Nonnull cppObject
 ///   - padding: 区域周围的边距（在内容坐标系中），默认为 0
 ///   - durationMs: 动画持续时间（毫秒），仅在 animated 为 true 时有效，默认 300ms
 void SeatCanvasCoreRendererZoomToRect(CPPObject *_Nonnull cppObject, CGRect rect, bool animated, CGFloat padding, double durationMs);
-};  // namespace kk::bridge
+}  // namespace kk::bridge

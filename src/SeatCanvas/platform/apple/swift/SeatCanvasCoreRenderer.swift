@@ -148,6 +148,20 @@ extension SeatCanvasCoreRenderer {
         kk.bridge.SeatCanvasCoreRendererInvalidateContent(cppObject)
     }
 
+    func setHighlightedZoneIds(_ zoneIds: [String], nonHighlightedAlpha: Float) {
+        guard let cppObject = cppObject else {
+            return
+        }
+        kk.bridge.SeatCanvasCoreRendererSetHighlightedZoneIds(cppObject, zoneIds, nonHighlightedAlpha)
+    }
+
+    func clearHighlightedZones() {
+        guard let cppObject = cppObject else {
+            return
+        }
+        kk.bridge.SeatCanvasCoreRendererClearHighlightedZones(cppObject)
+    }
+
     func updateSeatZoneDatas(zones: [SeatZoneData]) {
         guard let cppObject = cppObject else {
             return
@@ -155,7 +169,7 @@ extension SeatCanvasCoreRenderer {
 
         var builder = kk.bridge.CreateSeatZoneDataBuilder()
         for zone in zones {
-            kk.bridge.SeatZoneDataBuilderPut(builder, std.string(zone.zoneId), zone.color, zone.pirceColor)
+            kk.bridge.SeatZoneDataBuilderPut(builder, std.string(zone.zoneId), zone.color, zone.priceColor)
         }
 
         kk.bridge.SeatCanvasCoreRendererSetSeatZoneDatas(cppObject, builder)

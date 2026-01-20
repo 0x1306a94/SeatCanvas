@@ -16,7 +16,7 @@ data class MockZoneInfo(
     val h: Float,
     @SerializedName("color")
     val colorHex: String? = null,
-    @SerializedName("pirceColor")
+    @SerializedName("priceColor")
     val priceColorHex: String? = null
 ) {
     val color: Int?

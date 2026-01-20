@@ -84,7 +84,7 @@ export struct SeatCanvas {
       return zones.map((zone: MockZoneInfo): SeatZoneData => ({
         zoneId: zone.zoneId,
         color: zone.color,
-        priceColor: zone.pirceColor
+        priceColor: zone.priceColor
       }));
     } catch (e) {
       console.error('Failed to parse zone data:', e);

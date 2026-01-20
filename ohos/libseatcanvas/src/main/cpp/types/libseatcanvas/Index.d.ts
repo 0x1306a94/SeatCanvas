@@ -101,6 +101,18 @@ export declare namespace seatcanvas {
     getCanvasColor(): number;
 
     /**
+     * 高亮指定区域：高亮区域 additionalAlpha=1.0，其余为 nonHighlightedAlpha
+     * @param zoneIds 高亮区域的 ID 集合
+     * @param nonHighlightedAlpha 非高亮区域的 additionalAlpha
+     */
+    setHighlightedZoneIds(zoneIds: string[], nonHighlightedAlpha: number): void;
+
+    /**
+     * 清除高亮，将所有区域 additionalAlpha 重置为 1.0
+     */
+    clearHighlightedZones(): void;
+
+    /**
      * 释放内部 C++ 资源， 调用后将不能在继续使用当前对象
      */
     release(): void;

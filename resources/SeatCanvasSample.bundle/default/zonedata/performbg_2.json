@@ -2,7 +2,7 @@
     {
         "y": 411,
         "color": "#FFFFFFFF",
-        "pirceColor": "#DF0AEEFF",
+        "priceColor": "#DF0AEEFF",
         "w": 289,
         "x": 33,
         "zoneId": "37492",
@@ -11,7 +11,7 @@
     {
         "y": 76,
         "color": "#FFFFFFFF",
-        "pirceColor": "#DFCA86FF",
+        "priceColor": "#DFCA86FF",
         "w": 332,
         "x": 400,
         "zoneId": "74148",

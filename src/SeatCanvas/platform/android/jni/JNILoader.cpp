@@ -241,6 +241,32 @@ Java_com_libseatcanvas_SeatCanvasView_nativeUpdateSeats(JNIEnv *env, jobject thi
 }
 
 JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeSetHighlightedZoneIds(JNIEnv *env, jobject thiz,
+                                                                  jobjectArray zoneIds,
+                                                                  jfloat nonHighlightedAlpha) {
+    GetCPPObjectOrReturn(env, thiz, renderer);
+    std::vector<std::string> vec;
+    if (zoneIds != nullptr) {
+        jsize len = env->GetArrayLength(zoneIds);
+        vec.reserve(static_cast<size_t>(len));
+        for (jsize i = 0; i < len; ++i) {
+            jobject elem = env->GetObjectArrayElement(zoneIds, i);
+            if (elem != nullptr) {
+                vec.push_back(kk::jni::SafeConvertToStdString(env, static_cast<jstring>(elem)));
+                env->DeleteLocalRef(elem);
+            }
+        }
+    }
+    renderer->setHighlightedZoneIds(vec, static_cast<float>(nonHighlightedAlpha));
+}
+
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeClearHighlightedZones(JNIEnv *env, jobject thiz) {
+    GetCPPObjectOrReturn(env, thiz, renderer);
+    renderer->clearHighlightedZones();
+}
+
+JNIEXPORT void JNICALL
 Java_com_libseatcanvas_SeatCanvasView_nativeHandleTap(JNIEnv *env, jobject thiz, jfloat x,
                                                       jfloat y) {
     GetCPPObjectOrReturn(env, thiz, renderer);

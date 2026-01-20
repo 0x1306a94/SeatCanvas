@@ -109,6 +109,14 @@ class SeatCanvasCoreRenderer {
     const tgfx::Color &getBackgroundColor() const;
     void setBackgroundColor(const tgfx::Color &color);
 
+    /// 高亮指定区域：高亮区域 additionalAlpha=1.0f，其余为 nonHighlightedAlpha
+    /// @param zoneIds 高亮区域的 ID 集合
+    /// @param nonHighlightedAlpha 非高亮区域的 additionalAlpha
+    void setHighlightedZoneIds(const std::vector<std::string> &zoneIds, float nonHighlightedAlpha);
+
+    /// 清除高亮，将所有区域 additionalAlpha 重置为 1.0f
+    void clearHighlightedZones();
+
     /**
      * 设置样式键到配置的映射
      * 动态更新座位样式配置，会同步更新到 SeatStyleAtlasManager

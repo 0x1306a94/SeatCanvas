@@ -12,6 +12,7 @@
 #include <mutex>
 #include <random>
 #include <unordered_map>
+#include <unordered_set>
 
 #include <tgfx/core/Canvas.h>
 #include <tgfx/core/Data.h>
@@ -183,6 +184,37 @@ void SeatCanvasCoreRenderer::setBackgroundColor(const tgfx::Color &color) {
         return;
     }
     _backgroundColor = color;
+    invalidateContent();
+}
+
+void SeatCanvasCoreRenderer::setHighlightedZoneIds(const std::vector<std::string> &zoneIds,
+                                                   float nonHighlightedAlpha) {
+    auto config = _useBaseMapConfig.lock();
+    if (!config) {
+        return;
+    }
+    auto meshBuilder = config->meshBuilder();
+    if (!meshBuilder) {
+        return;
+    }
+    std::unordered_set<std::string> highlighted(zoneIds.begin(), zoneIds.end());
+    for (const auto &zone : meshBuilder->getZoneMeshInfos()) {
+        zone->additionalAlpha = (highlighted.count(zone->zoneId) != 0) ? 1.0f : nonHighlightedAlpha;
+    }
+    invalidateContent();
+}
+
+void SeatCanvasCoreRenderer::clearHighlightedZones() {
+    if (!_baseMapConfig) {
+        return;
+    }
+    auto meshBuilder = _baseMapConfig->meshBuilder();
+    if (!meshBuilder) {
+        return;
+    }
+    for (const auto &zone : meshBuilder->getZoneMeshInfos()) {
+        zone->additionalAlpha = 1.0f;
+    }
     invalidateContent();
 }
 
