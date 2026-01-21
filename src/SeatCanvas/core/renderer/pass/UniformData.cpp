@@ -70,7 +70,7 @@ void UniformData::onSetData(const std::string &name, const void *data, size_t si
         return;
     }
 
-    memcpy(_buffer + field->offset, data, size);
+    std::memcpy(_buffer + field->offset, data, size);
 }
 
 void UniformData::setArrayData(const std::string &name, const void *data, int count) const {
@@ -103,7 +103,7 @@ void UniformData::setArrayData(const std::string &name, const void *data, int co
     uint8_t *dst = _buffer + field->offset;
 
     for (int i = 0; i < count; ++i) {
-        memcpy(dst + i * alignedElementSize, src + i * entrySize, entrySize);
+        std::memcpy(dst + i * alignedElementSize, src + i * entrySize, entrySize);
     }
 }
 
@@ -135,7 +135,7 @@ void UniformData::setArrayElement(const std::string &name, int index, const void
     size_t alignedElementSize = AlignTo(entrySize, 16);
 
     uint8_t *dst = _buffer + field->offset + index * alignedElementSize;
-    memcpy(dst, data, entrySize);
+    std::memcpy(dst, data, entrySize);
 }
 
 const UniformData::Field *UniformData::findField(const std::string &name) const {

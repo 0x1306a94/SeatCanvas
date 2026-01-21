@@ -24,20 +24,22 @@ static constexpr char SEAT_VERTEXT_SHADER[] = R"(
 in vec2 inPosition;
 in vec2 inTextureCoord;
 
-in vec2 inInstancePosition;
-in vec4 inInstanceUVRect;
+in vec2 inPositionOffset;
+in int inTextureCoordIndex;
 
 layout(std140) uniform VertexUniformBlock {
     mat3 uMVP;
+    vec4 uTextureCoordRects[40];
 };
 
 out vec2 vTexCoord;
 
 void main() {
-    vec2 worldPos = inPosition + inInstancePosition;
+    vec2 worldPos = inPosition + inPositionOffset;
     vec3 pos = uMVP * vec3(worldPos, 1.0);
     gl_Position = vec4(pos.xy, 0.0, 1.0);
-    vTexCoord = inInstanceUVRect.xy + inTextureCoord * (inInstanceUVRect.zw - inInstanceUVRect.xy);
+    vec4 uvRect = uTextureCoordRects[inTextureCoordIndex];
+    vTexCoord = uvRect.xy + inTextureCoord * (uvRect.zw - uvRect.xy);
 }
 )";
 
@@ -58,20 +60,24 @@ CustomSeatPass::CustomSeatPass() {
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
 
     memset(&bitFields, 0, sizeof(bitFields));
-    bitFields.dirtyUVTable = true;
     bitFields.avaiable = false;
 
     position = {"inPosition", tgfx::VertexFormat::Float2};
     textureCoord = {"inTextureCoord", tgfx::VertexFormat::Float2};
-    instancePosition = {"inInstancePosition", tgfx::VertexFormat::Float2};
-    instanceUVRect = {"inInstanceUVRect", tgfx::VertexFormat::Float4};
+    positionOffset = {"inPositionOffset", tgfx::VertexFormat::Float2};
+    textureCoordIndex = {"inTextureCoordIndex", tgfx::VertexFormat::Int};
 
     mvpUniform = {"uMVP", UniformFormat::Float3x3};
-    uniformData.reset(new UniformData({mvpUniform}));
+    textureCoordRectsUniform = {"uTextureCoordRects", UniformFormat::Float4, 40};
+    uniformData.reset(new UniformData({mvpUniform, textureCoordRectsUniform}));
 }
 
 CustomSeatPass::~CustomSeatPass() {
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+}
+
+void CustomSeatPass::updateUVOffset(const std::vector<float> &uvOffset) {
+    this->uvOffset = uvOffset;
 }
 
 void CustomSeatPass::updateSeats(std::vector<SeatInstanceData> &&seats) {
@@ -203,7 +209,7 @@ std::string CustomSeatPass::onBuildFragmentShader() const {
 
 std::vector<tgfx::VertexBufferLayout> CustomSeatPass::vertexBufferLayouts() const {
     tgfx::VertexBufferLayout vertexLayout{{position, textureCoord}, tgfx::VertexStepMode::Vertex};
-    tgfx::VertexBufferLayout instanceLayout{{instancePosition, instanceUVRect}, tgfx::VertexStepMode::Instance};
+    tgfx::VertexBufferLayout instanceLayout{{positionOffset, textureCoordIndex}, tgfx::VertexStepMode::Instance};
     return {vertexLayout, instanceLayout};
 }
 
@@ -262,7 +268,7 @@ bool CustomSeatPass::prepareSampler(tgfx::GPU *gpu) {
     tgfx::SamplerDescriptor samplerDesc{};
     samplerDesc.minFilter = tgfx::FilterMode::Linear;
     samplerDesc.magFilter = tgfx::FilterMode::Linear;
-    samplerDesc.mipmapMode = tgfx::MipmapMode::None;  // Atlas 通常不需要 mipmap
+    samplerDesc.mipmapMode = tgfx::MipmapMode::None;
     samplerDesc.addressModeX = tgfx::AddressMode::ClampToEdge;
     samplerDesc.addressModeY = tgfx::AddressMode::ClampToEdge;
     sampler = gpu->createSampler(samplerDesc);
@@ -343,6 +349,15 @@ bool CustomSeatPass::updateUBOBuffer() {
     }
     uniformData->setBuffer(ptr);
     uniformData->setData(mvpUniform.name(), mvpMatrix);
+
+    auto expectedSize = textureCoordRectsUniform.count() * 4;
+    std::vector<float> uvRects(expectedSize, 0.0f);
+    auto copySize = std::min(uvOffset.size(), static_cast<size_t>(expectedSize));
+    if (copySize > 0) {
+        std::copy(uvOffset.begin(), uvOffset.begin() + copySize, uvRects.begin());
+    }
+    uniformData->setArrayData(textureCoordRectsUniform.name(), uvRects.data(), textureCoordRectsUniform.count());
+
     uboBuffer->unmap();
     return true;
 }

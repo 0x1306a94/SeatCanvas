@@ -395,8 +395,8 @@ bool CustomBaseMapPass::updateFillUBOBuffer() {
     }
     fillUniformData->setBuffer(ptr);
     fillUniformData->setData(fillMVPUniform.name(), mvpMatrix);
-    int size[2] = {colorTexture->width(), colorTexture->height()};
-    fillUniformData->setData(fillColorTextureSizeUniform.name(), size, sizeof(size));
+    int32_t colorTextureSize[2] = {static_cast<int32_t>(colorTexture->width()), static_cast<int32_t>(colorTexture->height())};
+    fillUniformData->setData(fillColorTextureSizeUniform.name(), colorTextureSize, fillColorTextureSizeUniform.size());
     fillUBOBuffer->unmap();
 
     bitFields.dirtyFillUBO = false;

@@ -84,6 +84,9 @@ SeatCanvasCoreRenderer::SeatCanvasCoreRenderer(
     _overlayLayer->setMinimapAlpha(0.0f);
 
     _seatAtlasManager = std::make_unique<SeatStyleAtlasManager>();
+    _seatAtlasManager->setOnAtlasGenerated([this](const SeatStyleAtlasManager *atlasManager) {
+        _customSeatPass->updateUVOffset(atlasManager->getUVOffsets());
+    });
 
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
     updateSize();
@@ -1158,10 +1161,11 @@ void SeatCanvasCoreRenderer::prepareSeatIfNeeded() {
                 continue;
             }
 
-            tgfx::Point uvMin, uvMax;
-            if (_seatAtlasManager->getUVCoords(seat.status, seat.selected, uvMin, uvMax)) {
-                instances.emplace_back(seat.x, seat.y, uvMin.x, uvMin.y, uvMax.x, uvMax.y);
+            auto uvOffsetIndex = _seatAtlasManager->getUVOffsetIndex(seat.status, seat.selected);
+            if (uvOffsetIndex == -1) {
+                continue;
             }
+            instances.emplace_back(seat.x, seat.y, uvOffsetIndex);
         }
     }
 

@@ -20,18 +20,12 @@ namespace kk::renderer {
 PACKED_STRUCT SeatInstanceData {
     float x;
     float y;
-    float uMin;
-    float vMIn;
-    float uMax;
-    float vMax;
+    int32_t uvOffsetIndex;
 
-    SeatInstanceData(float x, float y, float uMin, float vMin, float uMax, float vMax)
+    SeatInstanceData(float x, float y, int32_t uvOffsetIndex)
         : x(x)
         , y(y)
-        , uMin(uMin)
-        , vMIn(vMin)
-        , uMax(uMax)
-        , vMax(vMax) {
+        , uvOffsetIndex(uvOffsetIndex) {
     }
 };
 PACKED_END;

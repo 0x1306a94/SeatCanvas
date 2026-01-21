@@ -22,6 +22,7 @@ class CustomSeatPass : public CustomRenderPass {
     CustomSeatPass();
     virtual ~CustomSeatPass();
 
+    void updateUVOffset(const std::vector<float> &uvOffset);
     void updateSeats(std::vector<SeatInstanceData> &&seats);
 
     void clearSeats();
@@ -55,10 +56,10 @@ class CustomSeatPass : public CustomRenderPass {
 
   private:
     struct {
-        bool dirtyUVTable : 1;
         bool avaiable : 1;
     } bitFields = {};
 
+    std::vector<float> uvOffset = {};
     std::vector<SeatInstanceData> seats = {};
     tgfx::Color defaultColor = tgfx::Color{0.3f, 0.6f, 0.9f, 1.0f};
     tgfx::Matrix mvpMatrix = {tgfx::Matrix::I()};
@@ -76,10 +77,11 @@ class CustomSeatPass : public CustomRenderPass {
 
     tgfx::Attribute position;
     tgfx::Attribute textureCoord;
-    tgfx::Attribute instancePosition;
-    tgfx::Attribute instanceUVRect;
+    tgfx::Attribute positionOffset;
+    tgfx::Attribute textureCoordIndex;
 
     Uniform mvpUniform;
+    Uniform textureCoordRectsUniform;
 };
 };  // namespace kk::renderer
 
