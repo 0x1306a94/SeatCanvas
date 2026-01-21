@@ -16,12 +16,12 @@ data class MockZoneInfo(
     val h: Float,
     @SerializedName("color")
     val colorHex: String? = null,
-    @SerializedName("priceColor")
-    val priceColorHex: String? = null
+    @SerializedName("rainbowColor")
+    val rainbowColorHex: String? = null
 ) {
     val color: Int?
         get() = colorHex?.let { ColorExtensions.colorFromArgbHex(it) }
 
-    val priceColor: Int?
-        get() = priceColorHex?.let { ColorExtensions.colorFromArgbHex(it) }
+    val rainbowColor: Int?
+        get() = rainbowColorHex?.let { ColorExtensions.colorFromArgbHex(it) }
 }

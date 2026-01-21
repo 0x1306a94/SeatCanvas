@@ -1821,14 +1821,14 @@ void SeatCanvasCoreRenderer::setZoneData(const kk::SeatZoneData &zoneData) {
         }
     }
 
-    if (zoneData.priceColor.has_value()) {
-        if (zoneMeshInfo->priceColor != zoneData.priceColor) {
-            zoneMeshInfo->priceColor = zoneData.priceColor;
+    if (zoneData.rainbowColor.has_value()) {
+        if (zoneMeshInfo->rainbowColor != zoneData.rainbowColor) {
+            zoneMeshInfo->rainbowColor = zoneData.rainbowColor;
             colorChanged = true;
         }
     } else {
-        if (zoneMeshInfo->priceColor.has_value()) {
-            zoneMeshInfo->priceColor = std::nullopt;
+        if (zoneMeshInfo->rainbowColor.has_value()) {
+            zoneMeshInfo->rainbowColor = std::nullopt;
             colorChanged = true;
         }
     }
@@ -1862,14 +1862,14 @@ void SeatCanvasCoreRenderer::applySavedZoneDataColors(std::shared_ptr<BaseMapMes
             }
         }
 
-        if (zoneData.priceColor.has_value()) {
-            if (zoneMeshInfo->priceColor != zoneData.priceColor) {
-                zoneMeshInfo->priceColor = zoneData.priceColor;
+        if (zoneData.rainbowColor.has_value()) {
+            if (zoneMeshInfo->rainbowColor != zoneData.rainbowColor) {
+                zoneMeshInfo->rainbowColor = zoneData.rainbowColor;
                 anyColorChanged = true;
             }
         } else {
-            if (zoneMeshInfo->priceColor.has_value()) {
-                zoneMeshInfo->priceColor = std::nullopt;
+            if (zoneMeshInfo->rainbowColor.has_value()) {
+                zoneMeshInfo->rainbowColor = std::nullopt;
                 anyColorChanged = true;
             }
         }

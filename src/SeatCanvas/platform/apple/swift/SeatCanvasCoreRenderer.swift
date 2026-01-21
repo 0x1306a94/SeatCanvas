@@ -184,7 +184,7 @@ extension SeatCanvasCoreRenderer {
 
         var builder = kk.bridge.CreateSeatZoneDataBuilder()
         for zone in zones {
-            kk.bridge.SeatZoneDataBuilderPut(builder, std.string(zone.zoneId), zone.color, zone.priceColor)
+            kk.bridge.SeatZoneDataBuilderPut(builder, std.string(zone.zoneId), zone.color, zone.rainbowColor)
         }
 
         kk.bridge.SeatCanvasCoreRendererSetSeatZoneDatas(cppObject, builder)

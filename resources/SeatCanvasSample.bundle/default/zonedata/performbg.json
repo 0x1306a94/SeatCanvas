@@ -1,7 +1,7 @@
 [
     {
         "color": "#FFFFFFFF",
-        "priceColor": "#FF0088FF",
+        "rainbowColor": "#FF0088FF",
         "x": 850,
         "y": 2800,
         "w": 550,
@@ -10,7 +10,7 @@
     },
     {
         "color": "#FFFFFFFF",
-        "priceColor": "#FF2255FF",
+        "rainbowColor": "#FF2255FF",
         "x": 850,
         "y": 3170,
         "w": 550,
@@ -19,7 +19,7 @@
     },
     {
         "color": "#FFFFFFFF",
-        "priceColor": "#FFE604FF",
+        "rainbowColor": "#FFE604FF",
         "x": 850,
         "y": 3540,
         "w": 550,
@@ -28,7 +28,7 @@
     },
     {
         "color": "#FFFFFFFF",
-        "priceColor": "#FF5502FF",
+        "rainbowColor": "#FF5502FF",
         "x": 850,
         "y": 3910,
         "w": 550,
@@ -37,7 +37,7 @@
     },
     {
         "color": "#FFFFFFFF",
-        "priceColor": "#FF16F3FF",
+        "rainbowColor": "#FF16F3FF",
         "x": 2000,
         "y": 2800,
         "w": 450,
@@ -46,7 +46,7 @@
     },
     {
         "color": "#FFFFFFFF",
-        "priceColor": "#FF2499FF",
+        "rainbowColor": "#FF2499FF",
         "x": 2000,
         "y": 3130,
         "w": 450,
@@ -55,7 +55,7 @@
     },
     {
         "color": "#FFFFFFFF",
-        "priceColor": "#FF9446FF",
+        "rainbowColor": "#FF9446FF",
         "x": 2000,
         "y": 3790,
         "w": 450,
@@ -64,7 +64,7 @@
     },
     {
         "color": "#FFFFFFFF",
-        "priceColor": "#FF2610FF",
+        "rainbowColor": "#FF2610FF",
         "x": 1700,
         "y": 1520,
         "w": 700,
@@ -73,7 +73,7 @@
     },
     {
         "color": "#FFFFFFFF",
-        "priceColor": "#FFE179FF",
+        "rainbowColor": "#FFE179FF",
         "x": 2450,
         "y": 1520,
         "w": 700,
@@ -82,7 +82,7 @@
     },
     {
         "color": "#FFFFFFFF",
-        "priceColor": "#FFD04CFF",
+        "rainbowColor": "#FFD04CFF",
         "x": 9550,
         "y": 2800,
         "w": 450,
@@ -91,7 +91,7 @@
     },
     {
         "color": "#FFFFFFFF",
-        "priceColor": "#FFE058FF",
+        "rainbowColor": "#FFE058FF",
         "x": 9550,
         "y": 3130,
         "w": 450,
@@ -100,7 +100,7 @@
     },
     {
         "color": "#FFFFFFFF",
-        "priceColor": "#FF24D5FF",
+        "rainbowColor": "#FF24D5FF",
         "x": 9550,
         "y": 3460,
         "w": 450,
@@ -109,7 +109,7 @@
     },
     {
         "color": "#FFFFFFFF",
-        "priceColor": "#FF0688FF",
+        "rainbowColor": "#FF0688FF",
         "x": 9600,
         "y": 1800,
         "w": 700,
@@ -118,7 +118,7 @@
     },
     {
         "color": "#FFFFFFFF",
-        "priceColor": "#FF6229FF",
+        "rainbowColor": "#FF6229FF",
         "x": 11100,
         "y": 1800,
         "w": 700,
@@ -127,7 +127,7 @@
     },
     {
         "color": "#FFFFFFFF",
-        "priceColor": "#FFC7C1FF",
+        "rainbowColor": "#FFC7C1FF",
         "x": 6950,
         "y": 9300,
         "w": 700,
@@ -136,7 +136,7 @@
     },
     {
         "color": "#FFFFFFFF",
-        "priceColor": "#FFD6A5FF",
+        "rainbowColor": "#FFD6A5FF",
         "x": 7700,
         "y": 9300,
         "w": 700,
@@ -145,7 +145,7 @@
     },
     {
         "color": "#FFFFFFFF",
-        "priceColor": "#FF2564FF",
+        "rainbowColor": "#FF2564FF",
         "x": 6600,
         "y": 9600,
         "w": 750,
@@ -154,7 +154,7 @@
     },
     {
         "color": "#FFFFFFFF",
-        "priceColor": "#FF3616FF",
+        "rainbowColor": "#FF3616FF",
         "x": 7400,
         "y": 9600,
         "w": 750,

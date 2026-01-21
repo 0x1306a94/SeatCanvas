@@ -18,12 +18,12 @@ CPPObject *_Nonnull CreateSeatZoneDataBuilder() {
     return cppObj;
 }
 
-void SeatZoneDataBuilderPut(CPPObject *_Nonnull cppObject, const std::string &zoneId, UIColor *_Nullable color, UIColor *_Nullable priceColor) {
+void SeatZoneDataBuilderPut(CPPObject *_Nonnull cppObject, const std::string &zoneId, UIColor *_Nullable color, UIColor *_Nullable rainbowColor) {
     if (cppObject == nullptr || cppObject->realValue == nullptr || zoneId.empty()) {
         return;
     }
     auto map = static_cast<std::unordered_map<std::string, kk::SeatZoneData> *>(cppObject->realValue);
-    map->insert_or_assign(zoneId, kk::SeatZoneData(zoneId, UIColorToTGFXOptional(color), UIColorToTGFXOptional(priceColor)));
+    map->insert_or_assign(zoneId, kk::SeatZoneData(zoneId, UIColorToTGFXOptional(color), UIColorToTGFXOptional(rainbowColor)));
 }
 
 void SeatZoneDataBuilderDelete(CPPObject *_Nonnull cppObject, const std::string &zoneId) {

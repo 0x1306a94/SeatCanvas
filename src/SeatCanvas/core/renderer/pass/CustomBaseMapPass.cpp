@@ -457,10 +457,10 @@ bool CustomBaseMapPass::updateColorTexture(tgfx::GPU *gpu, const SeatCanvasCoreR
     for (size_t index = 0; index < zoneMeshInfos.size(); index++) {
         const auto &zoneMesh = zoneMeshInfos[index];
         auto fillColorToUse = zoneMesh->fillColor;
-        auto usePriceColor = false;
-        if (colorState == kk::BaseMapColorState::Rainbow && zoneMesh->priceColor) {
-            usePriceColor = true;
-            fillColorToUse = zoneMesh->priceColor;
+        auto useRainbowColor = false;
+        if (colorState == kk::BaseMapColorState::Rainbow && zoneMesh->rainbowColor) {
+            useRainbowColor = true;
+            fillColorToUse = zoneMesh->rainbowColor;
         }
 
         auto fillColorIndex = index * 2;
@@ -471,7 +471,7 @@ bool CustomBaseMapPass::updateColorTexture(tgfx::GPU *gpu, const SeatCanvasCoreR
             int col = static_cast<int>(fillColorIndex % textureWidth);
             size_t pixelIndex = (row * textureWidth + col) * 4;
             auto &color = fillColorToUse.value();
-            auto additionalAlpha = usePriceColor ? zoneMesh->additionalAlpha : 1.0f;
+            auto additionalAlpha = useRainbowColor ? zoneMesh->additionalAlpha : 1.0f;
             pixelData[pixelIndex + 0] = static_cast<uint8_t>(color.red * 255.0f);
             pixelData[pixelIndex + 1] = static_cast<uint8_t>(color.green * 255.0f);
             pixelData[pixelIndex + 2] = static_cast<uint8_t>(color.blue * 255.0f);

@@ -117,7 +117,7 @@ class SecondFragment : Fragment() {
                 SeatZoneData(
                     zoneId = zone.zoneId,
                     color = zone.color,
-                    priceColor = zone.priceColor
+                    rainbowColor = zone.rainbowColor
                 )
             }.toTypedArray()
         } catch (e: Exception) {

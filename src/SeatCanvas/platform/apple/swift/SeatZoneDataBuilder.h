@@ -12,6 +12,6 @@
 
 namespace kk::bridge {
 CPPObject *_Nonnull CreateSeatZoneDataBuilder();
-void SeatZoneDataBuilderPut(CPPObject *_Nonnull cppObject, const std::string &zoneId, UIColor *_Nullable color, UIColor *_Nullable priceColor);
+void SeatZoneDataBuilderPut(CPPObject *_Nonnull cppObject, const std::string &zoneId, UIColor *_Nullable color, UIColor *_Nullable rainbowColor);
 void SeatZoneDataBuilderDelete(CPPObject *_Nonnull cppObject, const std::string &zoneId);
 };  // namespace kk::bridge

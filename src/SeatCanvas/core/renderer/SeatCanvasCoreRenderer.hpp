@@ -225,7 +225,7 @@ class SeatCanvasCoreRenderer {
 
     /// 设置区域数据
     /// 用于设置区域的显示信息（区域颜色和价格颜色）
-    /// @param zoneData 区域数据，包含 zoneId, zoneColor, priceColor
+    /// @param zoneData 区域数据，包含 zoneId, zoneColor, rainbowColor
     void setZoneData(const kk::SeatZoneData &zoneData);
 
     /// 设置某个区域的座位数据

@@ -36,7 +36,7 @@ export declare namespace seatcanvas {
   export interface SeatZoneData {
     zoneId: string;
     color?: string;
-    priceColor?: string
+    rainbowColor?: string
   }
 
   export interface SeatData {

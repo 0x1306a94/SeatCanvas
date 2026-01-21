@@ -17,14 +17,14 @@ namespace kk {
 struct SeatZoneData {
     std::string zoneId = {};
     std::optional<tgfx::Color> color = {std::nullopt};
-    std::optional<tgfx::Color> priceColor = {std::nullopt};
+    std::optional<tgfx::Color> rainbowColor = {std::nullopt};
 
     SeatZoneData() = default;
 
-    SeatZoneData(const std::string &zoneId, const std::optional<tgfx::Color> &color, const std::optional<tgfx::Color> &priceColor)
+    SeatZoneData(const std::string &zoneId, const std::optional<tgfx::Color> &color, const std::optional<tgfx::Color> &rainbowColor)
         : zoneId(zoneId)
         , color(color)
-        , priceColor(priceColor) {
+        , rainbowColor(rainbowColor) {
     }
 
     bool isValid() const {

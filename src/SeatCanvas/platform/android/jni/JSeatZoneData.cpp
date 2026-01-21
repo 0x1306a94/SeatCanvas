@@ -33,7 +33,7 @@ static kk::jni::Global<jclass> SeatZoneDataClass;
 static kk::jni::Global<jclass> IntegerClass;
 static jfieldID SeatZoneData_zoneId;
 static jfieldID SeatZoneData_color;
-static jfieldID SeatZoneData_priceColor;
+static jfieldID SeatZoneData_rainbowColor;
 static jmethodID SeatZoneData_constructor;
 static jmethodID Integer_intValue;
 static jmethodID Integer_valueOf;
@@ -52,8 +52,8 @@ void JSeatZoneData::InitJNI(JNIEnv *env) {
     SeatZoneData_zoneId = env->GetFieldID(SeatZoneDataClass.get(), "zoneId", "Ljava/lang/String;");
     SeatZoneData_color =
         env->GetFieldID(SeatZoneDataClass.get(), "color", "Ljava/lang/Integer;");
-    SeatZoneData_priceColor =
-        env->GetFieldID(SeatZoneDataClass.get(), "priceColor", "Ljava/lang/Integer;");
+    SeatZoneData_rainbowColor =
+        env->GetFieldID(SeatZoneDataClass.get(), "rainbowColor", "Ljava/lang/Integer;");
     SeatZoneData_constructor = env->GetMethodID(
         SeatZoneDataClass.get(), "<init>", "(Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;)V");
     if (SeatZoneData_constructor == nullptr) {
@@ -81,15 +81,15 @@ std::optional<kk::SeatZoneData> JSeatZoneData::FromJava(JNIEnv *env, jobject obj
         color = ColorFromARGBInt(argb);
     }
 
-    std::optional<tgfx::Color> priceColor = std::nullopt;
-    auto priceColorObj = env->GetObjectField(object, SeatZoneData_priceColor);
-    if (priceColorObj != nullptr && Integer_intValue != nullptr) {
-        auto argb =
-            static_cast<uint32_t>(env->CallIntMethod(priceColorObj, Integer_intValue));
-        priceColor = ColorFromARGBInt(argb);
+    std::optional<tgfx::Color> rainbowColor = std::nullopt;
+    auto rainbowColorObj = env->GetObjectField(object, SeatZoneData_rainbowColor);
+    if (rainbowColorObj != nullptr && Integer_intValue != nullptr) {
+        auto argb = static_cast<uint32_t>(
+            env->CallIntMethod(rainbowColorObj, Integer_intValue));
+        rainbowColor = ColorFromARGBInt(argb);
     }
 
-    return kk::SeatZoneData(zoneId, color, priceColor);
+    return kk::SeatZoneData(zoneId, color, rainbowColor);
 }
 
 jobject JSeatZoneData::ToJava(JNIEnv *env, const kk::SeatZoneData &data) {
@@ -105,14 +105,15 @@ jobject JSeatZoneData::ToJava(JNIEnv *env, const kk::SeatZoneData &data) {
                                              ColorToARGBInt(data.color.value()));
     }
 
-    jobject jpriceColor = nullptr;
-    if (data.priceColor.has_value() && Integer_valueOf != nullptr) {
-        jpriceColor = env->CallStaticObjectMethod(IntegerClass.get(), Integer_valueOf,
-                                                  ColorToARGBInt(data.priceColor.value()));
+    jobject jrainbowColor = nullptr;
+    if (data.rainbowColor.has_value() && Integer_valueOf != nullptr) {
+        jrainbowColor = env->CallStaticObjectMethod(
+            IntegerClass.get(), Integer_valueOf,
+            ColorToARGBInt(data.rainbowColor.value()));
     }
 
     jobject result =
-        env->NewObject(clazz, SeatZoneData_constructor, jzoneId, jcolor, jpriceColor);
+        env->NewObject(clazz, SeatZoneData_constructor, jzoneId, jcolor, jrainbowColor);
 
     if (jzoneId != nullptr) {
         env->DeleteLocalRef(jzoneId);
@@ -120,8 +121,8 @@ jobject JSeatZoneData::ToJava(JNIEnv *env, const kk::SeatZoneData &data) {
     if (jcolor != nullptr) {
         env->DeleteLocalRef(jcolor);
     }
-    if (jpriceColor != nullptr) {
-        env->DeleteLocalRef(jpriceColor);
+    if (jrainbowColor != nullptr) {
+        env->DeleteLocalRef(jrainbowColor);
     }
     return result;
 }

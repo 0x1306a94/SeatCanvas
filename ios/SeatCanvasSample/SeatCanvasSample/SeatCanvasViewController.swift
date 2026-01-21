@@ -146,7 +146,7 @@ class SeatCanvasViewController: UIViewController {
         }
         do {
             let zones = try JSONDecoder().decode([MockZoneInfo].self, from: data)
-            return zones.map { SeatZoneData(zoneId: $0.zoneId, color: $0.color, priceColor: $0.priceColor) }
+            return zones.map { SeatZoneData(zoneId: $0.zoneId, color: $0.color, rainbowColor: $0.rainbowColor) }
         } catch {
             print(error)
             return []

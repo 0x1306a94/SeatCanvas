@@ -266,8 +266,8 @@ std::optional<kk::SeatZoneData> GetSeatZoneData(napi_env env, napi_value value) 
         return std::nullopt;
     }
     auto color = ReadOptionalColorFromARGBHex(env, value, "color");
-    auto priceColor = ReadOptionalColorFromARGBHex(env, value, "priceColor");
-    return {kk::SeatZoneData(zoneId, color, priceColor)};
+    auto rainbowColor = ReadOptionalColorFromARGBHex(env, value, "rainbowColor");
+    return {kk::SeatZoneData(zoneId, color, rainbowColor)};
 }
 
 std::optional<kk::SeatData> GetSeatData(napi_env env, napi_value value) {
