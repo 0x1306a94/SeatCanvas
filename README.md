@@ -19,7 +19,7 @@ SeatCanvas 是一个跨平台的座位图渲染库，支持 iOS、Android 和 OH
 
 ## 依赖管理
 
-本项目使用 **tgfx 的依赖管理方式**，通过 `DEPS` 文件和 `depsync` 工具来管理第三方依赖。
+本项目使用 **tgfx 的依赖管理方式**，通过 `DEPS` 文件和 [depctl](https://github.com/0x1306a94/depctl) 工具来管理第三方依赖。
 
 ### 安装依赖
 
@@ -32,11 +32,11 @@ SeatCanvas 是一个跨平台的座位图渲染库，支持 iOS、Android 和 OH
 或者手动执行：
 
 ```bash
-# 安装 depsync 工具
-npm install -g depsync
+# 安装 depctl 工具
+brew install 0x1306a94/tap/depctl
 
 # 同步依赖
-depsync
+depctl
 ```
 
 ### 依赖说明

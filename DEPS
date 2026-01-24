@@ -1,5 +1,5 @@
 {
-  "version": "1.3.12",
+  "version": "1.4.5",
   "vars": {
     "PAG_GROUP": "https://github.com/libpag"
   },
@@ -15,7 +15,7 @@
   "actions": {
     "common": [
       {
-        "command": "depsync --clean",
+        "command": "depctl --clean",
         "dir": "third_party"
       }
     ]

@@ -25,7 +25,7 @@ jobs:
 
       - uses: tecolicom/actions-use-homebrew-tools@v1
         with:
-          tools: ninja yasm
+          tools: ninja yasm 0x1306a94/tap/depctl
 
       - name: Install Build Tools
         run: |
@@ -33,10 +33,10 @@ jobs:
           ./install_tools.sh
         shell: bash
 
-      - name: Run depsync
+      - name: Run depctl
         run: |
-          npm install depsync -g
-          depsync
+          depctl --version
+          depctl
         shell: bash
 
       - name: Build iOS
@@ -74,10 +74,33 @@ jobs:
           key: third-party-android-${{ hashFiles('DEPS') }}-${{ hashFiles('vendor.json') }}
           restore-keys: third-party-android-
 
-      - name: Run depsync
+      - name: Get depctl Cache
+        id: depctl-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/depctl
+          key: depctl-fd8da7953a56c52e480c49d34acacdc23348226c8618e028b2caeaf67d9f83d2
+          restore-keys: depctl-
+
+      - name: Install depctl
+        if: steps.depctl-cache.outputs.cache-hit != 'true'
         run: |
-          npm install depsync -g
-          depsync
+          DEPCTL_URL="https://github.com/0x1306a94/depctl/releases/download/v1.4.5/depctl-linux-x86_64.tar.gz"
+          curl -L -o /tmp/depctl.tar.gz "$DEPCTL_URL"
+          rm -rf ~/depctl
+          mkdir -p ~/depctl
+          tar -xzf /tmp/depctl.tar.gz -C ~/depctl
+          chmod +x ~/depctl/depctl
+
+      - name: Configure depctl PATH
+        run: |
+          echo "$HOME/depctl" >> $GITHUB_PATH
+
+      - name: Run depctl
+        run: |
+          depctl --version
+          depctl
+        shell: bash
 
       - uses: seanmiddleditch/gha-setup-ninja@master
 
@@ -168,11 +191,16 @@ jobs:
           path: third_party
           key: third-party-ohos-${{ hashFiles('DEPS') }}-${{ hashFiles('vendor.json') }}
           restore-keys: third-party-ohos-
+      
+      - uses: tecolicom/actions-use-homebrew-tools@v1
+        with:
+          tools: ninja yasm 0x1306a94/tap/depctl
 
-      - name: Run depsync
+      - name: Run depctl
         run: |
-          npm install depsync -g
-          depsync
+          depctl --version
+          depctl
+        shell: bash
 
       - name: Install ohpm dependencies
         run: |

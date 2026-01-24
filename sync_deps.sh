@@ -12,14 +12,14 @@ if [[ `uname` == 'Darwin' ]]; then
   fi
 fi
 
-if [ ! $(which depsync) ]; then
-  echo "depsync not found. Trying to install..."
-  npm install -g depsync > /dev/null
+if [ ! $(which depctl) ]; then
+  echo "depctl not found. Trying to install..."
+  brew install 0x1306a94/tap/depctl > /dev/null
 else
-  npm update -g depsync > /dev/null
+  brew upgrade 0x1306a94/tap/depctl > /dev/null
 fi
 
-depsync || exit 1
+depctl || exit 1
 
 # depsync
 
