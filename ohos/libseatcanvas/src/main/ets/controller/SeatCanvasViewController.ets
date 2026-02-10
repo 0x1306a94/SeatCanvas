@@ -6,6 +6,7 @@ import { BaseMapFormat } from '../utils/BaseMapFormat';
 import { SeatCanvasRendererDelegate } from './SeatCanvasRendererDelegate';
 import { SeatData } from './SeatData';
 import { SeatZoneData } from './SeatZoneData';
+import { ZoomLevel } from './ZoomLevel';
 
 export class SeatCanvasViewController {
   private jView!: seatcanvas.JRendererCore;
@@ -142,8 +143,26 @@ export class SeatCanvasViewController {
   }
 
   /**
+   * 当前内容允许的最小缩放比例
+   */
+  get minimumZoomScale(): number {
+    return this.jView.getMinimumZoomScale();
+  }
+
+  /**
+   * 当前内容允许的最大缩放比例
+   */
+  get maximumZoomScale(): number {
+    return this.jView.getMaximumZoomScale();
+  }
+
+  get zoomLevel(): ZoomLevel {
+    return this.jView.zoomLevel()
+  }
+
+  /**
    * 座位渲染阈值（控制从彩虹图切换到绘制座位的缩放级别）
-   * 默认等同于内部计算得到的 zoomScale50
+   * 默认等同于内部计算得到的 ZoomLevelConfig.venue
    */
   get seatRenderZoomThreshold(): number {
     return this.jView.getSeatRenderZoomThreshold();

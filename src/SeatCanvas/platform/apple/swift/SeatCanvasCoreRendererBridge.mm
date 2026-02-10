@@ -320,10 +320,10 @@ ZoomLevel SeatCanvasCoreRendererGetZoomLevel(CPPObject *_Nonnull cppObject) {
     ZoomLevel zoom{};
     GetCPPObjectOrReturnValue(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer, zoom);
     auto config = renderer->zoomLevelConfig();
-    zoom.zoomScale9 = static_cast<CGFloat>(config.zoomScale9);
-    zoom.zoomScale18 = static_cast<CGFloat>(config.zoomScale18);
-    zoom.zoomScale30 = static_cast<CGFloat>(config.zoomScale30);
-    zoom.zoomScale50 = static_cast<CGFloat>(config.zoomScale50);
+    zoom.seat = static_cast<CGFloat>(config.seat);
+    zoom.row = static_cast<CGFloat>(config.row);
+    zoom.zone = static_cast<CGFloat>(config.zone);
+    zoom.venue = static_cast<CGFloat>(config.venue);
     return zoom;
 }
 

@@ -352,7 +352,7 @@ void SeatLayerTree::onDraw(
 ```cpp
 void SeatCanvasCoreRenderer::drawSeatIfNeeded(tgfx::Canvas *canvas) {
     // 1. 检查缩放级别，过小则隐藏所有座位
-    if (zoomScale < _zoomLevelConfig.zoomScale50) {
+    if (zoomScale < _zoomLevelConfig.venue) {
         _seatLayer->hiddenSeatAtlas();
         return;
     }

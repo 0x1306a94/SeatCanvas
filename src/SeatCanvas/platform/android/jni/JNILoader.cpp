@@ -21,6 +21,7 @@
 #include "JSeatData.h"
 #include "JSeatZoneData.h"
 #include "JStringUtil.hpp"
+#include "JZoomLevel.h"
 #include "core/BaseMapConfig.hpp"
 #include "core/FontManager.hpp"
 #include "core/gesture/ElasticZoomPanController.hpp"
@@ -290,6 +291,13 @@ Java_com_libseatcanvas_SeatCanvasView_nativeSetSeatRenderZoomThreshold(JNIEnv *e
     renderer->setSeatRenderZoomThreshold(static_cast<float>(threshold));
 }
 
+JNIEXPORT jobject JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeGetZoomLevel(JNIEnv *env, jobject thiz) {
+    GetCPPObjectOrReturnValue(env, thiz, renderer, nullptr);
+    const auto &config = renderer->zoomLevelConfig();
+    return kk::jni::JZoomLevel::ToJava(env, config);
+}
+
 JNIEXPORT void JNICALL
 Java_com_libseatcanvas_SeatCanvasView_nativeHandleTap(JNIEnv *env, jobject thiz, jfloat x,
                                                       jfloat y) {
@@ -396,6 +404,18 @@ Java_com_libseatcanvas_SeatCanvasView_nativeGetZoomScale(JNIEnv *env, jobject th
     return renderer->getZoomScale();
 }
 
+JNIEXPORT jfloat JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeGetMinimumZoomScale(JNIEnv *env, jobject thiz) {
+    GetCPPObjectOrReturnValue(env, thiz, renderer, 1.0f);
+    return renderer->getMinimumZoomScale();
+}
+
+JNIEXPORT jfloat JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeGetMaximumZoomScale(JNIEnv *env, jobject thiz) {
+    GetCPPObjectOrReturnValue(env, thiz, renderer, 1.0f);
+    return renderer->getMaximumZoomScale();
+}
+
 JNIEXPORT jfloatArray JNICALL
 Java_com_libseatcanvas_SeatCanvasView_nativeGetContentOffset(JNIEnv *env, jobject thiz) {
     GetCPPObjectOrReturnValue(env, thiz, renderer, nullptr);
@@ -458,8 +478,9 @@ jint JNI_OnLoad(JavaVM *vm, void *) {
     kk::jni::SeatCanvasView_NativePtr = env->GetFieldID(kk::jni::SeatCanvasViewClass.get(),
                                                         "nativePtr", "J");
 
-    // 初始化 JRect
+    // 初始化辅助 JNI 类型
     kk::jni::JRect::InitJNI(env);
+    kk::jni::JZoomLevel::InitJNI(env);
     kk::jni::JSeatData::InitJNI(env);
     kk::jni::JSeatZoneData::InitJNI(env);
 

@@ -257,6 +257,22 @@ tgfx::Rect GetRect(napi_env env, napi_value value) {
     return rect;
 }
 
+napi_value CreateZoomLevel(napi_env env, float seat, float row, float zone, float venue) {
+    napi_value jsValue;
+    napi_create_object(env, &jsValue);
+
+    napi_value v;
+    napi_create_double(env, seat, &v);
+    napi_set_named_property(env, jsValue, "seat", v);
+    napi_create_double(env, row, &v);
+    napi_set_named_property(env, jsValue, "row", v);
+    napi_create_double(env, zone, &v);
+    napi_set_named_property(env, jsValue, "zone", v);
+    napi_create_double(env, venue, &v);
+    napi_set_named_property(env, jsValue, "venue", v);
+    return jsValue;
+}
+
 std::optional<kk::SeatZoneData> GetSeatZoneData(napi_env env, napi_value value) {
     if (env == nullptr || value == nullptr) {
         return std::nullopt;

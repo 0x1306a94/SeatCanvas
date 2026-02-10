@@ -21,10 +21,10 @@
 
 namespace kk::bridge {
 struct ZoomLevel {
-    CGFloat zoomScale9 = {1.0f};
-    CGFloat zoomScale18 = {1.0f};
-    CGFloat zoomScale30 = {1.0f};
-    CGFloat zoomScale50 = {1.0f};
+    CGFloat seat = {1.0f};
+    CGFloat row = {1.0f};
+    CGFloat zone = {1.0f};
+    CGFloat venue = {1.0f};
 };
 
 /// 创建C++渲染器
@@ -199,7 +199,7 @@ ZoomLevel SeatCanvasCoreRendererGetZoomLevel(CPPObject *_Nonnull cppObject);
 
 /// 获取当前座位渲染缩放阈值（控制从彩虹图切换到绘制座位的缩放级别）
 /// - Parameter cppObject: C++渲染器实例
-/// - Returns: 当前阈值，如果未显式设置则等同于内部计算得到的 zoomScale50
+/// - Returns: 当前阈值，如果未显式设置则等同于内部计算得到的 ZoomLevelConfig.venue
 CGFloat SeatCanvasCoreRendererGetSeatRenderZoomThreshold(CPPObject *_Nonnull cppObject);
 
 /// 设置从彩虹图切换到绘制座位的缩放阈值

@@ -14,7 +14,6 @@ internal import SeatCanvas_Private
 @objc(KKSeatCanvasView)
 public class SeatCanvasView: UIView {
     var renderView: SeatCanvasRenderView!
-    var zoomLevel: kk.bridge.ZoomLevel = .init(zoomScale9: 1.0, zoomScale18: 1.0, zoomScale30: 1.0, zoomScale50: 1.0)
     var isSmallVenue = false
     var minimapImage: UIImage?
 
@@ -117,7 +116,7 @@ public class SeatCanvasView: UIView {
     }
 
     /// 座位渲染阈值（控制从彩虹图切换到绘制座位的缩放级别）
-    /// 默认等同于内部计算得到的 zoomScale50
+    /// 默认等同于内部计算得到的 ZoomLevelConfig.venue
     @objc
     public var seatRenderZoomThreshold: CGFloat {
         get {
@@ -126,6 +125,27 @@ public class SeatCanvasView: UIView {
         set {
             renderer?.seatRenderZoomThreshold = newValue
         }
+    }
+
+    /// 获取缩放级别
+    @objc
+    public func zoomLevel() -> ZoomLevel {
+        guard let renderer else {
+            return ZoomLevel.defalut
+        }
+        return renderer.zoomLevel
+    }
+
+    /// 最小缩放级别
+    @objc
+    public var minimumZoomScale: CGFloat {
+        renderer?.minimumZoomScale ?? 1.0
+    }
+
+    /// 最大缩放级别
+    @objc
+    public var maximumZoomScale: CGFloat {
+        renderer?.maximumZoomScale ?? 1.0
     }
 
     deinit {

@@ -91,11 +91,11 @@ class SeatCanvasCoreRenderer {
 
     /// 设置从彩虹图切换到绘制座位的缩放阈值
     /// 当当前缩放比例大于等于该阈值时，将绘制座位；否则显示彩虹图
-    /// 如果不调用该方法，则使用内部计算得到的 zoomScale50 作为默认阈值
+    /// 如果不调用该方法，则使用内部计算得到的 ZoomLevelConfig.venue 作为默认阈值
     void setSeatRenderZoomThreshold(float zoomThreshold);
 
     /// 获取当前用于控制彩虹图与座位渲染切换的缩放阈值
-    /// 如果未显式设置，则返回内部计算得到的 zoomScale50
+    /// 如果未显式设置，则返回内部计算得到的 ZoomLevelConfig.venue
     float getSeatRenderZoomThreshold() const;
 
     void replacePlatformView(std::unique_ptr<PlatformView> platformView);
@@ -319,7 +319,7 @@ class SeatCanvasCoreRenderer {
     bool executeCustomRenderPass(tgfx::Context *context, const SeatCanvasCoreRendererState *state);
 
     /// 判断是否应该自动绘制座位
-    /// @return 如果当前缩放级别大于 zoomScale50 返回 true，否则返回 false
+    /// @return 如果当前缩放级别大于 ZoomLevelConfig.venue 返回 true，否则返回 false
     bool shouldAutoDrawSeat() const;
 
   private:

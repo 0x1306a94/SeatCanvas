@@ -124,7 +124,7 @@ float SeatCanvasCoreRenderer::getSeatRenderZoomThreshold() const {
     if (_seatRenderZoomThreshold > 0.0f) {
         return _seatRenderZoomThreshold;
     }
-    return _zoomLevelConfig.zoomScale50;
+    return _zoomLevelConfig.venue;
 }
 
 void SeatCanvasCoreRenderer::replacePlatformView(std::unique_ptr<PlatformView> platformView) {
@@ -183,14 +183,14 @@ void SeatCanvasCoreRenderer::setContentOffset(const tgfx::Point &contentOffset) 
 }
 
 bool SeatCanvasCoreRenderer::isSmallVenue() const {
-    return _zoomLevelConfig.zoomScale50 < 1.0f;
+    return _zoomLevelConfig.venue < 1.0f;
 }
 
 float SeatCanvasCoreRenderer::showBackZoomThreshold() const {
     if (isSmallVenue()) {
-        return _zoomLevelConfig.zoomScale30;
+        return _zoomLevelConfig.zone;
     }
-    return _zoomLevelConfig.zoomScale50;
+    return _zoomLevelConfig.venue;
 }
 
 const tgfx::Color &SeatCanvasCoreRenderer::getBackgroundColor() const {
@@ -962,10 +962,10 @@ void SeatCanvasCoreRenderer::updateMaxMinZoomScalesForCurrentBounds() {
         _zoomPanController->setMaximumZoomScale(1.0f);
         _zoomPanController->setZoomScale(1.0f);
 
-        _zoomLevelConfig.zoomScale9 = 1.0f;
-        _zoomLevelConfig.zoomScale18 = 1.0f;
-        _zoomLevelConfig.zoomScale30 = 1.0f;
-        _zoomLevelConfig.zoomScale50 = 1.0f;
+        _zoomLevelConfig.seat = 1.0f;
+        _zoomLevelConfig.row = 1.0f;
+        _zoomLevelConfig.zone = 1.0f;
+        _zoomLevelConfig.venue = 1.0f;
 
         updateZoomPanControllerState();
         return;
@@ -984,21 +984,27 @@ void SeatCanvasCoreRenderer::updateMaxMinZoomScalesForCurrentBounds() {
     auto unitWidth = (contentScale * kk::ZoomScaleConfig::SEAT_BASE_SIZE) / _svgModelScale;
 
     // viewWidth 是像素单位 所以最后需要转为 pt 单位
-    _zoomLevelConfig.zoomScale9 = (viewWidth / (unitWidth * kk::ZoomScaleConfig::ZOOM_LEVEL_SMALL)) / density;
-    _zoomLevelConfig.zoomScale18 = (viewWidth / (unitWidth * kk::ZoomScaleConfig::ZOOM_LEVEL_MEDIUM)) / density;
-    _zoomLevelConfig.zoomScale30 = (viewWidth / (unitWidth * kk::ZoomScaleConfig::ZOOM_LEVEL_LARGE)) / density;
-    _zoomLevelConfig.zoomScale50 = (viewWidth / (unitWidth * kk::ZoomScaleConfig::ZOOM_LEVEL_XLARGE)) / density;
+    _zoomLevelConfig.seat = (viewWidth / (unitWidth * kk::ZoomScaleConfig::ZOOM_LEVEL_SMALL)) / density;
+    _zoomLevelConfig.row = (viewWidth / (unitWidth * kk::ZoomScaleConfig::ZOOM_LEVEL_MEDIUM)) / density;
+    _zoomLevelConfig.zone = (viewWidth / (unitWidth * kk::ZoomScaleConfig::ZOOM_LEVEL_LARGE)) / density;
+    _zoomLevelConfig.venue = (viewWidth / (unitWidth * kk::ZoomScaleConfig::ZOOM_LEVEL_XLARGE)) / density;
 
-    _zoomLevelConfig.zoomScale50 = std::max(_zoomLevelConfig.zoomScale50, minimumZoomScale);
+    _zoomLevelConfig.venue = std::max(_zoomLevelConfig.venue, minimumZoomScale);
 
     float baseScale = 1.0f / (contentScale / _svgModelScale);
-    float maximumZoomScale = std::max(_zoomLevelConfig.zoomScale9, baseScale);
+    float maximumZoomScale = std::max(_zoomLevelConfig.seat, baseScale);
 
     _zoomPanController->setMinimumZoomScale(static_cast<float>(minimumZoomScale));
     _zoomPanController->setMaximumZoomScale(static_cast<float>(maximumZoomScale));
     _zoomPanController->setZoomScale(static_cast<float>(minimumZoomScale));
 
-    tgfx::PrintLog("updateMaxMinZoomScalesForCurrentBounds: min %f max %f zoomScale9 %f zoomScale18 %f zoomScale30 %f zoomScale50 %f", minimumZoomScale, maximumZoomScale, _zoomLevelConfig.zoomScale9, _zoomLevelConfig.zoomScale18, _zoomLevelConfig.zoomScale30, _zoomLevelConfig.zoomScale50);
+    tgfx::PrintLog("updateMaxMinZoomScalesForCurrentBounds: min %f max %f seat %f row %f zone %f venue %f",
+                   minimumZoomScale,
+                   maximumZoomScale,
+                   _zoomLevelConfig.seat,
+                   _zoomLevelConfig.row,
+                   _zoomLevelConfig.zone,
+                   _zoomLevelConfig.venue);
     updateZoomPanControllerState();
 }
 
@@ -1424,8 +1430,8 @@ void SeatCanvasCoreRenderer::scrollViewWithLocation(const tgfx::Point &location)
     }
 
     auto zoomScale = _state->getZoomScale();
-    // === 情况1：已经是最大缩放 ===
-    if (zoomScale >= _zoomLevelConfig.zoomScale9) {
+    // === 情况1：已经是最大缩放（座位级别）===
+    if (zoomScale >= _zoomLevelConfig.seat) {
         return;
     }
 
@@ -1434,25 +1440,25 @@ void SeatCanvasCoreRenderer::scrollViewWithLocation(const tgfx::Point &location)
         // 根据场馆类型选择目标缩放
         float target = zoomScale;
         if (isSmallVenue()) {
-            target = _zoomLevelConfig.zoomScale18;
+            target = _zoomLevelConfig.row;
         } else {
-            target = _zoomLevelConfig.zoomScale30;
+            target = _zoomLevelConfig.zone;
         }
         zoomToPoint(location, target, true, 20.0f, 300.0);
         return;
     }
 
     // === 情况3：从中景放大到中景+ ===
-    if (zoomScale < _zoomLevelConfig.zoomScale30) {
+    if (zoomScale < _zoomLevelConfig.zone) {
         // 放大到 18格
-        zoomToPoint(location, _zoomLevelConfig.zoomScale18, true, 20.0f, 300.0);
+        zoomToPoint(location, _zoomLevelConfig.row, true, 20.0f, 300.0);
         return;
     }
 
     // === 情况4：从中景+放大到近景 ===
-    auto diff = std::fabs(_zoomLevelConfig.zoomScale9 - zoomScale);
+    auto diff = std::fabs(_zoomLevelConfig.seat - zoomScale);
     if (diff > FLT_EPSILON) {
-        zoomToPoint(location, _zoomLevelConfig.zoomScale9, true, 20.0f, 300.0);
+        zoomToPoint(location, _zoomLevelConfig.seat, true, 20.0f, 300.0);
     }
 }
 

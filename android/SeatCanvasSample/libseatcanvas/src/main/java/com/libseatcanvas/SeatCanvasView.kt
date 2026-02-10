@@ -272,7 +272,7 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
 
     /**
      * 座位渲染阈值（控制从彩虹图切换到绘制座位的缩放级别）
-     * 默认等同于内部计算得到的 zoomScale50
+     * 默认等同于内部计算得到的 ZoomLevelConfig.venue
      */
     var seatRenderZoomThreshold: Float
         get() {
@@ -286,7 +286,39 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
             if (nativeInitialized()) {
                 nativeSetSeatRenderZoomThreshold(value)
             }
-        }   
+        }
+
+    /**
+     * 获取当前缩放级别配置（seat/row/zone/venue）
+     */
+    fun zoomLevel(): ZoomLevel {
+        if (!nativeInitialized()) {
+            return ZoomLevel(1f, 1f, 1f, 1f)
+        }
+        return nativeGetZoomLevel()
+    }
+
+    /**
+     * 当前内容允许的最小缩放比例
+     */
+    val minimumZoomScale: Float
+        get() {
+            if (nativeInitialized()) {
+                return nativeGetMinimumZoomScale()
+            }
+            return 1f
+        }
+
+    /**
+     * 当前内容允许的最大缩放比例
+     */
+    val maximumZoomScale: Float
+        get() {
+            if (nativeInitialized()) {
+                return nativeGetMaximumZoomScale()
+            }
+            return 1f
+        }
 
     private fun zoomToRect(
         bounds: Rect,
@@ -362,6 +394,7 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
     private external fun nativeSetSeatSize(seatSize: Float)
     private external fun nativeGetSeatRenderZoomThreshold(): Float
     private external fun nativeSetSeatRenderZoomThreshold(threshold: Float)
+    private external fun nativeGetZoomLevel(): ZoomLevel
     private external fun nativeHandleTap(x: Float, y: Float)
     private external fun nativeHandlePan(state: Int, tx: Float, ty: Float, timestampMs: Double)
     private external fun nativeHandlePinch(state: Int, scale: Float, cx: Float, cy: Float)
@@ -374,6 +407,8 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
     )
 
     private external fun nativeGetZoomScale(): Float
+    private external fun nativeGetMinimumZoomScale(): Float
+    private external fun nativeGetMaximumZoomScale(): Float
     private external fun nativeGetContentOffset(): FloatArray
     private external fun nativeStartDrawLoop()
     private external fun nativeStopDrawLoop()

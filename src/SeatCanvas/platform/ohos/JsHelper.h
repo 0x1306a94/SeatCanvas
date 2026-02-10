@@ -52,6 +52,8 @@ napi_value CreateRect(napi_env env, const tgfx::Rect &rect);
 
 tgfx::Rect GetRect(napi_env env, napi_value value);
 
+napi_value CreateZoomLevel(napi_env env, float seat, float row, float zone, float venue);
+
 std::optional<kk::SeatZoneData> GetSeatZoneData(napi_env env, napi_value value);
 std::optional<kk::SeatData> GetSeatData(napi_env env, napi_value value);
 

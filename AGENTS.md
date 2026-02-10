@@ -201,7 +201,7 @@ SeatCanvasView({ controller: this.controller })
 
 **代理**: `setDelegate(delegate)`
 
-**缩放级别配置**: `ZoomLevelConfig`（zoomScale9/18/30/50，控制 ZoomBased 模式座位渲染时机）
+**缩放级别配置**: `ZoomLevelConfig`（seat/row/zone/venue，控制 ZoomBased 模式座位渲染时机）
 
 ## 开发指南
 

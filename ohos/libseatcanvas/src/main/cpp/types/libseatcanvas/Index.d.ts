@@ -47,6 +47,13 @@ export declare namespace seatcanvas {
     y: number;
   }
 
+  export interface ZoomLevel {
+    seat: number;
+    row: number;
+    zone: number;
+    venue: number;
+  }
+
   export class JRendererCore {
     static InitSystemProperties(density: number, fontScale: number): void;
 
@@ -111,6 +118,18 @@ export declare namespace seatcanvas {
      * @param seatSize 座位大小
      */
     setSeatSize(seatSize: number): void;
+
+    /**
+     * 获取当前内容允许的最小缩放比例
+     */
+    getMinimumZoomScale(): number;
+
+    /**
+     * 获取当前内容允许的最大缩放比例
+     */
+    getMaximumZoomScale(): number;
+
+    zoomLevel(): ZoomLevel;
 
     getSeatRenderZoomThreshold(): number;
 

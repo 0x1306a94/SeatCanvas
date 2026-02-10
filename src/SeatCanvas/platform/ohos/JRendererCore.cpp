@@ -403,6 +403,53 @@ static napi_value GetSeatSize(napi_env env, napi_callback_info info) {
     return result;
 }
 
+static napi_value GetMinimumZoomScale(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+    napi_value jsView = nullptr;
+    size_t argc = 0;
+    napi_value args[1] = {nullptr};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr) {
+        napi_value def = nullptr;
+        napi_create_double(env, 1.0, &def);
+        return def;
+    }
+    auto *renderer = view->internalRenderer();
+    if (renderer == nullptr) {
+        napi_value def = nullptr;
+        napi_create_double(env, 1.0, &def);
+        return def;
+    }
+    napi_value result = nullptr;
+    napi_create_double(env, renderer->getMinimumZoomScale(), &result);
+    return result;
+}
+
+static napi_value GetMaximumZoomScale(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+    napi_value jsView = nullptr;
+    size_t argc = 0;
+    napi_value args[1] = {nullptr};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr) {
+        napi_value def = nullptr;
+        napi_create_double(env, 1.0, &def);
+        return def;
+    }
+    auto *renderer = view->internalRenderer();
+    if (renderer == nullptr) {
+        napi_value def = nullptr;
+        napi_create_double(env, 1.0, &def);
+        return def;
+    }
+    napi_value result = nullptr;
+    napi_create_double(env, renderer->getMaximumZoomScale(), &result);
+    return result;
+}
 static napi_value SetSeatSize(napi_env env, napi_callback_info info) {
     kk::js::NapiEnvHolder::setEnv(env);
     napi_value jsView = nullptr;
@@ -421,6 +468,27 @@ static napi_value SetSeatSize(napi_env env, napi_callback_info info) {
         renderer->setSeatSize(static_cast<float>(seatSize));
     }
     return nullptr;
+}
+
+static napi_value GetZoomLevel(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+    napi_value jsView = nullptr;
+    size_t argc = 0;
+    napi_value args[1] = {nullptr};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr) {
+        return CreateZoomLevel(env, 1.0, 1.0, 1.0, 1.0);
+    }
+
+    auto *renderer = view->internalRenderer();
+    if (renderer == nullptr) {
+        return CreateZoomLevel(env, 1.0, 1.0, 1.0, 1.0);
+    }
+
+    const auto &result = renderer->zoomLevelConfig();
+    return CreateZoomLevel(env, result.seat, result.row, result.zone, result.venue);
 }
 
 static napi_value GetSeatRenderZoomThreshold(napi_env env, napi_callback_info info) {
@@ -851,6 +919,9 @@ bool JRendererCore::Init(napi_env env, napi_value exports) {
         JS_DEFAULT_METHOD_ENTRY(getCanvasColor, GetCanvasColor),
         JS_DEFAULT_METHOD_ENTRY(getSeatSize, GetSeatSize),
         JS_DEFAULT_METHOD_ENTRY(setSeatSize, SetSeatSize),
+        JS_DEFAULT_METHOD_ENTRY(getMinimumZoomScale, GetMinimumZoomScale),
+        JS_DEFAULT_METHOD_ENTRY(getMaximumZoomScale, GetMaximumZoomScale),
+        JS_DEFAULT_METHOD_ENTRY(zoomLevel, GetZoomLevel),
         JS_DEFAULT_METHOD_ENTRY(getSeatRenderZoomThreshold, GetSeatRenderZoomThreshold),
         JS_DEFAULT_METHOD_ENTRY(setSeatRenderZoomThreshold, SetSeatRenderZoomThreshold),
         JS_DEFAULT_METHOD_ENTRY(setHighlightedZoneIds, SetHighlightedZoneIds),
