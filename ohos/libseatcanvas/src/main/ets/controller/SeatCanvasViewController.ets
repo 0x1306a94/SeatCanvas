@@ -142,6 +142,18 @@ export class SeatCanvasViewController {
   }
 
   /**
+   * 座位渲染阈值（控制从彩虹图切换到绘制座位的缩放级别）
+   * 默认等同于内部计算得到的 zoomScale50
+   */
+  get seatRenderZoomThreshold(): number {
+    return this.jView.getSeatRenderZoomThreshold();
+  }
+
+  set seatRenderZoomThreshold(value: number) {
+    this.jView.setSeatRenderZoomThreshold(value);
+  }
+
+  /**
    * 释放内部 C++ 资源， 调用后将不能在继续使用当前对象
    */
   release() {

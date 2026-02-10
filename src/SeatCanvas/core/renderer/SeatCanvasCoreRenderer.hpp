@@ -89,6 +89,15 @@ class SeatCanvasCoreRenderer {
 
     const kk::ZoomLevelConfig &zoomLevelConfig() const;
 
+    /// 设置从彩虹图切换到绘制座位的缩放阈值
+    /// 当当前缩放比例大于等于该阈值时，将绘制座位；否则显示彩虹图
+    /// 如果不调用该方法，则使用内部计算得到的 zoomScale50 作为默认阈值
+    void setSeatRenderZoomThreshold(float zoomThreshold);
+
+    /// 获取当前用于控制彩虹图与座位渲染切换的缩放阈值
+    /// 如果未显式设置，则返回内部计算得到的 zoomScale50
+    float getSeatRenderZoomThreshold() const;
+
     void replacePlatformView(std::unique_ptr<PlatformView> platformView);
 
     bool updateSize();
@@ -343,6 +352,7 @@ class SeatCanvasCoreRenderer {
     float _svgModelScale = {1.0f};
     kk::SeatRenderMode _renderMode = {kk::SeatRenderMode::ZoomBased};
     kk::ZoomLevelConfig _zoomLevelConfig = {};
+    float _seatRenderZoomThreshold = {0.0f};
     uint32_t _minimapAnimationId = {0};
 
     std::unordered_map<std::string, kk::SeatZoneData> _zoneDataMap = {};

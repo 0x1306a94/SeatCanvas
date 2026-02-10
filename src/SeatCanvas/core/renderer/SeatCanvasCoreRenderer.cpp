@@ -112,6 +112,21 @@ const kk::ZoomLevelConfig &SeatCanvasCoreRenderer::zoomLevelConfig() const {
     return _zoomLevelConfig;
 }
 
+void SeatCanvasCoreRenderer::setSeatRenderZoomThreshold(float zoomThreshold) {
+    if (zoomThreshold <= 0.0f) {
+        _seatRenderZoomThreshold = 0.0f;
+        return;
+    }
+    _seatRenderZoomThreshold = zoomThreshold;
+}
+
+float SeatCanvasCoreRenderer::getSeatRenderZoomThreshold() const {
+    if (_seatRenderZoomThreshold > 0.0f) {
+        return _seatRenderZoomThreshold;
+    }
+    return _zoomLevelConfig.zoomScale50;
+}
+
 void SeatCanvasCoreRenderer::replacePlatformView(std::unique_ptr<PlatformView> platformView) {
     _platformView = std::move(platformView);
 }
@@ -1001,7 +1016,7 @@ bool SeatCanvasCoreRenderer::shouldAutoDrawSeat() const {
         return false;
     }
     auto currentZoomScale = _zoomPanController->getZoomScale();
-    return currentZoomScale > _zoomLevelConfig.zoomScale50;
+    return currentZoomScale > getSeatRenderZoomThreshold();
 }
 
 bool SeatCanvasCoreRenderer::scheduleAnimator() {
@@ -1107,10 +1122,10 @@ void SeatCanvasCoreRenderer::prepareSeatIfNeeded() {
 
     /*
      * 缩小到一定级别后，不显示座位
-     * zoomScale 越小表示缩得越小，zoomScale50 是一个较小的缩放值
-     * 所以当 zoomScale < zoomScale50 时，应该隐藏座位
+     * zoomScale 越小表示缩得越小，seatRenderZoomThreshold 是一个较小的缩放值
+     * 所以当 zoomScale < seatRenderZoomThreshold 时，应该隐藏座位
      */
-    if (zoomScale < _zoomLevelConfig.zoomScale50) {
+    if (zoomScale < getSeatRenderZoomThreshold()) {
         _customSeatPass->clearSeats();
         if (_autoChangeBaseMapColorState) {
             applyBaseMapColorState(kk::BaseMapColorState::Rainbow);
@@ -1356,9 +1371,9 @@ void SeatCanvasCoreRenderer::handleAutoZoomOnTap(const tgfx::Point &location) {
         return;
     }
 
-    // 如果已经缩放到座位级别（zoomScale50），则执行点击位置的渐进式缩放
+    // 如果已经缩放到座位级别（seatRenderZoomThreshold），则执行点击位置的渐进式缩放
     auto zoomScale = _zoomPanController->getZoomScale();
-    if (zoomScale >= _zoomLevelConfig.zoomScale50 || isSmallVenue()) {
+    if (zoomScale >= getSeatRenderZoomThreshold() || isSmallVenue()) {
         scrollViewWithLocation(location);
         return;
     }
@@ -1415,7 +1430,7 @@ void SeatCanvasCoreRenderer::scrollViewWithLocation(const tgfx::Point &location)
     }
 
     // === 情况2：从远景放大到中景 ===
-    if (zoomScale < _zoomLevelConfig.zoomScale50) {
+    if (zoomScale < getSeatRenderZoomThreshold()) {
         // 根据场馆类型选择目标缩放
         float target = zoomScale;
         if (isSmallVenue()) {
@@ -1503,7 +1518,7 @@ void SeatCanvasCoreRenderer::scrollViewWithZone(const std::string &zoneId) {
     float scaleX = effectiveWidth / contentZoneWidth;
     float scaleY = effectiveHeight / contentZoneHeight;
     float targetZoomScale = std::min(scaleX, scaleY);
-    targetZoomScale = std::max(_zoomLevelConfig.zoomScale50, targetZoomScale);
+    targetZoomScale = std::max(getSeatRenderZoomThreshold(), targetZoomScale);
 
     // clamp 到有效范围
     const float minZoom = _zoomPanController->getMinimumZoomScale();
@@ -1589,7 +1604,7 @@ void SeatCanvasCoreRenderer::scrollViewWithZone(const std::string &zoneId) {
     _animator->cancelAll();
 
     _autoChangeBaseMapColorState = false;
-    _disableAutoDrawSeat = currentZoomScale <= _zoomLevelConfig.zoomScale50;
+    _disableAutoDrawSeat = currentZoomScale <= getSeatRenderZoomThreshold();
     auto showBack = targetZoomScale >= showBackZoomThreshold();
     if (showBack) {
         applyBaseMapColorState(kk::BaseMapColorState::Original);
@@ -1690,7 +1705,7 @@ void SeatCanvasCoreRenderer::zoomToPoint(const tgfx::Point &location, float scal
     _animator->cancelAll();
 
     _autoChangeBaseMapColorState = false;
-    _disableAutoDrawSeat = currentZoomScale <= _zoomLevelConfig.zoomScale50;
+    _disableAutoDrawSeat = currentZoomScale <= getSeatRenderZoomThreshold();
     auto showBack = targetZoomScale >= showBackZoomThreshold();
     if (showBack) {
         applyBaseMapColorState(kk::BaseMapColorState::Original);

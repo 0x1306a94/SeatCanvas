@@ -278,6 +278,18 @@ Java_com_libseatcanvas_SeatCanvasView_nativeSetSeatSize(JNIEnv *env, jobject thi
     renderer->setSeatSize(seatSize);
 }
 
+JNIEXPORT jfloat JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeGetSeatRenderZoomThreshold(JNIEnv *env, jobject thiz) {
+    GetCPPObjectOrReturnValue(env, thiz, renderer, 0.0f);
+    return static_cast<jfloat>(renderer->getSeatRenderZoomThreshold());
+}
+
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeSetSeatRenderZoomThreshold(JNIEnv *env, jobject thiz, jfloat threshold) {
+    GetCPPObjectOrReturn(env, thiz, renderer);
+    renderer->setSeatRenderZoomThreshold(static_cast<float>(threshold));
+}
+
 JNIEXPORT void JNICALL
 Java_com_libseatcanvas_SeatCanvasView_nativeHandleTap(JNIEnv *env, jobject thiz, jfloat x,
                                                       jfloat y) {

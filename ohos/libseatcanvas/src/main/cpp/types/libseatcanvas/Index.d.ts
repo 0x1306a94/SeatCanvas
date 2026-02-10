@@ -112,6 +112,10 @@ export declare namespace seatcanvas {
      */
     setSeatSize(seatSize: number): void;
 
+    getSeatRenderZoomThreshold(): number;
+
+    setSeatRenderZoomThreshold(threshold: number): void;
+
     /**
      * 高亮指定区域：高亮区域 additionalAlpha=1.0，其余为 nonHighlightedAlpha
      * @param zoneIds 高亮区域的 ID 集合

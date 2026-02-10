@@ -327,6 +327,16 @@ ZoomLevel SeatCanvasCoreRendererGetZoomLevel(CPPObject *_Nonnull cppObject) {
     return zoom;
 }
 
+CGFloat SeatCanvasCoreRendererGetSeatRenderZoomThreshold(CPPObject *_Nonnull cppObject) {
+    GetCPPObjectOrReturnValue(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer, 0.0);
+    return static_cast<CGFloat>(renderer->getSeatRenderZoomThreshold());
+}
+
+void SeatCanvasCoreRendererSetSeatRenderZoomThreshold(CPPObject *_Nonnull cppObject, CGFloat zoomThreshold) {
+    GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
+    renderer->setSeatRenderZoomThreshold(static_cast<float>(zoomThreshold));
+}
+
 void SeatCanvasCoreRendererHandTap(CPPObject *_Nonnull cppObject, CGPoint location) {
     GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
     renderer->handleTap({static_cast<float>(location.x), static_cast<float>(location.y)});

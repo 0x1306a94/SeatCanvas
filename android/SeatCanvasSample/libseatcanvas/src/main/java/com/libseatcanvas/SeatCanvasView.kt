@@ -211,7 +211,9 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
             }
         }
         set(@ColorInt value) {
-            if (nativeInitialized()) nativeSetCanvasColor(value)
+            if (nativeInitialized()) {
+                nativeSetCanvasColor(value)
+            }
         }
 
 
@@ -263,8 +265,28 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
             }
         }
         set(value) {
-            if (nativeInitialized()) nativeSetSeatSize(value)
+            if (nativeInitialized()) {
+                nativeSetSeatSize(value)
+            }
         }
+
+    /**
+     * 座位渲染阈值（控制从彩虹图切换到绘制座位的缩放级别）
+     * 默认等同于内部计算得到的 zoomScale50
+     */
+    var seatRenderZoomThreshold: Float
+        get() {
+            if (nativeInitialized()) {
+                return nativeGetSeatRenderZoomThreshold()
+            } else {
+                return 0f
+            }
+        }
+        set(value) {
+            if (nativeInitialized()) {
+                nativeSetSeatRenderZoomThreshold(value)
+            }
+        }   
 
     private fun zoomToRect(
         bounds: Rect,
@@ -338,6 +360,8 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
     private external fun nativeClearHighlightedZones()
     private external fun nativeGetSeatSize(): Float
     private external fun nativeSetSeatSize(seatSize: Float)
+    private external fun nativeGetSeatRenderZoomThreshold(): Float
+    private external fun nativeSetSeatRenderZoomThreshold(threshold: Float)
     private external fun nativeHandleTap(x: Float, y: Float)
     private external fun nativeHandlePan(state: Int, tx: Float, ty: Float, timestampMs: Double)
     private external fun nativeHandlePinch(state: Int, scale: Float, cx: Float, cy: Float)

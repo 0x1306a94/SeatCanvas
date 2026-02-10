@@ -197,6 +197,17 @@ void SeatCanvasCoreRendererSetSeatSize(CPPObject *_Nonnull cppObject, CGFloat se
 /// - Returns: 缩放级别
 ZoomLevel SeatCanvasCoreRendererGetZoomLevel(CPPObject *_Nonnull cppObject);
 
+/// 获取当前座位渲染缩放阈值（控制从彩虹图切换到绘制座位的缩放级别）
+/// - Parameter cppObject: C++渲染器实例
+/// - Returns: 当前阈值，如果未显式设置则等同于内部计算得到的 zoomScale50
+CGFloat SeatCanvasCoreRendererGetSeatRenderZoomThreshold(CPPObject *_Nonnull cppObject);
+
+/// 设置从彩虹图切换到绘制座位的缩放阈值
+/// - Parameters:
+///   - cppObject: C++渲染器实例
+///   - zoomThreshold: 缩放阈值，当当前缩放比例大于等于该值时开始绘制座位
+void SeatCanvasCoreRendererSetSeatRenderZoomThreshold(CPPObject *_Nonnull cppObject, CGFloat zoomThreshold);
+
 /// 处理点击手势
 /// - Parameter cppObject: C++渲染器实例
 /// - Parameter location: 当前手势位置, viewport 坐标系 (像素单位)

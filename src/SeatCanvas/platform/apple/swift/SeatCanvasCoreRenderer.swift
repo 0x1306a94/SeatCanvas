@@ -35,6 +35,22 @@ final class SeatCanvasCoreRenderer {
         }
     }
 
+    /// 座位渲染阈值（控制从彩虹图切换到绘制座位的缩放级别）
+    var seatRenderZoomThreshold: CGFloat {
+        get {
+            guard let cppObject = cppObject else {
+                return 0.0
+            }
+            return kk.bridge.SeatCanvasCoreRendererGetSeatRenderZoomThreshold(cppObject)
+        }
+        set {
+            guard let cppObject = cppObject else {
+                return
+            }
+            kk.bridge.SeatCanvasCoreRendererSetSeatRenderZoomThreshold(cppObject, newValue)
+        }
+    }
+
     deinit {
         guard var cppObject = self.cppObject else {
             return

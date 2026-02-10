@@ -116,6 +116,18 @@ public class SeatCanvasView: UIView {
         }
     }
 
+    /// 座位渲染阈值（控制从彩虹图切换到绘制座位的缩放级别）
+    /// 默认等同于内部计算得到的 zoomScale50
+    @objc
+    public var seatRenderZoomThreshold: CGFloat {
+        get {
+            renderer?.seatRenderZoomThreshold ?? 0.0
+        }
+        set {
+            renderer?.seatRenderZoomThreshold = newValue
+        }
+    }
+
     deinit {
         NotificationCenter.default.removeObserver(self, name: UIApplication.didEnterBackgroundNotification, object: nil)
         NotificationCenter.default.removeObserver(self, name: UIApplication.willEnterForegroundNotification, object: nil)
