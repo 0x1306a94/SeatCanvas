@@ -6,6 +6,8 @@ export { SeatZoneData } from './src/main/ets/controller/SeatZoneData';
 
 export { SeatData } from './src/main/ets/controller/SeatData';
 
+export { SeatCanvasInit } from './src/main/ets/utils/SeatCanvasInit';
+
 export { SeatCanvasViewController } from './src/main/ets/controller/SeatCanvasViewController';
 
 export { SeatCanvasView } from './src/main/ets/components/SeatCanvasView';

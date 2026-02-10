@@ -1,5 +1,7 @@
 import { seatcanvas } from 'libseatcanvas.so';
 import { font } from '@kit.ArkUI';
+import { deviceInfo } from '@kit.BasicServicesKit';
+import { text } from '@kit.ArkGraphics2D';
 
 export class SeatCanvasInit {
   private static hasInit: boolean = false;
@@ -13,6 +15,41 @@ export class SeatCanvasInit {
   }
 
   private static InitFontFallback() {
+    // API14+: prefer the new async API, fallback to the legacy API on failure
+    if (deviceInfo.sdkApiVersion >= 14) {
+      SeatCanvasInit.InitFontFallbackWithTextModule().then((success: boolean) => {
+        if (!success) {
+          SeatCanvasInit.InitFontFallbackWithFontModule();
+        }
+      });
+      return;
+    }
+
+    // Below API14: use the legacy API
+    SeatCanvasInit.InitFontFallbackWithFontModule();
+  }
+
+  // Use the new text module API (API14+)
+  private static async InitFontFallbackWithTextModule(): Promise<boolean> {
+    try {
+      let fontNames: string[] = await text.getSystemFontFullNamesByType(text.SystemFontType.ALL);
+      if (fontNames && fontNames.length > 0) {
+        let descriptors = await Promise.all(fontNames.map(fontName =>
+        text.getFontDescriptorByFullName(fontName, text.SystemFontType.ALL)
+        ));
+        let paths = Array.from(new Set(descriptors.filter(d => d && d.path).map(d => d.path)));
+        if (paths.length > 0) {
+          seatcanvas.JFont.SetFallbackFontPaths(paths);
+          return true;
+        }
+      }
+    } catch (e) {
+      console.warn('[SeatCanvasInit] text.getSystemFontFullNamesByType failed: ' + e);
+    }
+    return false;
+  }
+
+  private static async InitFontFallbackWithFontModule() {
     let fontConfig = font.getUIFontConfig();
     let paths = new Array<string>();
     let emojiPaths = new Array<string>();
@@ -39,5 +76,4 @@ export class SeatCanvasInit {
     paths.concat(emojiPaths);
     seatcanvas.JFont.SetFallbackFontPaths(paths);
   }
-
 }
