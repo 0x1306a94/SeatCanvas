@@ -31,6 +31,15 @@ namespace kk::svg {
 
 // ========== 辅助函数 ==========
 
+static std::shared_ptr<tgfx::Layer> buildTextLayerTreeFromNode(tgfx::SVGNode *node,
+                                                               const tgfx::SVGLengthContext &lengthContext);
+
+struct TextRun {
+    std::string text;
+    float offsetX = 0.0f;
+    float offsetY = 0.0f;
+};
+
 static std::shared_ptr<tgfx::Typeface> resolveTypeface(const tgfx::SVGText *node, const tgfx::SVGLengthContext &lengthContext) {
     using namespace tgfx;
     auto weight = [](const SVGFontWeight &w) {
@@ -110,6 +119,40 @@ static std::vector<float> resolveTextLengths(const tgfx::SVGLengthContext &lengt
     }
 
     return resolved;
+}
+
+static void collectTextRuns(tgfx::SVGTextContainer *container,
+                            tgfx::SVGText *rootText,
+                            const tgfx::SVGLengthContext &lengthContext,
+                            float offsetX,
+                            float offsetY,
+                            std::vector<TextRun> &runs) {
+    auto fontSize = tgfx::SVGFontSize(tgfx::SVGLength(10.0f, tgfx::SVGLength::Unit::PT));
+    if (auto attr = rootText->getFontSize().get(); attr) {
+        fontSize = attr.value();
+    }
+
+    auto x = resolveTextLengths(lengthContext, container->getX(), tgfx::SVGLengthContext::LengthType::Horizontal, fontSize);
+    auto y = resolveTextLengths(lengthContext, container->getY(), tgfx::SVGLengthContext::LengthType::Vertical, fontSize);
+    auto dx = resolveTextLengths(lengthContext, container->getDx(), tgfx::SVGLengthContext::LengthType::Horizontal, fontSize);
+    auto dy = resolveTextLengths(lengthContext, container->getDy(), tgfx::SVGLengthContext::LengthType::Vertical, fontSize);
+
+    const auto &children = container->getTextChildren();
+    for (size_t i = 0; i < children.size(); i++) {
+        const auto &child = children[i];
+        float runX = offsetX + (i < x.size() ? x[i] : 0.0f) + (i < dx.size() ? dx[i] : 0.0f);
+        float runY = offsetY + (i < y.size() ? y[i] : 0.0f) + (i < dy.size() ? dy[i] : 0.0f);
+
+        if (child->tag() == tgfx::SVGTag::TextLiteral) {
+            auto literal = std::static_pointer_cast<tgfx::SVGTextLiteral>(child);
+            std::string text = literal->getText();
+            if (!text.empty()) {
+                runs.push_back({std::move(text), runX, runY});
+            }
+        } else if (child->tag() == tgfx::SVGTag::TSpan) {
+            collectTextRuns(static_cast<tgfx::SVGTextContainer *>(child.get()), rootText, lengthContext, runX, runY, runs);
+        }
+    }
 }
 
 static void applyShapeLayerStyle(tgfx::ShapeLayer *shape, tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext) {
@@ -336,22 +379,12 @@ std::shared_ptr<tgfx::Layer> convertSVGDomTextNodeToLayer(std::shared_ptr<tgfx::
     auto container = kk::layer::BaseMapRootLayer::Make();
     container->setPath(path);
 
-    ConvertSVGLayerOptions options;
-    options.supportText = true;
-
     auto &childrens = rootNode->getChildren();
     for (const auto &child : childrens) {
-        auto layer = convertSVGNodeToLayer(child.get(), viewportLengthContext, options);
-        if (!layer) {
-            continue;
+        auto layer = buildTextLayerTreeFromNode(child.get(), viewportLengthContext);
+        if (layer != nullptr) {
+            container->addChild(layer);
         }
-
-        auto type = static_cast<kk::layer::CustomLayerType>(layer->type());
-        if (type != kk::layer::CustomLayerType::ZoneName) {
-            continue;
-        }
-
-        container->addChild(layer);
     }
 
     return container;
@@ -383,6 +416,42 @@ std::shared_ptr<tgfx::Layer> convertSVGNodeToLayer(tgfx::SVGNode *node, const tg
         default:
             break;
     }
+    return nullptr;
+}
+
+static std::shared_ptr<tgfx::Layer> buildTextLayerTreeFromNode(tgfx::SVGNode *node,
+                                                               const tgfx::SVGLengthContext &lengthContext) {
+    if (node == nullptr) {
+        return nullptr;
+    }
+
+    if (node->tag() == tgfx::SVGTag::Text) {
+        return convertText(static_cast<tgfx::SVGText *>(node), lengthContext);
+    }
+
+    if (node->tag() == tgfx::SVGTag::G) {
+        auto group = static_cast<tgfx::SVGGroup *>(node);
+        if (!group->hasChildren()) {
+            return nullptr;
+        }
+
+        auto groupLayer = tgfx::Layer::Make();
+        groupLayer->setMatrix(group->getTransform());
+
+        for (const auto &child : group->getChildren()) {
+            auto childLayer = buildTextLayerTreeFromNode(child.get(), lengthContext);
+            if (childLayer != nullptr) {
+                groupLayer->addChild(childLayer);
+            }
+        }
+
+        if (groupLayer->children().empty()) {
+            return nullptr;
+        }
+
+        return groupLayer;
+    }
+
     return nullptr;
 }
 
@@ -506,72 +575,55 @@ std::shared_ptr<kk::layer::SeatZoneLayer> convertRect(tgfx::SVGRect *node, const
     return shape;
 }
 
-std::shared_ptr<kk::layer::SeatTextLayer> convertText(tgfx::SVGText *node, const tgfx::SVGLengthContext &lengthContext) {
-    // 暂时只支持单个文本节点
-    std::shared_ptr<tgfx::SVGTextLiteral> literal = nullptr;
-    for (const auto &child : node->getTextChildren()) {
-        if (child->tag() == tgfx::SVGTag::TextLiteral) {
-            literal = std::static_pointer_cast<tgfx::SVGTextLiteral>(child);
-            break;
-        }
-    }
-
-    if (literal == nullptr) {
-        return nullptr;
-    }
-
-    auto text = literal->getText();
-    if (text.empty()) {
-        return nullptr;
-    }
-
-    auto typeface = resolveTypeface(node, lengthContext);
-
-    auto fontSize = tgfx::SVGFontSize(tgfx::SVGLength(10.0f, tgfx::SVGLength::Unit::PT));
-    if (auto attribute = node->getFontSize().get(); attribute) {
-        fontSize = attribute.value();
-    }
-
-    auto x = resolveTextLengths(lengthContext, node->getX(), tgfx::SVGLengthContext::LengthType::Horizontal, fontSize);
-    auto y = resolveTextLengths(lengthContext, node->getY(), tgfx::SVGLengthContext::LengthType::Vertical, fontSize);
-    auto dx = resolveTextLengths(lengthContext, node->getDx(), tgfx::SVGLengthContext::LengthType::Horizontal, fontSize);
-    auto dy = resolveTextLengths(lengthContext, node->getDy(), tgfx::SVGLengthContext::LengthType::Vertical, fontSize);
-
-    if (x.empty() || y.empty()) {
-        return nullptr;
-    }
-
-    auto finalFontSize = lengthContext.resolve(fontSize.size(), tgfx::SVGLengthContext::LengthType::Vertical);
-
-    auto offsetX = x[0] + (dx.empty() ? 0.0f : dx[0]);
-    auto offsetY = y[0] + (dy.empty() ? 0.0f : dy[0]);
-
+std::shared_ptr<tgfx::Layer> convertText(tgfx::SVGText *node, const tgfx::SVGLengthContext &lengthContext) {
     auto fallbackTypefaces = FontManager::GetFallbackTypefaces();
     auto shaper = tgfx::TextShaper::Make(std::move(fallbackTypefaces));
     if (shaper == nullptr) {
         return nullptr;
     }
 
-    auto textBlob = shaper->shape(text, typeface, finalFontSize);
-    if (textBlob == nullptr) {
+    std::vector<TextRun> runs;
+    collectTextRuns(node, node, lengthContext, 0.0f, 0.0f, runs);
+    if (runs.empty()) {
         return nullptr;
     }
 
-    auto layer = kk::layer::SeatTextLayer::Make();
+    auto typeface = resolveTypeface(node, lengthContext);
+    auto fontSize = tgfx::SVGFontSize(tgfx::SVGLength(10.0f, tgfx::SVGLength::Unit::PT));
+    if (auto attr = node->getFontSize().get(); attr) {
+        fontSize = attr.value();
+    }
+    auto finalFontSize = lengthContext.resolve(fontSize.size(), tgfx::SVGLengthContext::LengthType::Vertical);
 
+    std::shared_ptr<tgfx::Layer> result;
+    for (size_t i = 0; i < runs.size(); i++) {
+        const auto &run = runs[i];
+        auto textBlob = shaper->shape(run.text, typeface, finalFontSize);
+        if (textBlob == nullptr) {
+            continue;
+        }
+        auto layer = kk::layer::SeatTextLayer::Make();
 #if DEBUG
-    layer->setName(text);
+        layer->setName(run.text);
 #endif
-    layer->setTextBlob(textBlob);
+        layer->setTextBlob(textBlob);
+        applyTextLayerStyle(layer.get(), node, lengthContext);
+        auto matrix = tgfx::Matrix::MakeTrans(run.offsetX, run.offsetY);
+        matrix.postConcat(node->getTransform());
+        layer->setMatrix(matrix);
 
-    applyTextLayerStyle(layer.get(), node, lengthContext);
-
-    auto matrix = tgfx::Matrix::MakeTrans(offsetX, offsetY);
-    matrix.postConcat(node->getTransform());
-
-    layer->setMatrix(matrix);
-
-    return layer;
+        if (i == 0) {
+            result = std::move(layer);
+        } else {
+            if (i == 1) {
+                auto group = tgfx::Layer::Make();
+                group->addChild(result);
+                result = std::move(group);
+            }
+            result->addChild(layer);
+        }
+    }
+    return result;
 }
 
 };  // namespace kk::svg
