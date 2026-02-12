@@ -70,7 +70,7 @@ std::shared_ptr<kk::layer::SeatZoneLayer> convertEllipse(tgfx::SVGEllipse *node,
 std::shared_ptr<kk::layer::SeatZoneLayer> convertPath(tgfx::SVGPath *node, const tgfx::SVGLengthContext &lengthContext);
 std::shared_ptr<kk::layer::SeatZoneLayer> convertPoly(tgfx::SVGPoly *node, const tgfx::SVGLengthContext &lengthContext);
 std::shared_ptr<kk::layer::SeatZoneLayer> convertRect(tgfx::SVGRect *node, const tgfx::SVGLengthContext &lengthContext);
-std::shared_ptr<kk::layer::SeatTextLayer> convertText(tgfx::SVGText *node, const tgfx::SVGLengthContext &lengthContext);
+std::shared_ptr<tgfx::Layer> convertText(tgfx::SVGText *node, const tgfx::SVGLengthContext &lengthContext);
 
 };  // namespace kk::svg
 
