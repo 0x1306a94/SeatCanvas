@@ -43,7 +43,7 @@ class CustomBaseMapPass : public CustomRenderPass {
     virtual std::vector<tgfx::VertexBufferLayout> vertexBufferLayouts() const override;
     virtual std::vector<tgfx::BindingEntry> uniformBlocks() const override;
     virtual std::vector<tgfx::BindingEntry> textureSamplers() const override;
-
+    virtual tgfx::MultisampleDescriptor multisample() const override;
     bool updateMVPMatrix(const SeatCanvasCoreRendererState *state);
 
     bool prepareRenderTexture(tgfx::GPU *gpu, int width, int height);

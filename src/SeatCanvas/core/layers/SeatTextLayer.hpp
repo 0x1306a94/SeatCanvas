@@ -89,7 +89,7 @@ class SeatTextLayer : public tgfx::Layer {
   private:
     std::shared_ptr<tgfx::TextBlob> _textBlob = {nullptr};
     tgfx::Color _textColor = {tgfx::Color::White()};
-    tgfx::TextAlign _textAlign = {tgfx::TextAlign::Left};
+    tgfx::TextAlign _textAlign = {tgfx::TextAlign::Start};
     tgfx::Stroke _stroke = {};
     std::optional<tgfx::Color> _strokeColor = {std::nullopt};
 };

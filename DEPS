@@ -7,12 +7,18 @@
     "common": [
       {
         "url": "${PAG_GROUP}/tgfx.git",
-        "commit": "0d036a6fa7956bc46ea11f5b52c9f17a3ca40474",
+        "commit": "fbb9102d0c65f7901aa309a5a4cb1baa3e1d5c12",
         "dir": "third_party/tgfx"
       }
     ]
   },
   "actions": {
+    "mac": [
+      {
+        "command": "python tgfx/third_party/shaderc/utils/git-sync-deps",
+        "dir": "third_party"
+      }
+    ],
     "common": [
       {
         "command": "depctl --clean",
