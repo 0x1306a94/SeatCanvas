@@ -33,10 +33,9 @@ export declare namespace seatcanvas {
     height: number;
   }
 
-  export interface SeatZoneData {
+  export interface SeatZoneColor {
     zoneId: string;
-    color?: string;
-    rainbowColor?: string
+    alternateColor?: string;
   }
 
   export interface SeatData {
@@ -193,7 +192,7 @@ export declare namespace seatcanvas {
 
     setDidTapZoneCallback(callback: (zoneId: string) => void);
 
-    updateSeatZones(zones: SeatZoneData[]);
+    updateSeatZoneAlternateColors(colors: SeatZoneColor[]);
 
     updateSeats(zoneId: string, seats: SeatData[]);
   }

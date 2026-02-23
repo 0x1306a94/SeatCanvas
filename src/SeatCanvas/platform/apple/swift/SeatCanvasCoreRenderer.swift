@@ -216,18 +216,11 @@ extension SeatCanvasCoreRenderer {
         }
     }
 
-    func updateSeatZoneDatas(zones: [SeatZoneData]) {
+    func updateSeatZoneAlternateColors(colors: [String: UIColor]?) {
         guard let cppObject else {
             return
         }
-
-        var builder = kk.bridge.CreateSeatZoneDataBuilder()
-        for zone in zones {
-            kk.bridge.SeatZoneDataBuilderPut(builder, std.string(zone.zoneId), zone.color, zone.rainbowColor)
-        }
-
-        kk.bridge.SeatCanvasCoreRendererSetSeatZoneDatas(cppObject, builder)
-        kk.bridge.ReleaseCPPObject(&builder)
+        kk.bridge.SeatCanvasCoreRendererSetSeatZoneAlternateColors(cppObject, colors)
     }
 
     func updateSeatDatas(zoneId: String, seats: [SeatData]) {

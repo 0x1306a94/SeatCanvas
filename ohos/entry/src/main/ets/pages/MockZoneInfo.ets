@@ -6,16 +6,11 @@ export interface MockZoneInfo {
   y: number;
   w: number;
   h: number;
-  color?: string;
-  rainbowColor?: string;
+  alternateColor?: string;
 }
 
 export class MockZoneInfoHelper {
-  static getColor(zone: MockZoneInfo): string | undefined {
-    return zone.color ? ColorExtensions.colorFromArgbHex(zone.color) || undefined : undefined;
-  }
-
-  static getRainbowColor(zone: MockZoneInfo): string | undefined {
-    return zone.rainbowColor ? ColorExtensions.colorFromArgbHex(zone.rainbowColor) || undefined : undefined;
+  static getAlternateColor(zone: MockZoneInfo): string | undefined {
+    return zone.alternateColor ? ColorExtensions.colorFromArgbHex(zone.alternateColor) || undefined : undefined;
   }
 }

@@ -7,7 +7,6 @@
 
 #import "CPPObject.hpp"
 #import "SeatDataBuilder.h"
-#import "SeatZoneDataBuilder.h"
 #import "core/gesture/GestureState.hpp"
 #import "core/parser/BaseMapFormat.hpp"
 
@@ -66,11 +65,11 @@ void *_Nullable SeatCanvasCoreRendererParseBaseMapFromSVG(const void *_Nullable 
 /// - Returns: 是否成功
 bool SeatCanvasCoreRendererLoadBaseMap(CPPObject *_Nonnull cppObject, void **_Nullable loadResult);
 
-/// 设置渲染器座位区域数据
+/// 设置座位区域颜色表
 /// - Parameters:
 ///   - cppObject: C++渲染器实例
-///   - zoneBuilder: 区域信息
-void SeatCanvasCoreRendererSetSeatZoneDatas(CPPObject *_Nonnull cppObject, CPPObject *_Nullable zoneBuilder);
+///   - colors: 颜色表
+void SeatCanvasCoreRendererSetSeatZoneAlternateColors(CPPObject *_Nonnull cppObject, NSDictionary<NSString *, UIColor *> *_Nullable colors);
 
 /// 设置渲染器座位数据
 /// - Parameters:

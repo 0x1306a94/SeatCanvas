@@ -71,12 +71,11 @@ public class SeatCanvasView: UIView {
         renderer?.applySeatStyleJSONConfig(data)
     }
 
-    /// 更新座位区域信息
-    /// - Parameter zones: 区域集合
+    /// 更新区域颜色
+    /// - Parameter colors: 颜色表 (key 区域ID， value 颜色)
     @objc
-    public func updateSeatZoneDatas(zones: [SeatZoneData]) {
-        renderer?.updateSeatZoneDatas(zones: zones)
-        renderer?.invalidateContent()
+    public func updateSeatZoneAlternateColors(colors: [String: UIColor]?) {
+        renderer?.updateSeatZoneAlternateColors(colors: colors)
     }
 
     /// 更新区域座位信息
@@ -86,7 +85,6 @@ public class SeatCanvasView: UIView {
     @objc
     public func updateSeatDatas(zoneId: String, seats: [SeatData]) {
         renderer?.updateSeatDatas(zoneId: zoneId, seats: seats)
-        renderer?.invalidateContent()
     }
 
     /// 高亮指定区域：高亮区域 additionalAlpha=1.0，其余为 nonHighlightedAlpha

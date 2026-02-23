@@ -47,7 +47,7 @@ class BaseMapMeshBuilder {
     /// @param zoneInfo 区域网格信息（包含原始数据、三角化后的顶点等）
     void addZoneMeshInfo(std::shared_ptr<ZoneMeshInfo> zoneInfo);
 
-    /// 获取所有区域网格信息（构建前）
+    /// 获取所有区域网格信息
     const std::vector<std::shared_ptr<ZoneMeshInfo>> &getZoneMeshInfos() const {
         return zoneMeshInfos;
     }
@@ -58,8 +58,6 @@ class BaseMapMeshBuilder {
 
     std::optional<ZoneDrawRange> findZoneDrawRangeById(const std::string &zoneId) const;
     std::optional<ZoneDrawRange> findZoneDrawRangeByIndex(size_t index) const;
-
-    /// Hit-test 相关方法（基于 ZoneMeshInfo）
 
     /// 根据区域ID查找区域网格信息
     /// @param zoneId 区域ID

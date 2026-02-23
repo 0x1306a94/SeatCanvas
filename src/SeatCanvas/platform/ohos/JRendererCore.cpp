@@ -14,7 +14,6 @@
 #include "core/BaseMapConfig.hpp"
 #include "core/Platform.hpp"
 #include "core/SeatData.hpp"
-#include "core/SeatZoneData.hpp"
 #include "core/UniqueID.h"
 #include "core/gesture/ElasticZoomPanController.hpp"
 #include "core/gesture/GestureState.hpp"
@@ -450,6 +449,7 @@ static napi_value GetMaximumZoomScale(napi_env env, napi_callback_info info) {
     napi_create_double(env, renderer->getMaximumZoomScale(), &result);
     return result;
 }
+
 static napi_value SetSeatSize(napi_env env, napi_callback_info info) {
     kk::js::NapiEnvHolder::setEnv(env);
     napi_value jsView = nullptr;
@@ -800,7 +800,7 @@ static napi_value ZoomToRect(napi_env env, napi_callback_info info) {
     return nullptr;
 }
 
-static napi_value UpdateSeatZones(napi_env env, napi_callback_info info) {
+static napi_value UpdateSeatZoneAlternateColors(napi_env env, napi_callback_info info) {
     kk::js::NapiEnvHolder::setEnv(env);
 
     napi_value jsView = nullptr;
@@ -826,14 +826,26 @@ static napi_value UpdateSeatZones(napi_env env, napi_callback_info info) {
 
     uint32_t length = 0;
     napi_get_array_length(env, args[0], &length);
+
+    std::unordered_map<std::string, tgfx::Color> cppColors{};
+    cppColors.reserve(static_cast<size_t>(length));
+
     for (uint32_t i = 0; i < length; ++i) {
         napi_value element;
         napi_get_element(env, args[0], i, &element);
-        auto zoneData = GetSeatZoneData(env, element);
-        if (zoneData) {
-            renderer->setZoneData(zoneData.value());
+
+        auto zoneId = ReadString(env, element, "zoneId");
+        if (zoneId.empty()) {
+            continue;
         }
+        auto color = ReadOptionalColorFromARGBHex(env, element, "alternateColor");
+        if (!color) {
+            continue;
+        }
+        cppColors.emplace(zoneId, color.value());
     }
+
+    renderer->updateSeatZoneAlternateColors(cppColors);
     return nullptr;
 }
 
@@ -935,7 +947,7 @@ bool JRendererCore::Init(napi_env env, napi_value exports) {
         JS_DEFAULT_METHOD_ENTRY(setDidSelectSeatCallback, SetDidSelectSeatCallback),
         JS_DEFAULT_METHOD_ENTRY(setDidDeselectSeatCallback, SetDidDeselectSeatCallback),
         JS_DEFAULT_METHOD_ENTRY(setDidTapZoneCallback, SetDidTapZoneCallback),
-        JS_DEFAULT_METHOD_ENTRY(updateSeatZones, UpdateSeatZones),
+        JS_DEFAULT_METHOD_ENTRY(updateSeatZoneAlternateColors, UpdateSeatZoneAlternateColors),
         JS_DEFAULT_METHOD_ENTRY(updateSeats, UpdateSeats),
     };
 

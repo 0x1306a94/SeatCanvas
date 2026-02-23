@@ -11,7 +11,6 @@
 #import "core/BaseMapConfig.hpp"
 #import "core/Platform.hpp"
 #import "core/SeatData.hpp"
-#import "core/SeatZoneData.hpp"
 #import "core/gesture/ElasticZoomPanController.hpp"
 #import "core/layers/BaseMapRootLayer.hpp"
 #import "core/parser/BaseMapFormat.hpp"
@@ -175,15 +174,19 @@ bool SeatCanvasCoreRendererLoadBaseMap(CPPObject *_Nonnull cppObject, void **_Nu
     return true;
 }
 
-void SeatCanvasCoreRendererSetSeatZoneDatas(CPPObject *_Nonnull cppObject, CPPObject *_Nullable zoneBuilder) {
+void SeatCanvasCoreRendererSetSeatZoneAlternateColors(CPPObject *_Nonnull cppObject, NSDictionary<NSString *, UIColor *> *_Nullable colors) {
     GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
-    if (zoneBuilder == nullptr) {
-        return;
+    std::unordered_map<std::string, tgfx::Color> cppColors{};
+    cppColors.reserve(colors.count);
+    for (NSString *zoneId in colors.keyEnumerator) {
+        UIColor *color = colors[zoneId];
+        if (!color) {
+            continue;
+        }
+        cppColors.emplace(std::string(zoneId.UTF8String), UIColorToTGFX(color));
     }
-    auto zoneMap = static_cast<std::unordered_map<std::string, kk::SeatZoneData> *>(zoneBuilder->realValue);
-    for (const auto &[key, value] : *zoneMap) {
-        renderer->setZoneData(value);
-    }
+
+    renderer->updateSeatZoneAlternateColors(cppColors);
 }
 
 void SeatCanvasCoreRendererSetSeatDatas(CPPObject *_Nonnull cppObject, const std::string &zoneId, CPPObject *_Nullable seatBuilder) {

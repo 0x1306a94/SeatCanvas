@@ -11,20 +11,17 @@ import UIKit
 
 class MockZoneInfo: Codable {
     let zoneId: String
-    let color: UIColor?
-    let rainbowColor: UIColor?
+    let alternateColor: UIColor?
     let bounds: CGRect
-    init(zoneId: String, bounds: CGRect, color: UIColor? = nil, rainbowColor: UIColor? = nil) {
+    init(zoneId: String, bounds: CGRect, alternateColor: UIColor? = nil) {
         self.zoneId = zoneId
         self.bounds = bounds
-        self.color = color
-        self.rainbowColor = rainbowColor
+        self.alternateColor = alternateColor
     }
 
     enum CodingKeys: CodingKey {
         case zoneId
-        case color
-        case rainbowColor
+        case alternateColor
         case x
         case y
         case w
@@ -34,8 +31,7 @@ class MockZoneInfo: Codable {
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         zoneId = try container.decode(String.self, forKey: .zoneId)
-        color = try container.decodeIfPresent(String.self, forKey: .color).flatMap { UIColor.color(from: $0) }
-        rainbowColor = try container.decodeIfPresent(String.self, forKey: .rainbowColor).flatMap { UIColor.color(from: $0) }
+        alternateColor = try container.decodeIfPresent(String.self, forKey: .alternateColor).flatMap { UIColor.color(from: $0) }
         let x = try container.decode(CGFloat.self, forKey: .x)
         let y = try container.decode(CGFloat.self, forKey: .y)
         let w = try container.decode(CGFloat.self, forKey: .w)
@@ -46,11 +42,8 @@ class MockZoneInfo: Codable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(zoneId, forKey: .zoneId)
-        if let color {
-            try container.encode(color.rgbaHex, forKey: .color)
-        }
-        if let rainbowColor {
-            try container.encode(rainbowColor.rgbaHex, forKey: .rainbowColor)
+        if let alternateColor {
+            try container.encode(alternateColor.rgbaHex, forKey: .alternateColor)
         }
         try container.encode(bounds.minX, forKey: .x)
         try container.encode(bounds.minY, forKey: .y)

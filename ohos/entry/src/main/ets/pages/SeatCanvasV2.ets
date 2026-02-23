@@ -4,7 +4,7 @@ import {
   BaseMapFormat,
   SeatCanvasRendererDelegate,
   SeatData,
-  SeatZoneData
+  SeatZoneColor
 } from 'libseatcanvas';
 import { SeatStyleBuilder } from './SeatStyleBuilder';
 import { resourceManager } from '@kit.LocalizationKit';
@@ -63,8 +63,8 @@ export struct SeatCanvasV2 {
     if (!this.baseMap) {
       return;
     }
-    const zoneDatas = this.loadZoneDatas();
-    this.controller.updateSeatZones(zoneDatas);
+    const colors = this.loadZoneColors();
+    this.controller.updateSeatZoneAlternateColors(colors);
 
     const seatDatas = this.loadSeatDatas();
     for (const zoneId of Object.keys(seatDatas)) {
@@ -80,7 +80,7 @@ export struct SeatCanvasV2 {
     }
   }
 
-  loadZoneDatas(): SeatZoneData[] {
+  loadZoneColors(): SeatZoneColor[] {
     if (!this.baseMap) {
       return [];
     }
@@ -91,10 +91,9 @@ export struct SeatCanvasV2 {
     }
     try {
       const zones: MockZoneInfo[] = JSON.parse(jsonString);
-      return zones.map((zone: MockZoneInfo): SeatZoneData => ({
+      return zones.map((zone: MockZoneInfo): SeatZoneColor => ({
         zoneId: zone.zoneId,
-        color: zone.color,
-        rainbowColor: zone.rainbowColor
+        alternateColor: zone.alternateColor,
       }));
     } catch (e) {
       console.error('Failed to parse zone data:', e);

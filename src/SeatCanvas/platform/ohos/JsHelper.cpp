@@ -273,19 +273,6 @@ napi_value CreateZoomLevel(napi_env env, float seat, float row, float zone, floa
     return jsValue;
 }
 
-std::optional<kk::SeatZoneData> GetSeatZoneData(napi_env env, napi_value value) {
-    if (env == nullptr || value == nullptr) {
-        return std::nullopt;
-    }
-    auto zoneId = ReadString(env, value, "zoneId");
-    if (zoneId.empty()) {
-        return std::nullopt;
-    }
-    auto color = ReadOptionalColorFromARGBHex(env, value, "color");
-    auto rainbowColor = ReadOptionalColorFromARGBHex(env, value, "rainbowColor");
-    return {kk::SeatZoneData(zoneId, color, rainbowColor)};
-}
-
 std::optional<kk::SeatData> GetSeatData(napi_env env, napi_value value) {
     if (env == nullptr || value == nullptr) {
         return std::nullopt;

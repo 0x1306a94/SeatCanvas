@@ -128,7 +128,8 @@ class SeatCanvasViewController: UIViewController {
 
     func loadMockData() {
         let zoneDatas = loadZoneDatas()
-        seatCanvasView.updateSeatZoneDatas(zones: zoneDatas)
+        let zoneColors = zoneDatas.reduce(into: [String: UIColor]()) { $0[$1.zoneId] = $1.alternateColor }
+        seatCanvasView.updateSeatZoneAlternateColors(colors: zoneColors)
 
         let seats = loadSeatDatas()
         for seat in seats {
@@ -136,7 +137,7 @@ class SeatCanvasViewController: UIViewController {
         }
     }
 
-    func loadZoneDatas() -> [SeatZoneData] {
+    func loadZoneDatas() -> [MockZoneInfo] {
         guard let baseMap else {
             return []
         }
@@ -146,7 +147,7 @@ class SeatCanvasViewController: UIViewController {
         }
         do {
             let zones = try JSONDecoder().decode([MockZoneInfo].self, from: data)
-            return zones.map { SeatZoneData(zoneId: $0.zoneId, color: $0.color, rainbowColor: $0.rainbowColor) }
+            return zones
         } catch {
             print(error)
             return []

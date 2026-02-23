@@ -458,9 +458,9 @@ bool CustomBaseMapPass::updateColorTexture(tgfx::GPU *gpu, const SeatCanvasCoreR
         const auto &zoneMesh = zoneMeshInfos[index];
         auto fillColorToUse = zoneMesh->fillColor;
         auto useRainbowColor = false;
-        if (colorState == kk::BaseMapColorState::Rainbow && zoneMesh->rainbowColor) {
+        if (colorState == kk::BaseMapColorState::Rainbow && zoneMesh->alternateColor) {
             useRainbowColor = true;
-            fillColorToUse = zoneMesh->rainbowColor;
+            fillColorToUse = zoneMesh->alternateColor;
         }
 
         auto fillColorIndex = index * 2;

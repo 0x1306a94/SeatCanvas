@@ -5,7 +5,7 @@ import { SeatCanvasInit } from '../utils/SeatCanvasInit';
 import { BaseMapFormat } from '../utils/BaseMapFormat';
 import { SeatCanvasRendererDelegate } from './SeatCanvasRendererDelegate';
 import { SeatData } from './SeatData';
-import { SeatZoneData } from './SeatZoneData';
+import { SeatZoneColor } from './SeatZoneColor';
 import { ZoomLevel } from './ZoomLevel';
 
 export class SeatCanvasViewController {
@@ -229,11 +229,11 @@ export class SeatCanvasViewController {
   }
 
   /**
-   * 更新区域（zone）样式数据
-   * @param zones 区域数据列表
+   * 更新区域颜色数据
+   * @param colors 区域颜色表
    */
-  updateSeatZones(zones: SeatZoneData[]) {
-    this.jView.updateSeatZones(zones);
+  updateSeatZoneAlternateColors(colors: SeatZoneColor[]) {
+    this.jView.updateSeatZoneAlternateColors(colors);
   }
 
   /**
