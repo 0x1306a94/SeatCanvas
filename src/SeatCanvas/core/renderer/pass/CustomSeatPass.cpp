@@ -26,16 +26,27 @@ in vec2 inTextureCoord;
 
 in vec2 inPositionOffset;
 in int inTextureCoordIndex;
+in float inRotation;
 
 layout(std140) uniform VertexUniformBlock {
     mat3 uMVP;
+    vec2 uSeatHalfSize;
     vec4 uTextureCoordRects[40];
 };
 
 out vec2 vTexCoord;
 
 void main() {
-    vec2 worldPos = inPosition + inPositionOffset;
+    vec2 worldPos;
+    if (abs(inRotation) < 0.0001) {
+        worldPos = inPosition + inPositionOffset;
+    } else {
+        vec2 rel = inPosition - uSeatHalfSize;
+        float c = cos(inRotation);
+        float s = sin(inRotation);
+        vec2 rot = vec2(rel.x * c - rel.y * s, rel.x * s + rel.y * c);
+        worldPos = rot + uSeatHalfSize + inPositionOffset;
+    }
     vec3 pos = uMVP * vec3(worldPos, 1.0);
     gl_Position = vec4(pos.xy, 0.0, 1.0);
     vec4 uvRect = uTextureCoordRects[inTextureCoordIndex];
@@ -66,10 +77,12 @@ CustomSeatPass::CustomSeatPass() {
     textureCoord = {"inTextureCoord", tgfx::VertexFormat::Float2};
     positionOffset = {"inPositionOffset", tgfx::VertexFormat::Float2};
     textureCoordIndex = {"inTextureCoordIndex", tgfx::VertexFormat::Int};
+    rotation = {"inRotation", tgfx::VertexFormat::Float};
 
     mvpUniform = {"uMVP", UniformFormat::Float3x3};
+    seatHalfSizeUniform = {"uSeatHalfSize", UniformFormat::Float2};
     textureCoordRectsUniform = {"uTextureCoordRects", UniformFormat::Float4, 40};
-    uniformData.reset(new UniformData({mvpUniform, textureCoordRectsUniform}));
+    uniformData.reset(new UniformData({mvpUniform, seatHalfSizeUniform, textureCoordRectsUniform}));
 }
 
 CustomSeatPass::~CustomSeatPass() {
@@ -209,7 +222,7 @@ std::string CustomSeatPass::onBuildFragmentShader() const {
 
 std::vector<tgfx::VertexBufferLayout> CustomSeatPass::vertexBufferLayouts() const {
     tgfx::VertexBufferLayout vertexLayout{{position, textureCoord}, tgfx::VertexStepMode::Vertex};
-    tgfx::VertexBufferLayout instanceLayout{{positionOffset, textureCoordIndex}, tgfx::VertexStepMode::Instance};
+    tgfx::VertexBufferLayout instanceLayout{{positionOffset, rotation, textureCoordIndex}, tgfx::VertexStepMode::Instance};
     return {vertexLayout, instanceLayout};
 }
 
@@ -349,6 +362,9 @@ bool CustomSeatPass::updateUBOBuffer() {
     }
     uniformData->setBuffer(ptr);
     uniformData->setData(mvpUniform.name(), mvpMatrix);
+
+    float seatHalfSizeData[2] = {seatSize * 0.5f, seatSize * 0.5f};
+    uniformData->setData(seatHalfSizeUniform.name(), seatHalfSizeData, sizeof(seatHalfSizeData));
 
     auto expectedSize = textureCoordRectsUniform.count() * 4;
     std::vector<float> uvRects(expectedSize, 0.0f);

@@ -3,5 +3,6 @@ export interface MockSeatData {
   status: number;
   x: number;
   y: number;
+  rotation?: number;
   selected?: boolean;
 }

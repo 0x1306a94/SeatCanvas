@@ -95,7 +95,8 @@ class SecondFragment : Fragment() {
                     status = mockSeat.status,
                     selected = mockSeat.selected,
                     x = mockSeat.x,
-                    y = mockSeat.y
+                    y = mockSeat.y,
+                    rotation = mockSeat.rotation,
                 )
             }.toTypedArray()
             binding.seatCanvasView.updateSeats(zoneId, seatDataArray)

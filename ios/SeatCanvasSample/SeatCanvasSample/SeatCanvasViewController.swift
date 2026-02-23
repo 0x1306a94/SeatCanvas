@@ -133,7 +133,7 @@ class SeatCanvasViewController: UIViewController {
 
         let seats = loadSeatDatas()
         for seat in seats {
-            seatCanvasView.updateSeatDatas(zoneId: seat.key, seats: seat.value.map { SeatData(seatId: $0.seatId, status: $0.status, selected: $0.selected, position: $0.position) })
+            seatCanvasView.updateSeatDatas(zoneId: seat.key, seats: seat.value.map { SeatData(seatId: $0.seatId, status: $0.status, selected: $0.selected, position: $0.position, rotation: $0.rotation) })
         }
     }
 

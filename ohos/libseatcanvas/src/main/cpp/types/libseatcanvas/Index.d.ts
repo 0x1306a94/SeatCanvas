@@ -44,6 +44,7 @@ export declare namespace seatcanvas {
     selected: boolean;
     x: number;
     y: number;
+    rotation?: number;
   }
 
   export interface ZoomLevel {

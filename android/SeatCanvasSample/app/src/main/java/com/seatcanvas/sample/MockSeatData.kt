@@ -11,5 +11,7 @@ data class MockSeatData(
     val x: Float,
     @SerializedName("y")
     val y: Float,
+    @SerializedName("rotation")
+    val rotation: Float,
     var selected: Boolean = false
 )

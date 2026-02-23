@@ -4,4 +4,5 @@ export interface SeatData {
   selected: boolean;
   x: number;
   y: number;
+  rotation?: number;
 }
