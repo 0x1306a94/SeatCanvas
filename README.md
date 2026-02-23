@@ -161,8 +161,7 @@ SeatCanvasSample.bundle/
     "y": 411,
     "w": 289,
     "h": 329,
-    "color": "#FFFFFFFF",
-    "rainbowColor": "#DF0AEEFF"
+    "alternateColor": "#DF0AEEFF"
   }
 ]
 ```
