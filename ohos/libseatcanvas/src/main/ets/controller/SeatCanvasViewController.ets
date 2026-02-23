@@ -116,22 +116,6 @@ export class SeatCanvasViewController {
   }
 
   /**
-   * 高亮指定区域：高亮区域 additionalAlpha=1.0，其余为 nonHighlightedAlpha
-   * @param zoneIds 高亮区域的 ID 集合
-   * @param nonHighlightedAlpha 非高亮区域的 additionalAlpha
-   */
-  setHighlightedZoneIds(zoneIds: string[], nonHighlightedAlpha: number): void {
-    this.jView.setHighlightedZoneIds(zoneIds, nonHighlightedAlpha);
-  }
-
-  /**
-   * 清除高亮，将所有区域 additionalAlpha 重置为 1.0
-   */
-  clearHighlightedZones(): void {
-    this.jView.clearHighlightedZones();
-  }
-
-  /**
    * 座位大小
    */
   get seatSize(): number {

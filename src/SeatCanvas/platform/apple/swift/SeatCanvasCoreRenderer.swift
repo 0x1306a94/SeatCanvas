@@ -187,20 +187,6 @@ extension SeatCanvasCoreRenderer {
         kk.bridge.SeatCanvasCoreRendererInvalidateContent(cppObject)
     }
 
-    func setHighlightedZoneIds(_ zoneIds: [String], nonHighlightedAlpha: Float) {
-        guard let cppObject else {
-            return
-        }
-        kk.bridge.SeatCanvasCoreRendererSetHighlightedZoneIds(cppObject, zoneIds, nonHighlightedAlpha)
-    }
-
-    func clearHighlightedZones() {
-        guard let cppObject else {
-            return
-        }
-        kk.bridge.SeatCanvasCoreRendererClearHighlightedZones(cppObject)
-    }
-
     var seatSize: CGFloat {
         get {
             guard let cppObject else {

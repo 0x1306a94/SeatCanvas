@@ -290,25 +290,6 @@ UIColor *SeatCanvasCoreRendererGetBackgroundColor(CPPObject *_Nonnull cppObject)
     return UIColorFromTGFX(backgroundColor);
 }
 
-void SeatCanvasCoreRendererSetHighlightedZoneIds(CPPObject *_Nonnull cppObject, NSArray<NSString *> *_Nonnull zoneIds, float nonHighlightedAlpha) {
-    GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
-    std::vector<std::string> vec;
-    if (zoneIds != nil) {
-        vec.reserve(static_cast<size_t>(zoneIds.count));
-        for (NSString *s in zoneIds) {
-            if (s != nil && s.UTF8String != nullptr) {
-                vec.push_back(s.UTF8String);
-            }
-        }
-    }
-    renderer->setHighlightedZoneIds(vec, nonHighlightedAlpha);
-}
-
-void SeatCanvasCoreRendererClearHighlightedZones(CPPObject *_Nonnull cppObject) {
-    GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
-    renderer->clearHighlightedZones();
-}
-
 CGFloat SeatCanvasCoreRendererGetSeatSize(CPPObject *_Nonnull cppObject) {
     GetCPPObjectOrReturnValue(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer, 36.0);
     return static_cast<CGFloat>(renderer->getSeatSize());

@@ -169,17 +169,6 @@ void SeatCanvasCoreRendererSetBackgroundColor(CPPObject *_Nonnull cppObject, UIC
 /// - Returns: 内容大小
 UIColor *SeatCanvasCoreRendererGetBackgroundColor(CPPObject *_Nonnull cppObject);
 
-/// 高亮指定区域：高亮区域 additionalAlpha=1.0f，其余为 nonHighlightedAlpha
-/// - Parameters:
-///   - cppObject: C++渲染器实例
-///   - zoneIds: 高亮区域的 ID 集合
-///   - nonHighlightedAlpha: 非高亮区域的 additionalAlpha，默认 0.6f
-void SeatCanvasCoreRendererSetHighlightedZoneIds(CPPObject *_Nonnull cppObject, NSArray<NSString *> *_Nonnull zoneIds, float nonHighlightedAlpha);
-
-/// 清除高亮，将所有区域 additionalAlpha 重置为 1.0f
-/// - Parameter cppObject: C++渲染器实例
-void SeatCanvasCoreRendererClearHighlightedZones(CPPObject *_Nonnull cppObject);
-
 /// 获取座位大小
 /// - Parameter cppObject: C++渲染器实例
 /// - Returns: 座位大小

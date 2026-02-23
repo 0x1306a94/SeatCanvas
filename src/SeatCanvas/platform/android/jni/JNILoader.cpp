@@ -249,32 +249,6 @@ Java_com_libseatcanvas_SeatCanvasView_nativeUpdateSeats(JNIEnv *env, jobject thi
     renderer->setSeatData(zoneId, seats);
 }
 
-JNIEXPORT void JNICALL
-Java_com_libseatcanvas_SeatCanvasView_nativeSetHighlightedZoneIds(JNIEnv *env, jobject thiz,
-                                                                  jobjectArray zoneIds,
-                                                                  jfloat nonHighlightedAlpha) {
-    GetCPPObjectOrReturn(env, thiz, renderer);
-    std::vector<std::string> vec;
-    if (zoneIds != nullptr) {
-        jsize len = env->GetArrayLength(zoneIds);
-        vec.reserve(static_cast<size_t>(len));
-        for (jsize i = 0; i < len; ++i) {
-            jobject elem = env->GetObjectArrayElement(zoneIds, i);
-            if (elem != nullptr) {
-                vec.push_back(kk::jni::SafeConvertToStdString(env, static_cast<jstring>(elem)));
-                env->DeleteLocalRef(elem);
-            }
-        }
-    }
-    renderer->setHighlightedZoneIds(vec, static_cast<float>(nonHighlightedAlpha));
-}
-
-JNIEXPORT void JNICALL
-Java_com_libseatcanvas_SeatCanvasView_nativeClearHighlightedZones(JNIEnv *env, jobject thiz) {
-    GetCPPObjectOrReturn(env, thiz, renderer);
-    renderer->clearHighlightedZones();
-}
-
 JNIEXPORT jfloat JNICALL
 Java_com_libseatcanvas_SeatCanvasView_nativeGetSeatSize(JNIEnv *env, jobject thiz) {
     GetCPPObjectOrReturnValue(env, thiz, renderer, 36.0f);
