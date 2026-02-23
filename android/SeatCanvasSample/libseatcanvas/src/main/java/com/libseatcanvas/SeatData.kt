@@ -5,6 +5,7 @@ class SeatData(
     val status: UInt,
     val selected: Boolean,
     val x: Float,
-    val y: Float
+    val y: Float,
+    val rotation: Float = 0f
 ) {
 }

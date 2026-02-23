@@ -19,15 +19,17 @@ struct SeatData {
     bool selected = false;
     float x = 0.0f;
     float y = 0.0f;
+    float rotation = 0.0f;  // degrees, clockwise from upright
 
     SeatData() = default;
 
-    SeatData(const std::string &seatId, uint32_t status, bool selected, float x, float y)
+    SeatData(const std::string &seatId, uint32_t status, bool selected, float x, float y, float rotationDegrees = 0.0f)
         : seatId(seatId)
         , status(status)
         , selected(selected)
         , x(x)
-        , y(y) {
+        , y(y)
+        , rotation(rotationDegrees) {
     }
 
     bool isValid() const {

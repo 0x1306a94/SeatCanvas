@@ -20,11 +20,13 @@ namespace kk::renderer {
 PACKED_STRUCT SeatInstanceData {
     float x;
     float y;
+    float rotation;  // radians
     int32_t uvOffsetIndex;
 
-    SeatInstanceData(float x, float y, int32_t uvOffsetIndex)
+    SeatInstanceData(float x, float y, int32_t uvOffsetIndex, float rotationRadians = 0.0f)
         : x(x)
         , y(y)
+        , rotation(rotationRadians)
         , uvOffsetIndex(uvOffsetIndex) {
     }
 };

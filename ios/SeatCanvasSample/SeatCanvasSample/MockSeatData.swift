@@ -13,6 +13,7 @@ class MockSeatData: Codable {
     var status: UInt32
     var selected: Bool = false
     var position: CGPoint
+    var rotation: Float = 0
 
     init(seatId: String, status: UInt32, selected: Bool, position: CGPoint) {
         self.seatId = seatId
@@ -27,6 +28,7 @@ class MockSeatData: Codable {
         case selected
         case x
         case y
+        case rotation
     }
 
     required init(from decoder: Decoder) throws {
@@ -37,6 +39,7 @@ class MockSeatData: Codable {
         let x = try container.decode(CGFloat.self, forKey: .x)
         let y = try container.decode(CGFloat.self, forKey: .y)
         position = CGPoint(x: x, y: y)
+        rotation = try container.decodeIfPresent(Float.self, forKey: .rotation) ?? 0.0
     }
 
     func encode(to encoder: Encoder) throws {
@@ -46,5 +49,6 @@ class MockSeatData: Codable {
 //        try container.encode(selected, forKey: .selected)
         try container.encode(position.x, forKey: .x)
         try container.encode(position.y, forKey: .y)
+        try container.encodeIfPresent(rotation, forKey: .rotation)
     }
 }

@@ -4,37 +4,43 @@
             "seatId": "20013_seat_0_0",
             "status": 0,
             "y": 3540,
-            "x": 850
+            "x": 850,
+            "rotation": 25.0
         },
         {
             "seatId": "20013_seat_0_1",
             "status": 0,
             "y": 3540,
-            "x": 896
+            "x": 896,
+            "rotation": 15.0
         },
         {
             "seatId": "20013_seat_0_2",
             "status": 0,
             "y": 3540,
-            "x": 942
+            "x": 942,
+            "rotation": 15.0
         },
         {
             "seatId": "20013_seat_0_3",
             "status": 0,
             "y": 3540,
-            "x": 988
+            "x": 988,
+            "rotation": 15.0
         },
         {
             "seatId": "20013_seat_0_4",
             "status": 0,
             "y": 3540,
-            "x": 1034
+            "x": 1034,
+            "rotation": 15.0
         },
         {
             "seatId": "20013_seat_0_5",
             "status": 0,
             "y": 3540,
-            "x": 1080
+            "x": 1080,
+            "rotation": 15.0
         },
         {
             "seatId": "20013_seat_0_6",
@@ -3496,7 +3502,8 @@
             "y": 2800,
             "seatId": "20011_seat_0_0",
             "status": 0,
-            "x": 850
+            "x": 850,
+            "rotation": 45.0
         },
         {
             "y": 2800,
@@ -3514,7 +3521,8 @@
             "y": 2800,
             "seatId": "20011_seat_0_3",
             "status": 0,
-            "x": 988
+            "x": 988,
+            "rotation": 45.0
         },
         {
             "y": 2800,

@@ -74,7 +74,8 @@ export struct SeatCanvasV2 {
         status: mockSeat.status,
         selected: mockSeat.selected || false,
         x: mockSeat.x,
-        y: mockSeat.y
+        y: mockSeat.y,
+        rotation: mockSeat.rotation,
       }));
       this.controller.updateSeats(zoneId, seatDataArray);
     }

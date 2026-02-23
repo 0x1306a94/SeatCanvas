@@ -1152,7 +1152,8 @@ void SeatCanvasCoreRenderer::prepareSeatIfNeeded() {
             if (uvOffsetIndex == -1) {
                 continue;
             }
-            instances.emplace_back(seat.x, seat.y, uvOffsetIndex);
+            float rotationRad = seat.rotation * (M_PI / 180.0f);
+            instances.emplace_back(seat.x, seat.y, uvOffsetIndex, rotationRad);
         }
     }
 

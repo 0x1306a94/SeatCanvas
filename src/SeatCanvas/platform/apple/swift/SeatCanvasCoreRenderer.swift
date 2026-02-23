@@ -216,7 +216,7 @@ extension SeatCanvasCoreRenderer {
 
         var builder = kk.bridge.CreateSeatDataBuilder()
         for seat in seats {
-            kk.bridge.SeatDataBuilderPut(builder, std.string(seat.seatId), seat.status, seat.selected, seat.position)
+            kk.bridge.SeatDataBuilderPut(builder, std.string(seat.seatId), seat.status, seat.selected, seat.position, seat.rotation)
         }
 
         kk.bridge.SeatCanvasCoreRendererSetSeatDatas(cppObject, std.string(zoneId), builder)

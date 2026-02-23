@@ -79,9 +79,11 @@ class CustomSeatPass : public CustomRenderPass {
     tgfx::Attribute textureCoord;
     tgfx::Attribute positionOffset;
     tgfx::Attribute textureCoordIndex;
+    tgfx::Attribute rotation;
 
     Uniform mvpUniform;
     Uniform textureCoordRectsUniform;
+    Uniform seatHalfSizeUniform;
 };
 };  // namespace kk::renderer
 
