@@ -412,9 +412,6 @@ void SeatCanvasCoreRenderer::setBaseMapConfig(std::shared_ptr<kk::BaseMapConfig>
     updateUseBaseMapConfig(_baseMapConfig);
 }
 
-void SeatCanvasCoreRenderer::invalidateSeatStatusImage() {
-}
-
 void SeatCanvasCoreRenderer::invalidateContent() {
     _invalidate = true;
 }
@@ -882,7 +879,7 @@ void SeatCanvasCoreRenderer::updateUseBaseMapConfig(std::shared_ptr<kk::BaseMapC
         _useBaseMapConfig = config;
 
         applyBaseMapColorState(kk::BaseMapColorState::Rainbow);
-        applySavedZoneDataColors(config->meshBuilder());
+        applySavedSeatZoneAlternateColors(config->meshBuilder());
         _customBaseMapPass->updateMeshBuilder(config->meshBuilder());
 
         _customSeatPass->clearSeats();
@@ -1812,12 +1809,11 @@ void SeatCanvasCoreRenderer::applyBaseMapColorState(BaseMapColorState toState) {
     _baseMapColorState = toState;
 }
 
-void SeatCanvasCoreRenderer::setZoneData(const kk::SeatZoneData &zoneData) {
-    if (!zoneData.isValid()) {
-        return;
+void SeatCanvasCoreRenderer::updateSeatZoneAlternateColors(const std::unordered_map<std::string, tgfx::Color> &colors) {
+    if (_zoneColorMap != colors) {
+        _zoneColorMap = colors;
     }
 
-    _zoneDataMap[zoneData.zoneId] = zoneData;
     auto config = _useBaseMapConfig.lock();
     if (!config) {
         return;
@@ -1828,81 +1824,30 @@ void SeatCanvasCoreRenderer::setZoneData(const kk::SeatZoneData &zoneData) {
         return;
     }
 
-    auto zoneMeshInfo = meshBuilder->findZoneById(zoneData.zoneId);
-    if (!zoneMeshInfo) {
-        return;
-    }
-
-    bool colorChanged = false;
-    if (zoneData.color.has_value()) {
-        if (zoneMeshInfo->fillColor != zoneData.color) {
-            zoneMeshInfo->fillColor = zoneData.color;
-            colorChanged = true;
-        }
-    } else {
-        if (zoneMeshInfo->fillColor.has_value()) {
-            zoneMeshInfo->fillColor = std::nullopt;
-            colorChanged = true;
-        }
-    }
-
-    if (zoneData.rainbowColor.has_value()) {
-        if (zoneMeshInfo->rainbowColor != zoneData.rainbowColor) {
-            zoneMeshInfo->rainbowColor = zoneData.rainbowColor;
-            colorChanged = true;
-        }
-    } else {
-        if (zoneMeshInfo->rainbowColor.has_value()) {
-            zoneMeshInfo->rainbowColor = std::nullopt;
-            colorChanged = true;
-        }
-    }
-
-    if (colorChanged) {
-        invalidateContent();
-    }
-}
-
-void SeatCanvasCoreRenderer::applySavedZoneDataColors(std::shared_ptr<BaseMapMeshBuilder> meshBuilder) {
-    if (!meshBuilder || _zoneDataMap.empty()) {
-        return;
-    }
-
-    bool anyColorChanged = false;
-    for (const auto &[zoneId, zoneData] : _zoneDataMap) {
-        auto zoneMeshInfo = meshBuilder->findZoneById(zoneId);
-        if (!zoneMeshInfo) {
+    const auto &zoneMeshInfos = meshBuilder->getZoneMeshInfos();
+    const auto iterEnd = colors.end();
+    for (auto &zone : zoneMeshInfos) {
+        if (zone->zoneId.empty()) {
+            zone->alternateColor.reset();
             continue;
         }
-
-        if (zoneData.color.has_value()) {
-            if (zoneMeshInfo->fillColor != zoneData.color) {
-                zoneMeshInfo->fillColor = zoneData.color;
-                anyColorChanged = true;
-            }
-        } else {
-            if (zoneMeshInfo->fillColor.has_value()) {
-                zoneMeshInfo->fillColor = std::nullopt;
-                anyColorChanged = true;
-            }
+        const auto iter = colors.find(zone->zoneId);
+        if (iter != iterEnd && iter->second != tgfx::Color::Transparent()) {
+            zone->alternateColor = iter->second;
+            continue;
         }
-
-        if (zoneData.rainbowColor.has_value()) {
-            if (zoneMeshInfo->rainbowColor != zoneData.rainbowColor) {
-                zoneMeshInfo->rainbowColor = zoneData.rainbowColor;
-                anyColorChanged = true;
-            }
-        } else {
-            if (zoneMeshInfo->rainbowColor.has_value()) {
-                zoneMeshInfo->rainbowColor = std::nullopt;
-                anyColorChanged = true;
-            }
-        }
+        zone->alternateColor.reset();
     }
 
-    if (anyColorChanged) {
-        invalidateContent();
+    invalidateContent();
+}
+
+void SeatCanvasCoreRenderer::applySavedSeatZoneAlternateColors(std::shared_ptr<BaseMapMeshBuilder> meshBuilder) {
+    if (!meshBuilder) {
+        return;
     }
+
+    updateSeatZoneAlternateColors(_zoneColorMap);
 }
 
 void SeatCanvasCoreRenderer::setSeatData(const std::string &zoneId, const std::vector<kk::SeatData> &seats) {
@@ -1942,7 +1887,6 @@ void SeatCanvasCoreRenderer::clearSeatData() {
         allzoneIds.insert(zoneId);
     }
 
-    _zoneDataMap.clear();
     _seatDataMap.clear();
 
     _customSeatPass->clearSeats();

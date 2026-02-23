@@ -19,7 +19,7 @@
 #include "JNIHelper.hpp"
 #include "JRect.h"
 #include "JSeatData.h"
-#include "JSeatZoneData.h"
+#include "JSeatZoneColor.h"
 #include "JStringUtil.hpp"
 #include "JZoomLevel.h"
 #include "core/BaseMapConfig.hpp"
@@ -193,24 +193,32 @@ Java_com_libseatcanvas_SeatCanvasView_nativeSetSeatStyleJSONConfig(JNIEnv *env, 
 }
 
 JNIEXPORT void JNICALL
-Java_com_libseatcanvas_SeatCanvasView_nativeUpdateSeatZones(JNIEnv *env, jobject thiz,
-                                                            jobjectArray jzones) {
+Java_com_libseatcanvas_SeatCanvasView_nativeUpdateSeatZoneAlternateColors(JNIEnv *env, jobject thiz,
+                                                                          jobjectArray jcolors) {
     GetCPPObjectOrReturn(env, thiz, renderer);
-    if (jzones == nullptr) {
+    if (jcolors == nullptr) {
+        renderer->updateSeatZoneAlternateColors({});
         return;
     }
-    jsize length = env->GetArrayLength(jzones);
+
+    jsize length = env->GetArrayLength(jcolors);
+    std::unordered_map<std::string, tgfx::Color> cppColors{};
+    cppColors.reserve(length);
+
     for (jsize i = 0; i < length; ++i) {
-        jobject element = env->GetObjectArrayElement(jzones, i);
+        jobject element = env->GetObjectArrayElement(jcolors, i);
         if (element == nullptr) {
             continue;
         }
-        auto zoneData = kk::jni::JSeatZoneData::FromJava(env, element);
+        auto zoneId = kk::jni::JSeatZoneColor::ReadZoneIdFromJava(env, element);
+        auto color = kk::jni::JSeatZoneColor::ReadAlternateColorFromJava(env, element);
         env->DeleteLocalRef(element);
-        if (zoneData) {
-            renderer->setZoneData(*zoneData);
+        if (zoneId && color) {
+            cppColors.emplace(zoneId.value(), color.value());
         }
     }
+
+    renderer->updateSeatZoneAlternateColors(cppColors);
 }
 
 JNIEXPORT void JNICALL
@@ -482,7 +490,7 @@ jint JNI_OnLoad(JavaVM *vm, void *) {
     kk::jni::JRect::InitJNI(env);
     kk::jni::JZoomLevel::InitJNI(env);
     kk::jni::JSeatData::InitJNI(env);
-    kk::jni::JSeatZoneData::InitJNI(env);
+    kk::jni::JSeatZoneColor::InitJNI(env);
 
     return JNI_VERSION_1_4;
 }

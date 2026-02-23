@@ -1,7 +1,6 @@
 [
     {
-        "color": "#FFFFFFFF",
-        "rainbowColor": "#FF0088FF",
+        "alternateColor": "#FF0088FF",
         "x": 850,
         "y": 2800,
         "w": 550,
@@ -9,8 +8,7 @@
         "zoneId": "20011"
     },
     {
-        "color": "#FFFFFFFF",
-        "rainbowColor": "#FF2255FF",
+        "alternateColor": "#FF2255FF",
         "x": 850,
         "y": 3170,
         "w": 550,
@@ -18,8 +16,7 @@
         "zoneId": "20012"
     },
     {
-        "color": "#FFFFFFFF",
-        "rainbowColor": "#FFE604FF",
+        "alternateColor": "#FFE604FF",
         "x": 850,
         "y": 3540,
         "w": 550,
@@ -27,8 +24,7 @@
         "zoneId": "20013"
     },
     {
-        "color": "#FFFFFFFF",
-        "rainbowColor": "#FF5502FF",
+        "alternateColor": "#FF5502FF",
         "x": 850,
         "y": 3910,
         "w": 550,
@@ -36,8 +32,7 @@
         "zoneId": "20014"
     },
     {
-        "color": "#FFFFFFFF",
-        "rainbowColor": "#FF16F3FF",
+        "alternateColor": "#FF16F3FF",
         "x": 2000,
         "y": 2800,
         "w": 450,
@@ -45,8 +40,7 @@
         "zoneId": "20031"
     },
     {
-        "color": "#FFFFFFFF",
-        "rainbowColor": "#FF2499FF",
+        "alternateColor": "#FF2499FF",
         "x": 2000,
         "y": 3130,
         "w": 450,
@@ -54,8 +48,7 @@
         "zoneId": "20032"
     },
     {
-        "color": "#FFFFFFFF",
-        "rainbowColor": "#FF9446FF",
+        "alternateColor": "#FF9446FF",
         "x": 2000,
         "y": 3790,
         "w": 450,
@@ -63,8 +56,7 @@
         "zoneId": "20034"
     },
     {
-        "color": "#FFFFFFFF",
-        "rainbowColor": "#FF2610FF",
+        "alternateColor": "#FF2610FF",
         "x": 1700,
         "y": 1520,
         "w": 700,
@@ -72,8 +64,7 @@
         "zoneId": "10085"
     },
     {
-        "color": "#FFFFFFFF",
-        "rainbowColor": "#FFE179FF",
+        "alternateColor": "#FFE179FF",
         "x": 2450,
         "y": 1520,
         "w": 700,
@@ -81,8 +72,7 @@
         "zoneId": "10086"
     },
     {
-        "color": "#FFFFFFFF",
-        "rainbowColor": "#FFD04CFF",
+        "alternateColor": "#FFD04CFF",
         "x": 9550,
         "y": 2800,
         "w": 450,
@@ -90,8 +80,7 @@
         "zoneId": "30031"
     },
     {
-        "color": "#FFFFFFFF",
-        "rainbowColor": "#FFE058FF",
+        "alternateColor": "#FFE058FF",
         "x": 9550,
         "y": 3130,
         "w": 450,
@@ -99,8 +88,7 @@
         "zoneId": "30032"
     },
     {
-        "color": "#FFFFFFFF",
-        "rainbowColor": "#FF24D5FF",
+        "alternateColor": "#FF24D5FF",
         "x": 9550,
         "y": 3460,
         "w": 450,
@@ -108,8 +96,7 @@
         "zoneId": "30033"
     },
     {
-        "color": "#FFFFFFFF",
-        "rainbowColor": "#FF0688FF",
+        "alternateColor": "#FF0688FF",
         "x": 9600,
         "y": 1800,
         "w": 700,
@@ -117,8 +104,7 @@
         "zoneId": "10096"
     },
     {
-        "color": "#FFFFFFFF",
-        "rainbowColor": "#FF6229FF",
+        "alternateColor": "#FF6229FF",
         "x": 11100,
         "y": 1800,
         "w": 700,
@@ -126,8 +112,7 @@
         "zoneId": "10098"
     },
     {
-        "color": "#FFFFFFFF",
-        "rainbowColor": "#FFC7C1FF",
+        "alternateColor": "#FFC7C1FF",
         "x": 6950,
         "y": 9300,
         "w": 700,
@@ -135,8 +120,7 @@
         "zoneId": "40109"
     },
     {
-        "color": "#FFFFFFFF",
-        "rainbowColor": "#FFD6A5FF",
+        "alternateColor": "#FFD6A5FF",
         "x": 7700,
         "y": 9300,
         "w": 700,
@@ -144,8 +128,7 @@
         "zoneId": "40110"
     },
     {
-        "color": "#FFFFFFFF",
-        "rainbowColor": "#FF2564FF",
+        "alternateColor": "#FF2564FF",
         "x": 6600,
         "y": 9600,
         "w": 750,
@@ -153,8 +136,7 @@
         "zoneId": "40123"
     },
     {
-        "color": "#FFFFFFFF",
-        "rainbowColor": "#FF3616FF",
+        "alternateColor": "#FF3616FF",
         "x": 7400,
         "y": 9600,
         "w": 750,

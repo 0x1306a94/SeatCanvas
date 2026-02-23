@@ -23,7 +23,6 @@
 #include "core/BaseMapColorState.h"
 #include "core/SeatData.hpp"
 #include "core/SeatRenderMode.hpp"
-#include "core/SeatZoneData.hpp"
 #include "core/ZoomLevelConfig.hpp"
 #include "core/ZoomScaleConfig.hpp"
 #include "core/gesture/GestureState.hpp"
@@ -173,8 +172,6 @@ class SeatCanvasCoreRenderer {
     /// - Parameter renderMode: 渲染模式
     void setBaseMapConfig(std::shared_ptr<kk::BaseMapConfig> baseMapConfig, kk::SeatRenderMode renderMode);
 
-    void invalidateSeatStatusImage();
-
     void invalidateContent();
 
     void start();
@@ -232,10 +229,9 @@ class SeatCanvasCoreRenderer {
     /// @param zoneId 区域ID，为空表示取消选择，恢复到全区域视图
     void setSelectedzoneId(const std::string &zoneId);
 
-    /// 设置区域数据
-    /// 用于设置区域的显示信息（区域颜色和价格颜色）
-    /// @param zoneData 区域数据，包含 zoneId, zoneColor, rainbowColor
-    void setZoneData(const kk::SeatZoneData &zoneData);
+    /// 更新区域颜色
+    /// @param colors 颜色表
+    void updateSeatZoneAlternateColors(const std::unordered_map<std::string, tgfx::Color> &colors);
 
     /// 设置某个区域的座位数据
     /// @param zoneId 区域ID
@@ -312,7 +308,7 @@ class SeatCanvasCoreRenderer {
 
     void applyBaseMapColorState(kk::BaseMapColorState toState);
 
-    void applySavedZoneDataColors(std::shared_ptr<BaseMapMeshBuilder> meshBuilder);
+    void applySavedSeatZoneAlternateColors(std::shared_ptr<BaseMapMeshBuilder> meshBuilder);
 
     void drawFPS(tgfx::Canvas *canvas);
 
@@ -355,7 +351,7 @@ class SeatCanvasCoreRenderer {
     float _seatRenderZoomThreshold = {0.0f};
     uint32_t _minimapAnimationId = {0};
 
-    std::unordered_map<std::string, kk::SeatZoneData> _zoneDataMap = {};
+    std::unordered_map<std::string, tgfx::Color> _zoneColorMap = {};
     std::unordered_map<std::string, std::vector<kk::SeatData>> _seatDataMap = {};
     float _seatSize = {36.0f};
 };

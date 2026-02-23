@@ -217,11 +217,11 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         }
 
 
-    fun updateSeatZones(zones: Array<SeatZoneData>) {
+    fun updateSeatZoneAlternateColors(zones: Array<SeatZoneColor>) {
         if (!nativeInitialized()) {
             return
         }
-        nativeUpdateSeatZones(zones)
+        nativeUpdateSeatZoneAlternateColors(zones)
     }
 
     fun updateSeats(zoneId: String, seats: Array<SeatData>) {
@@ -382,7 +382,7 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
     private external fun nativeSetCanvasColor(color: Int)
     private external fun nativeGetCanvasColor(): Int
     private external fun nativeSetSeatStyleJSONConfig(data: ByteArray?, len: Int)
-    private external fun nativeUpdateSeatZones(zones: Array<SeatZoneData>)
+    private external fun nativeUpdateSeatZoneAlternateColors(zones: Array<SeatZoneColor>)
     private external fun nativeUpdateSeats(zoneId: String, seats: Array<SeatData>)
     private external fun nativeSetHighlightedZoneIds(
         zoneIds: Array<String>,

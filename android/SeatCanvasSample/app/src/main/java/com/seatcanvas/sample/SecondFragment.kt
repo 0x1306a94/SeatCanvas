@@ -13,7 +13,7 @@ import com.google.gson.reflect.TypeToken
 import com.libseatcanvas.BaseMapFormat
 import com.libseatcanvas.SeatCanvasRendererDelegate
 import com.libseatcanvas.SeatData
-import com.libseatcanvas.SeatZoneData
+import com.libseatcanvas.SeatZoneColor
 import com.libseatcanvas.style.SeatStyleConfigBuilder
 import com.seatcanvas.sample.databinding.FragmentSecondBinding
 
@@ -84,8 +84,8 @@ class SecondFragment : Fragment() {
     }
 
     private fun loadMockData(baseMapInfo: BaseMapFileInfo) {
-        val zoneDatas = loadZoneDatas(baseMapInfo)
-        binding.seatCanvasView.updateSeatZones(zoneDatas)
+        val colors = loadZoneColors(baseMapInfo)
+        binding.seatCanvasView.updateSeatZoneAlternateColors(colors)
 
         val seatDatas = loadSeatDatas(baseMapInfo)
         for ((zoneId, seats) in seatDatas) {
@@ -102,7 +102,7 @@ class SecondFragment : Fragment() {
         }
     }
 
-    private fun loadZoneDatas(baseMapInfo: BaseMapFileInfo): Array<SeatZoneData> {
+    private fun loadZoneColors(baseMapInfo: BaseMapFileInfo): Array<SeatZoneColor> {
         val path = ResourceExtensions.zoneDataPath(
             requireContext(),
             baseMapInfo.scope,
@@ -114,10 +114,9 @@ class SecondFragment : Fragment() {
             val type = object : TypeToken<List<MockZoneInfo>>() {}.type
             val zones: List<MockZoneInfo> = gson.fromJson(jsonString, type)
             zones.map { zone ->
-                SeatZoneData(
+                SeatZoneColor(
                     zoneId = zone.zoneId,
-                    color = zone.color,
-                    rainbowColor = zone.rainbowColor
+                    alternateColor = zone.alternateColor
                 )
             }.toTypedArray()
         } catch (e: Exception) {

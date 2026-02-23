@@ -31,7 +31,7 @@ struct ZoneMeshInfo {
     std::shared_ptr<tgfx::Path> path = {nullptr};
     std::optional<tgfx::Color> fillColor = {std::nullopt};
     std::optional<tgfx::Color> strokeColor = {std::nullopt};
-    std::optional<tgfx::Color> rainbowColor = {std::nullopt};
+    std::optional<tgfx::Color> alternateColor = {std::nullopt};
     std::vector<BaseMapZoneVertex> fillVertices = {};
     std::vector<BaseMapZoneVertex> strokeVertices = {};
     float additionalAlpha = 1.0f;
