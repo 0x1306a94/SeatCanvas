@@ -326,58 +326,6 @@ static napi_value GetCanvasColor(napi_env env, napi_callback_info info) {
     return result;
 }
 
-static napi_value SetHighlightedZoneIds(napi_env env, napi_callback_info info) {
-    kk::js::NapiEnvHolder::setEnv(env);
-    napi_value jsView = nullptr;
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
-    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
-    JRendererCore *view = nullptr;
-    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
-    if (view == nullptr || argc < 2) {
-        return nullptr;
-    }
-    bool isArray = false;
-    napi_is_array(env, args[0], &isArray);
-    if (!isArray) {
-        return nullptr;
-    }
-    uint32_t length = 0;
-    napi_get_array_length(env, args[0], &length);
-    std::vector<std::string> zoneIds;
-    zoneIds.reserve(length);
-    for (uint32_t i = 0; i < length; ++i) {
-        napi_value element = nullptr;
-        napi_get_element(env, args[0], i, &element);
-        zoneIds.push_back(GetUtf8String(env, element));
-    }
-    double nonHighlightedAlpha = 0.6;
-    napi_get_value_double(env, args[1], &nonHighlightedAlpha);
-    auto *renderer = view->internalRenderer();
-    if (renderer != nullptr) {
-        renderer->setHighlightedZoneIds(zoneIds, static_cast<float>(nonHighlightedAlpha));
-    }
-    return nullptr;
-}
-
-static napi_value ClearHighlightedZones(napi_env env, napi_callback_info info) {
-    kk::js::NapiEnvHolder::setEnv(env);
-    napi_value jsView = nullptr;
-    size_t argc = 0;
-    napi_value args[1] = {nullptr};
-    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
-    JRendererCore *view = nullptr;
-    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
-    if (view == nullptr) {
-        return nullptr;
-    }
-    auto *renderer = view->internalRenderer();
-    if (renderer != nullptr) {
-        renderer->clearHighlightedZones();
-    }
-    return nullptr;
-}
-
 static napi_value GetSeatSize(napi_env env, napi_callback_info info) {
     kk::js::NapiEnvHolder::setEnv(env);
     napi_value jsView = nullptr;
@@ -936,8 +884,6 @@ bool JRendererCore::Init(napi_env env, napi_value exports) {
         JS_DEFAULT_METHOD_ENTRY(zoomLevel, GetZoomLevel),
         JS_DEFAULT_METHOD_ENTRY(getSeatRenderZoomThreshold, GetSeatRenderZoomThreshold),
         JS_DEFAULT_METHOD_ENTRY(setSeatRenderZoomThreshold, SetSeatRenderZoomThreshold),
-        JS_DEFAULT_METHOD_ENTRY(setHighlightedZoneIds, SetHighlightedZoneIds),
-        JS_DEFAULT_METHOD_ENTRY(clearHighlightedZones, ClearHighlightedZones),
         JS_DEFAULT_METHOD_ENTRY(release, Release),
         JS_DEFAULT_METHOD_ENTRY(handleTap, HandleTap),
         JS_DEFAULT_METHOD_ENTRY(handlePan, HandlePan),

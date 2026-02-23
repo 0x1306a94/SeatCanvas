@@ -232,28 +232,6 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
     }
 
     /**
-     * 高亮指定区域：高亮区域 additionalAlpha=1.0，其余为 nonHighlightedAlpha
-     * @param zoneIds 高亮区域的 ID 集合
-     * @param nonHighlightedAlpha 非高亮区域的 additionalAlpha
-     */
-    fun setHighlightedZoneIds(zoneIds: Array<String>, nonHighlightedAlpha: Float) {
-        if (!nativeInitialized()) {
-            return
-        }
-        nativeSetHighlightedZoneIds(zoneIds, nonHighlightedAlpha)
-    }
-
-    /**
-     * 清除高亮，将所有区域 additionalAlpha 重置为 1.0
-     */
-    fun clearHighlightedZones() {
-        if (!nativeInitialized()) {
-            return
-        }
-        nativeClearHighlightedZones()
-    }
-
-    /**
      * 座位大小
      */
     var seatSize: Float
@@ -384,12 +362,6 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
     private external fun nativeSetSeatStyleJSONConfig(data: ByteArray?, len: Int)
     private external fun nativeUpdateSeatZoneAlternateColors(zones: Array<SeatZoneColor>)
     private external fun nativeUpdateSeats(zoneId: String, seats: Array<SeatData>)
-    private external fun nativeSetHighlightedZoneIds(
-        zoneIds: Array<String>,
-        nonHighlightedAlpha: Float
-    )
-
-    private external fun nativeClearHighlightedZones()
     private external fun nativeGetSeatSize(): Float
     private external fun nativeSetSeatSize(seatSize: Float)
     private external fun nativeGetSeatRenderZoomThreshold(): Float

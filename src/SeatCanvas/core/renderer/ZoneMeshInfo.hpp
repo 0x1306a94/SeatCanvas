@@ -34,7 +34,6 @@ struct ZoneMeshInfo {
     std::optional<tgfx::Color> alternateColor = {std::nullopt};
     std::vector<BaseMapZoneVertex> fillVertices = {};
     std::vector<BaseMapZoneVertex> strokeVertices = {};
-    float additionalAlpha = 1.0f;
     float strokeWidth = 1.0f;
     bool strokeOnTop = true;
 

@@ -218,37 +218,6 @@ void SeatCanvasCoreRenderer::setSeatSize(float seatSize) {
     invalidateContent();
 }
 
-void SeatCanvasCoreRenderer::setHighlightedZoneIds(const std::vector<std::string> &zoneIds,
-                                                   float nonHighlightedAlpha) {
-    auto config = _useBaseMapConfig.lock();
-    if (!config) {
-        return;
-    }
-    auto meshBuilder = config->meshBuilder();
-    if (!meshBuilder) {
-        return;
-    }
-    std::unordered_set<std::string> highlighted(zoneIds.begin(), zoneIds.end());
-    for (const auto &zone : meshBuilder->getZoneMeshInfos()) {
-        zone->additionalAlpha = (highlighted.count(zone->zoneId) != 0) ? 1.0f : nonHighlightedAlpha;
-    }
-    invalidateContent();
-}
-
-void SeatCanvasCoreRenderer::clearHighlightedZones() {
-    if (!_baseMapConfig) {
-        return;
-    }
-    auto meshBuilder = _baseMapConfig->meshBuilder();
-    if (!meshBuilder) {
-        return;
-    }
-    for (const auto &zone : meshBuilder->getZoneMeshInfos()) {
-        zone->additionalAlpha = 1.0f;
-    }
-    invalidateContent();
-}
-
 void SeatCanvasCoreRenderer::setStyleKeyToConfig(const std::unordered_map<kk::SeatStyleKey, std::shared_ptr<SeatStyleConfig>> &styleKeyToConfig) {
     auto changed = _seatAtlasManager->setStyleKeyToConfigs(styleKeyToConfig);
     if (changed) {
