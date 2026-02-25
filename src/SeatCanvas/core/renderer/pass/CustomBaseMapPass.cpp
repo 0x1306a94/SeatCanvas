@@ -128,19 +128,20 @@ bool CustomBaseMapPass::onDraw(tgfx::CommandEncoder *encoder, const SeatCanvasCo
         return false;
     }
 
-    if (!prepareFillPipeline(gpu)) {
-        return false;
-    }
-
     auto viewport = state->getBoundsSize();
     auto textureWidth = static_cast<int>(viewport.width);
     auto textureHeight = static_cast<int>(viewport.height);
 
+    // 可选
+    prepareMSAATexture(gpu, textureWidth, textureHeight);
+
+    if (!prepareFillPipeline(gpu)) {
+        return false;
+    }
+
     if (!prepareRenderTexture(gpu, textureWidth, textureHeight)) {
         return false;
     }
-    // 可选
-    prepareMSAATexture(gpu, textureWidth, textureHeight);
 
     if (!prepareFillBuffer(gpu)) {
         return false;
@@ -231,6 +232,14 @@ std::vector<tgfx::BindingEntry> CustomBaseMapPass::uniformBlocks() const {
 
 std::vector<tgfx::BindingEntry> CustomBaseMapPass::textureSamplers() const {
     return {{"sColorTexture", 0}};
+}
+
+tgfx::MultisampleDescriptor CustomBaseMapPass::multisample() const {
+    tgfx::MultisampleDescriptor descriptor = {};
+    if (this->msaaTexture) {
+        descriptor.count = 4;
+    }
+    return descriptor;
 }
 
 bool CustomBaseMapPass::updateMVPMatrix(const SeatCanvasCoreRendererState *state) {

@@ -82,11 +82,11 @@ void SeatTextLayer::setLineWidth(float width) {
 
 float SeatTextLayer::getAlignmentFactor() const {
     switch (_textAlign) {
-        case tgfx::TextAlign::Left:
+        case tgfx::TextAlign::Start:
             return 0.0f;
         case tgfx::TextAlign::Center:
             return -0.5f;
-        case tgfx::TextAlign::Right:
+        case tgfx::TextAlign::End:
             return -1.0f;
         case tgfx::TextAlign::Justify:
             return 0.0f;

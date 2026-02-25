@@ -40,7 +40,7 @@ class CustomRenderPass : public IContextAware {
     virtual std::shared_ptr<tgfx::Image> outputImage() = 0;
 
   protected:
-    static std::shared_ptr<tgfx::RenderPipeline> CreatePipeline(tgfx::GPU *gpu, const std::string &vertexShader, const std::string &fragmentShader, const std::vector<tgfx::VertexBufferLayout> &vertexBufferLayouts, const std::vector<tgfx::BindingEntry> &uniformBlocks, const std::vector<tgfx::PipelineColorAttachment> &colorAttachments, const std::vector<tgfx::BindingEntry> &textureSamplers);
+    static std::shared_ptr<tgfx::RenderPipeline> CreatePipeline(tgfx::GPU *gpu, const std::string &vertexShader, const std::string &fragmentShader, const std::vector<tgfx::VertexBufferLayout> &vertexBufferLayouts, const std::vector<tgfx::BindingEntry> &uniformBlocks, const std::vector<tgfx::PipelineColorAttachment> &colorAttachments, const std::vector<tgfx::BindingEntry> &textureSamplers, const tgfx::MultisampleDescriptor &multisample);
 
     std::shared_ptr<tgfx::RenderPipeline> createPipeline(tgfx::GPU *gpu) const;
 
@@ -57,6 +57,10 @@ class CustomRenderPass : public IContextAware {
     }
 
     virtual std::vector<tgfx::BindingEntry> textureSamplers() const {
+        return {};
+    }
+
+    virtual tgfx::MultisampleDescriptor multisample() const {
         return {};
     }
 

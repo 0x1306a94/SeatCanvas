@@ -250,13 +250,13 @@ static void applyTextLayerStyle(kk::layer::SeatTextLayer *textLayer, tgfx::SVGTe
         auto type = attribute.value().type();
         switch (type) {
             case tgfx::SVGTextAnchor::Type::Start:
-                textLayer->setTextAlign(tgfx::TextAlign::Left);
+                textLayer->setTextAlign(tgfx::TextAlign::Start);
                 break;
             case tgfx::SVGTextAnchor::Type::Middle:
                 textLayer->setTextAlign(tgfx::TextAlign::Center);
                 break;
             case tgfx::SVGTextAnchor::Type::End:
-                textLayer->setTextAlign(tgfx::TextAlign::Right);
+                textLayer->setTextAlign(tgfx::TextAlign::End);
                 break;
             default:
                 break;

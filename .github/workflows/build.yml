@@ -3,7 +3,7 @@ name: build
 on:
   workflow_dispatch:
   pull_request:
-    branches: [ master ]
+    branches: [ master, develop ]
   push:
     branches: [ master ]
 
@@ -36,7 +36,7 @@ jobs:
       - name: Run depctl
         run: |
           depctl --version
-          depctl
+          depctl --skip-paths third_party/tgfx/third_party/shaderc
         shell: bash
 
       - name: Build iOS
@@ -79,13 +79,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/depctl
-          key: depctl-fd8da7953a56c52e480c49d34acacdc23348226c8618e028b2caeaf67d9f83d2
+          key: depctl-02a04ee0655e5987f8715ab0f204d122d71bf5e1265865c2f38ee3f71c8b327c
           restore-keys: depctl-
 
       - name: Install depctl
         if: steps.depctl-cache.outputs.cache-hit != 'true'
         run: |
-          DEPCTL_URL="https://github.com/0x1306a94/depctl/releases/download/v1.4.5/depctl-linux-x86_64.tar.gz"
+          DEPCTL_URL="https://github.com/0x1306a94/depctl/releases/download/v1.4.6/depctl-linux-x86_64.tar.gz"
           curl -L -o /tmp/depctl.tar.gz "$DEPCTL_URL"
           rm -rf ~/depctl
           mkdir -p ~/depctl
@@ -99,7 +99,7 @@ jobs:
       - name: Run depctl
         run: |
           depctl --version
-          depctl
+          depctl --skip-paths third_party/tgfx/third_party/shaderc
         shell: bash
 
       - uses: seanmiddleditch/gha-setup-ninja@master
@@ -199,7 +199,7 @@ jobs:
       - name: Run depctl
         run: |
           depctl --version
-          depctl
+          depctl --skip-paths third_party/tgfx/third_party/shaderc
         shell: bash
 
       - name: Install ohpm dependencies

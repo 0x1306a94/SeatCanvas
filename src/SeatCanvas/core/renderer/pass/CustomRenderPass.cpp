@@ -13,7 +13,7 @@
 
 namespace kk::renderer {
 
-std::shared_ptr<tgfx::RenderPipeline> CustomRenderPass::CreatePipeline(tgfx::GPU *gpu, const std::string &vertexShader, const std::string &fragmentShader, const std::vector<tgfx::VertexBufferLayout> &vertexBufferLayouts, const std::vector<tgfx::BindingEntry> &uniformBlocks, const std::vector<tgfx::PipelineColorAttachment> &colorAttachments, const std::vector<tgfx::BindingEntry> &textureSamplers) {
+std::shared_ptr<tgfx::RenderPipeline> CustomRenderPass::CreatePipeline(tgfx::GPU *gpu, const std::string &vertexShader, const std::string &fragmentShader, const std::vector<tgfx::VertexBufferLayout> &vertexBufferLayouts, const std::vector<tgfx::BindingEntry> &uniformBlocks, const std::vector<tgfx::PipelineColorAttachment> &colorAttachments, const std::vector<tgfx::BindingEntry> &textureSamplers, const tgfx::MultisampleDescriptor &multisample) {
     auto info = gpu->info();
     auto isDesktop = info->version.find("OpenGL ES") == std::string::npos;
     std::string versionPrefix = isDesktop ? "#version 150\n\n" : "#version 300 es\n\n";
@@ -42,11 +42,12 @@ std::shared_ptr<tgfx::RenderPipeline> CustomRenderPass::CreatePipeline(tgfx::GPU
     descriptor.fragment.colorAttachments = colorAttachments;
     descriptor.layout.textureSamplers = textureSamplers;
     descriptor.layout.uniformBlocks = uniformBlocks;
+    descriptor.multisample = multisample;
     return gpu->createRenderPipeline(descriptor);
 }
 
 std::shared_ptr<tgfx::RenderPipeline> CustomRenderPass::createPipeline(tgfx::GPU *gpu) const {
-    return CreatePipeline(gpu, onBuildVertexShader(), onBuildFragmentShader(), vertexBufferLayouts(), uniformBlocks(), colorAttachments(), textureSamplers());
+    return CreatePipeline(gpu, onBuildVertexShader(), onBuildFragmentShader(), vertexBufferLayouts(), uniformBlocks(), colorAttachments(), textureSamplers(), multisample());
 }
 
 };  // namespace kk::renderer
