@@ -5,7 +5,7 @@ on:
   pull_request:
     branches: [ master, develop ]
   push:
-    branches: [ master ]
+    branches: [ master, develop ]
 
 jobs:
   ios:
@@ -20,18 +20,12 @@ jobs:
         with:
           path: |
             third_party
-          key: third-party-ios-${{ hashFiles('DEPS') }}-${{ hashFiles('vendor.json') }}
+          key: third-party-ios-${{ hashFiles('DEPS') }}
           restore-keys: third-party-ios-
 
       - uses: tecolicom/actions-use-homebrew-tools@v1
         with:
-          tools: ninja yasm 0x1306a94/tap/depctl
-
-      - name: Install Build Tools
-        run: |
-          chmod +x install_tools.sh
-          ./install_tools.sh
-        shell: bash
+          tools: cmake ninja yasm git-lfs 0x1306a94/tap/depctl
 
       - name: Run depctl
         run: |
@@ -50,7 +44,7 @@ jobs:
         with:
           path: |
             third_party
-          key: third-party-ios-${{ hashFiles('DEPS') }}-${{ hashFiles('vendor.json') }}
+          key: third-party-ios-${{ hashFiles('DEPS') }}
 
       - name: Job Failed
         if: ${{ failure() }}
@@ -71,7 +65,7 @@ jobs:
         with:
           path: |
             third_party
-          key: third-party-android-${{ hashFiles('DEPS') }}-${{ hashFiles('vendor.json') }}
+          key: third-party-android-${{ hashFiles('DEPS') }}
           restore-keys: third-party-android-
 
       - name: Get depctl Cache
@@ -121,7 +115,7 @@ jobs:
         with:
           path: |
             third_party
-          key: third-party-android-${{ hashFiles('DEPS') }}-${{ hashFiles('vendor.json') }}
+          key: third-party-android-${{ hashFiles('DEPS') }}
 
       - name: Job Failed
         if: ${{ failure() }}
@@ -189,7 +183,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: third_party
-          key: third-party-ohos-${{ hashFiles('DEPS') }}-${{ hashFiles('vendor.json') }}
+          key: third-party-ohos-${{ hashFiles('DEPS') }}
           restore-keys: third-party-ohos-
       
       - uses: tecolicom/actions-use-homebrew-tools@v1
@@ -218,7 +212,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: third_party
-          key: third-party-ohos-${{ hashFiles('DEPS') }}-${{ hashFiles('vendor.json') }}
+          key: third-party-ohos-${{ hashFiles('DEPS') }}
 
       - name: Job Failed
         if: ${{ failure() }}
