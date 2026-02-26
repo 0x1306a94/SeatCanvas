@@ -21,7 +21,6 @@ jobs:
           path: |
             third_party
           key: third-party-ios-${{ hashFiles('DEPS') }}
-          restore-keys: third-party-ios-
 
       - uses: tecolicom/actions-use-homebrew-tools@v1
         with:
@@ -66,15 +65,13 @@ jobs:
           path: |
             third_party
           key: third-party-android-${{ hashFiles('DEPS') }}
-          restore-keys: third-party-android-
 
       - name: Get depctl Cache
         id: depctl-cache
         uses: actions/cache@v4
         with:
           path: ~/depctl
-          key: depctl-02a04ee0655e5987f8715ab0f204d122d71bf5e1265865c2f38ee3f71c8b327c
-          restore-keys: depctl-
+          key: depctl-linux-x86_64-02a04ee0
 
       - name: Install depctl
         if: steps.depctl-cache.outputs.cache-hit != 'true'
@@ -184,7 +181,6 @@ jobs:
         with:
           path: third_party
           key: third-party-ohos-${{ hashFiles('DEPS') }}
-          restore-keys: third-party-ohos-
       
       - uses: tecolicom/actions-use-homebrew-tools@v1
         with:
