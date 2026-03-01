@@ -1,142 +1,249 @@
-# SeatCanvas AGENTS.md
+# SeatCanvas Agent Guide
 
-## 项目概述
+This file provides guidance to AI coding agents working inside this repository.
 
-SeatCanvas 是一个跨平台的座位图渲染库，支持 iOS、Android 和 OHOS（鸿蒙）平台。该库提供了高性能的座位图渲染、交互手势处理、自定义样式配置等功能。
+## Quick Reference
 
-### 核心特性
+**Common Commands**
+- Build iOS: `./ios/gen_ios` (simulator: `./ios/gen_simulator`)
+- Build Android: `cd android/SeatCanvasSample && ./gradlew assembleRelease`
+- Build OHOS: `cd ohos && hvigorw assembleHar --mode module -p module=libseatcanvas@default -p buildMode=release -p product=default --no-daemon`
+- Format code: `./codeformat.sh`
+- Sync dependencies: `./sync_deps.sh`
 
-- **跨平台支持**: iOS、Android、OHOS
-- **高性能渲染**: 基于 tgfx 图形库的 GPU 加速渲染，使用自定义渲染通道（Custom Render Pass）
-- **SVG 底图支持**: 支持 SVG 格式的场馆底图解析和渲染
-- **手势交互**: 支持点击、平移、缩放等手势操作，带有弹性回弹效果
-- **自定义样式**: 支持圆形和 SVG 两种座位样式配置，支持动态更新
-- **渲染模式**: 支持两种渲染模式（点击进入模式、缩放级别模式）
-- **Minimap 支持**: 支持小地图显示和动画
-- **动画系统**: 内置动画系统支持平滑的缩放和平移动画
+**Key Files**
+- Core renderer: `src/SeatCanvas/core/renderer/SeatCanvasCoreRenderer.{hpp,cpp}`
+- Platform views: `src/SeatCanvas/platform/{ios,android,ohos}/`
+- Style system: `src/SeatCanvas/core/style/`
+- Gesture handling: `src/SeatCanvas/core/gesture/ElasticZoomPanController.{hpp,cpp}`
+- Render passes: `src/SeatCanvas/core/renderer/pass/`
 
-## 架构设计
+**Critical Rules** ⚠️
+- NO direct coding for new features - design first, ask questions, get approval
+- Always initialize variables on declaration
+- Use `./codeformat.sh` before commit
+- Don't generate documentation unless explicitly requested
 
-### 目录结构
+## ⚠️ Critical Development Rules
+
+**MUST FOLLOW**:
+
+1. **Design First**: For new features, output key interfaces and pseudocode first, ask ALL questions, get confirmation before coding
+2. **No Documentation**: Don't generate README/docs unless explicitly requested
+3. **Code Reuse**: Reuse existing project functionality, keep changes minimal, avoid duplicate code
+4. **No Backward Compatibility**: When refactoring, review and clean up redundant code without backward compatibility hacks
+5. **Variable Init**: ALL variables must be initialized at declaration (even `= {}`), smart pointers initialized with `nullptr`
+6. **Function Order**: Implementation order in .cpp files should match header declaration order whenever possible
+7. **Language**: code and comments in English
+
+## Project Overview
+
+SeatCanvas is a cross-platform seat map rendering library supporting iOS, Android, and OHOS (HarmonyOS). It provides high-performance seat map rendering, interactive gesture handling, and customizable style configuration.
+
+### Core Features
+
+- **Cross-Platform**: iOS, Android, OHOS
+- **High-Performance Rendering**: GPU-accelerated rendering via tgfx graphics library with custom render passes
+- **SVG Basemap Support**: Parse and render venue basemaps in SVG format
+- **Gesture Interaction**: Tap, pan, pinch-to-zoom with elastic bounce-back effects
+- **Customizable Styles**: Circle and SVG seat styles with dynamic updates
+- **Render Modes**: ClickToEnter (tap to enter region) and ZoomBased (auto-show based on zoom level)
+- **Minimap Support**: Small map overlay with fade animations
+- **Animation System**: Built-in animation system for smooth zoom and pan transitions
+
+### Architecture Overview
+
+```
+User Input → PlatformView → SeatCanvasCoreRenderer
+                                    │
+              ┌─────────────────────┼─────────────────────┐
+              ↓                     ↓                     ↓
+    ElasticZoomPanController  CustomPasses        SeatStyleAtlas
+              ↓                     ↓                     ↓
+         Gestures            GPU Rendering           Textures
+```
+
+## Build Commands
+
+### Build Commands by Platform
+
+| Platform | Command | Notes |
+|----------|---------|-------|
+| iOS Device | `./ios/gen_ios && cd ios && xcodebuild -workspace ios/SeatCanvas.xcworkspace -scheme SeatCanvasSample -configuration Release -sdk iphoneos -arch arm64 CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO` | Requires Xcode |
+| iOS Simulator | `./ios/gen_simulator` | Faster for testing |
+| iOS (custom flags) | `./ios/gen_ios -DENABLE_TIME_PROFILER=ON` | Custom CMake flags |
+| Android (all arch) | `cd android/SeatCanvasSample && ./gradlew assembleRelease` | All architectures |
+| Android (arm64) | `cd android/SeatCanvasSample && ./gradlew assembleRelease -Parm64-only` | Faster builds |
+| OHOS | `cd ohos && hvigorw assembleHar --mode module -p module=libseatcanvas@default -p buildMode=release -p product=default --no-daemon` | Requires HarmonyOS SDK |
+
+### Dependency Management
+
+First-time setup requires syncing dependencies via depctl:
+
+```bash
+./sync_deps.sh
+```
+
+Or manually:
+```bash
+brew install 0x1306a94/tap/depctl
+depctl --skip-paths third_party/tgfx/third_party/shaderc
+```
+
+### OHOS Dependencies
+
+```bash
+cd ohos
+ohpm config set registry https://ohpm.openharmony.cn/ohpm/
+ohpm install --all
+```
+
+### Code Formatting
+
+Format all C++ and Swift code:
+```bash
+./codeformat.sh
+```
+
+Uses clang-format 14.x for C++ and swiftformat for Swift. A pre-commit hook automatically formats code before commits.
+
+## Directory Structure
 
 ```
 SeatCanvas/
-├── src/SeatCanvas/              # C++ 核心代码
-│   ├── core/                    # 核心功能模块
-│   │   ├── renderer/            # 渲染器相关
-│   │   │   ├── pass/            # 自定义渲染通道
+├── src/SeatCanvas/              # C++ core code
+│   ├── core/                    # Core modules
+│   │   ├── renderer/            # Renderer components
+│   │   │   ├── pass/            # Custom render passes
 │   │   │   └── SeatCanvasCoreRenderer.hpp/cpp
-│   │   ├── gesture/             # 手势处理
-│   │   ├── style/               # 样式配置
-│   │   ├── layers/              # 图层管理
-│   │   ├── parser/              # 底图解析器
-│   │   ├── animation/           # 动画系统
-│   │   └── drawers/             # 绘制器
-│   ├── platform/                # 平台特定实现
-│   │   ├── ios/                 # iOS 平台代码
-│   │   ├── android/             # Android 平台代码
-│   │   └── ohos/                # OHOS 平台代码
-│   └── swift/                   # Swift 桥接代码
-├── ios/                     # iOS 示例和资源
-├── android/                 # Android 示例和资源
-├── ohos/                    # OHOS 示例和资源
-├── resources/               # 资源文件
-│   └── SVGBaseMap.bundle/  # 测试资源文件（SVG 底图示例）
-├── third_party/             # 第三方依赖（通过 depsync 同步）
-└── CMakeLists.txt          # CMake 构建配置
+│   │   ├── gesture/             # Gesture handling
+│   │   ├── style/               # Style configuration
+│   │   ├── layers/              # Layer management
+│   │   ├── parser/              # Basemap parsers
+│   │   ├── animation/           # Animation system
+│   │   └── drawers/             # Drawers
+│   ├── platform/                # Platform-specific implementations
+│   │   ├── ios/                 # iOS platform code
+│   │   ├── android/             # Android platform code
+│   │   └── ohos/                # OHOS platform code
+│   └── swift/                   # Swift bridging code
+├── ios/                         # iOS samples and resources
+├── android/                     # Android samples and resources
+├── ohos/                        # OHOS samples and resources
+├── resources/                   # Resource files
+│   └── SVGBaseMap.bundle/       # Test resources (SVG basemap examples)
+├── third_party/                 # Third-party dependencies (synced via depctl)
+└── CMakeLists.txt               # CMake build configuration
 ```
 
-### 核心组件
+## Core Components
 
-#### 1. SeatCanvasCoreRenderer
+### 1. SeatCanvasCoreRenderer
 
-**位置**: `src/SeatCanvas/core/renderer/SeatCanvasCoreRenderer.hpp`
+**Location**: `src/SeatCanvas/core/renderer/SeatCanvasCoreRenderer.hpp`
 
-核心渲染器，负责渲染逻辑和生命周期管理。
+Core renderer responsible for rendering logic and lifecycle management.
 
-**关键方法**: `setBaseMapConfig()`, `setStyleKeyToConfigFromJSON()`, `handleTap/Pan/Pinch()`, `zoomToRect()`, `start/stop()`, `draw()`
+**Key Methods**: `setBaseMapConfig()`, `setStyleKeyToConfigFromJSON()`, `handleTap/Pan/Pinch()`, `zoomToRect()`, `start/stop()`, `draw()`
 
-**内部组件**: `CustomBaseMapPass`, `CustomSeatPass`, `SeatStyleAtlasManager`, `ElasticZoomPanController`, `Animator`
+**Internal Components**: `CustomBaseMapPass`, `CustomSeatPass`, `SeatStyleAtlasManager`, `ElasticZoomPanController`, `Animator`
 
-#### 2. PlatformView
+### 2. PlatformView
 
-**位置**: `src/SeatCanvas/core/renderer/PlatformView.hpp`
+**Location**: `src/SeatCanvas/core/renderer/PlatformView.hpp`
 
-平台视图抽象接口，提供 GPU 上下文和窗口。各平台实现：iOS (`IOSPlatformView.mm`), Android (`AndroidPlatformView.cpp`), OHOS (`OHOSPlatformView.cpp`)
+Platform view abstraction providing GPU context and window. Platform implementations: iOS (`IOSPlatformView.mm`), Android (`AndroidPlatformView.cpp`), OHOS (`OHOSPlatformView.cpp`)
 
-#### 3. 自定义渲染通道
+### 3. Custom Render Passes
 
-**位置**: `src/SeatCanvas/core/renderer/pass/`
+**Location**: `src/SeatCanvas/core/renderer/pass/`
 
-**CustomBaseMapPass**: 底图 GPU 渲染，使用 BaseMapMeshBuilder 构建网格
+**CustomBaseMapPass**: Basemap GPU rendering using BaseMapMeshBuilder for mesh construction
 
-**CustomSeatPass**: 座位 GPU 渲染，实例化渲染，纹理图集管理样式，UV 偏移更新
+**CustomSeatPass**: Seat GPU rendering with instanced rendering, texture atlas for style management, UV offset updates
 
-**渲染流程**: CommandEncoder → CustomBaseMapPass → CustomSeatPass → Canvas 绘制 → 图层绘制 → 提交呈现
+**Render Pipeline**: CommandEncoder → CustomBaseMapPass → CustomSeatPass → Canvas drawing → Layer drawing → Present
 
-#### 4. 手势处理
+### 4. Gesture Handling
 
-**位置**: `src/SeatCanvas/core/gesture/`
+**Location**: `src/SeatCanvas/core/gesture/`
 
-**核心类**: `ElasticZoomPanController`（弹性缩放平移，边界回弹），`Scroller`（滚动动画，惯性滚动），`VelocityTracker`（速度计算），`SpringBack`（弹性回弹）
+**Core Classes**:
+- `ElasticZoomPanController` (elastic zoom/pan with boundary bounce-back)
+- `Scroller` (scroll animation, inertial scrolling)
+- `VelocityTracker` (velocity calculation)
+- `SpringBack` (elastic bounce-back)
 
-**手势状态**: `Began`, `Changed`, `Ended`, `Cancelled`
+**Gesture States**: `Began`, `Changed`, `Ended`, `Cancelled`
 
-#### 5. 座位样式系统
+### 5. Seat Style System
 
-**位置**: `src/SeatCanvas/core/style/`
+**Location**: `src/SeatCanvas/core/style/`
 
-**样式类型**: `CircleSeatStyleConfig`（圆形样式），`SVGSeatStyleConfig`（SVG 样式），`SeatStyleKey`（zoneId + styleId）
+**Style Types**:
+- `CircleSeatStyleConfig` (circle style)
+- `SVGSeatStyleConfig` (SVG style)
+- `SeatStyleKey` (zoneId + styleId)
 
-**样式渲染**: `SeatStyleRenderer`（基类）→ `CanvasSeatStyleRenderer`（渲染到纹理图集）
+**Style Rendering**: `SeatStyleRenderer` (base class) → `CanvasSeatStyleRenderer` (renders to texture atlas)
 
-**图集管理**: `SeatStyleAtlasManager`（动态生成/更新图集，UV 偏移，多密度适配）
+**Atlas Management**: `SeatStyleAtlasManager` (dynamic atlas generation/updates, UV offsets, multi-density adaptation)
 
-#### 6. 底图解析器
+### 6. Basemap Parser
 
-**位置**: `src/SeatCanvas/core/parser/`
+**Location**: `src/SeatCanvas/core/parser/`
 
-**接口**: `IBaseMapParser` → `BaseMapParserFactory`（工厂模式）→ `SVGBaseMapParser`（SVG 实现）
+**Interface**: `IBaseMapParser` → `BaseMapParserFactory` (factory pattern) → `SVGBaseMapParser` (SVG implementation)
 
-**解析结果**: `BaseMapParseResult`（Layer + RegionInfo + SeatInfo）
+**Parse Result**: `BaseMapParseResult` (Layer + RegionInfo + SeatInfo)
 
-#### 7. 渲染模式
+### 7. Render Modes
 
-**位置**: `src/SeatCanvas/core/SeatRenderMode.hpp`
+**Location**: `src/SeatCanvas/core/SeatRenderMode.hpp`
 
-**模式**: `ClickToEnter`（点击进入区域视图，座位坐标相对区域），`ZoomBased`（缩放级别自动显示，座位坐标相对画布）
+**Modes**:
+- `ClickToEnter` (tap to enter region view, seat coordinates relative to region)
+- `ZoomBased` (auto-show based on zoom level, seat coordinates relative to canvas)
 
-#### 8. 图层系统
+### 8. Layer System
 
-**位置**: `src/SeatCanvas/core/layers/`
+**Location**: `src/SeatCanvas/core/layers/`
 
-**核心图层**: `BaseMapRootLayer`（底图图层树），`SeatRegionLayer`（区域图层），`SeatTextLayer`（文本图层）
+**Core Layers**:
+- `BaseMapRootLayer` (basemap layer tree)
+- `SeatRegionLayer` (region layer)
+- `SeatTextLayer` (text layer)
 
-#### 9. 绘制器
+### 9. Drawers
 
-**位置**: `src/SeatCanvas/core/drawers/`
+**Location**: `src/SeatCanvas/core/drawers/`
 
-**绘制器**: `SeatRegionNameLayerTree`（区域名称），`SeatOverlayLayerTree`（Minimap，透明度动画）
+**Drawers**:
+- `SeatRegionNameLayerTree` (region names)
+- `SeatOverlayLayerTree` (minimap with opacity animations)
 
-#### 10. 动画系统
+### 10. Animation System
 
-**位置**: `src/SeatCanvas/core/animation/`
+**Location**: `src/SeatCanvas/core/animation/`
 
-**核心类**: `Animator`（动画生命周期，插值动画，回调通知）
+**Core Class**: `Animator` (animation lifecycle, interpolation, callback notifications)
 
-#### 11. 代理模式
+### 11. Delegate Pattern
 
-**位置**: `src/SeatCanvas/core/renderer/SeatCanvasCoreRendererDelegate.hpp`
+**Location**: `src/SeatCanvas/core/renderer/SeatCanvasCoreRendererDelegate.hpp`
 
-**接口**: `shouldSelectSeat()`（可阻止选择），`didSelectSeat()`，`didDeselectSeat()`
+**Interface**:
+- `shouldSelectSeat()` (can prevent selection)
+- `didSelectSeat()`
+- `didDeselectSeat()`
 
-## 平台集成
+## Platform Integration
 
 ### iOS
 
-**主要文件**: `platform/ios/ui/SeatCanvasView.swift`, `platform/ios/renderer/IOSPlatformView.mm`
+**Main Files**: `platform/ios/ui/SeatCanvasView.swift`, `platform/ios/renderer/IOSPlatformView.mm`
 
-**使用**: Swift/Objective-C++ 桥接，OpenGL ES 渲染，CADisplayLink 渲染循环
+**Usage**: Swift/Objective-C++ bridging, OpenGL ES rendering, CADisplayLink render loop
 
 ```swift
 let seatCanvasView = SeatCanvasView(frame: view.bounds)
@@ -146,9 +253,9 @@ seatCanvasView.applySeatStyleJSONConfig(styleJsonData)
 
 ### Android
 
-**主要文件**: `android/.../SeatCanvasView.kt`, `platform/android/renderer/AndroidPlatformView.cpp`
+**Main Files**: `android/.../SeatCanvasView.kt`, `platform/android/renderer/AndroidPlatformView.cpp`
 
-**使用**: JNI 桥接，OpenGL ES 渲染，TextureView 渲染目标，ValueAnimator 渲染循环
+**Usage**: JNI bridging, OpenGL ES rendering, TextureView render target, ValueAnimator render loop
 
 ```kotlin
 val seatCanvasView = SeatCanvasView(context)
@@ -157,167 +264,211 @@ seatCanvasView.loadBaseMap(svgData, BaseMapFormat.SVG)
 
 ### OHOS
 
-**主要文件**: `ohos/.../SeatCanvasView.ets`, `platform/ohos/OHOSPlatformView.cpp`
+**Main Files**: `ohos/.../SeatCanvasView.ets`, `platform/ohos/OHOSPlatformView.cpp`
 
-**使用**: NAPI 桥接，OpenGL ES 渲染，XComponent 渲染目标
+**Usage**: NAPI bridging, OpenGL ES rendering, XComponent render target
 
 ```typescript
 @State controller: SeatCanvasViewController = new SeatCanvasViewController()
 SeatCanvasView({ controller: this.controller })
 ```
 
-## 底图格式
+## Basemap Format
 
-**位置**: `src/SeatCanvas/core/parser/BaseMapFormat.hpp`
+**Location**: `src/SeatCanvas/core/parser/BaseMapFormat.hpp`
 
-**格式**: SVG（通过 `SVGBaseMapParser` 解析）
+**Format**: SVG (parsed via `SVGBaseMapParser`)
 
-**配置**: `BaseMapConfig`（BaseMapMeshBuilder + Layer + BaseMapRootLayer + 原始尺寸）
+**Configuration**: `BaseMapConfig` (BaseMapMeshBuilder + Layer + BaseMapRootLayer + original dimensions)
 
-## 渲染流程
+## Render Pipeline
 
-1. **初始化**: 创建 `SeatCanvasCoreRenderer` → 设置 `PlatformView` → 创建 `ElasticZoomPanController` → 初始化样式
-2. **加载底图**: `setBaseMapConfig()` → `BaseMapParserFactory` 解析 → 提取图层和区域信息
-3. **设置样式**: `setStyleKeyToConfigFromJSON()` → `SeatStyleAtlasManager` 生成纹理图集
-4. **渲染循环**: `DisplayLink` 驱动 → `draw()` → CustomBaseMapPass → CustomSeatPass → 图层绘制 → 提交
-5. **手势处理**: 平台层传递 → `ElasticZoomPanController` 处理 → 更新状态 → 重渲染
-6. **数据更新**: 更新网格/图集 → `invalidateContent()` 标记重绘
+1. **Initialization**: Create `SeatCanvasCoreRenderer` → Set `PlatformView` → Create `ElasticZoomPanController` → Initialize styles
+2. **Load Basemap**: `setBaseMapConfig()` → `BaseMapParserFactory` parse → Extract layers and region info
+3. **Set Styles**: `setStyleKeyToConfigFromJSON()` → `SeatStyleAtlasManager` generates texture atlas
+4. **Render Loop**: `DisplayLink` driven → `draw()` → CustomBaseMapPass → CustomSeatPass → Layer drawing → Present
+5. **Gesture Handling**: Platform layer passes events → `ElasticZoomPanController` processes → Update state → Re-render
+6. **Data Updates**: Update mesh/atlas → `invalidateContent()` marks for redraw
 
-## 关键 API
+## Key APIs
 
-**底图配置**: `setBaseMapConfig(baseMapConfig, renderMode)`
+**Basemap Configuration**: `setBaseMapConfig(baseMapConfig, renderMode)`
 
-**样式配置**: `setStyleKeyToConfig(styleKeyToConfig)`, `setStyleKeyToConfigFromJSON(bytes, len)`
+**Style Configuration**: `setStyleKeyToConfig(styleKeyToConfig)`, `setStyleKeyToConfigFromJSON(bytes, len)`
 
-**缩放控制**: `getZoomScale()`, `setZoomScale()`, `getMinimumZoomScale()`, `getMaximumZoomScale()`, `getContentOffset()`, `setContentOffset()`
+**Zoom Control**: `getZoomScale()`, `setZoomScale()`, `getMinimumZoomScale()`, `getMaximumZoomScale()`, `getContentOffset()`, `setContentOffset()`
 
-**手势处理**: `handleTap(location)`, `handlePan(state, translation, timestampMs)`, `handlePinch(state, scale, center)`
+**Gesture Handling**: `handleTap(location)`, `handlePan(state, translation, timestampMs)`, `handlePinch(state, scale, center)`
 
-**区域操作**: `zoomToRect(rect, animated, padding, durationMs)`, `setSelectedzoneId(zoneId)`, `getSeatRegionDataByPoint(x, y)`
+**Region Operations**: `zoomToRect(rect, animated, padding, durationMs)`, `setSelectedzoneId(zoneId)`, `getSeatRegionDataByPoint(x, y)`
 
-**坐标转换**: `convertScreenToOriginal()`, `convertOriginalToScreen()`, `getVisibleOriginalRect()`, `isPointInContentArea()`
+**Coordinate Conversion**: `convertScreenToOriginal()`, `convertOriginalToScreen()`, `getVisibleOriginalRect()`, `isPointInContentArea()`
 
-**渲染控制**: `start()`, `stop()`, `draw(force)`, `invalidateContent()`, `getFPS()`
+**Render Control**: `start()`, `stop()`, `draw(force)`, `invalidateContent()`, `getFPS()`
 
-**代理**: `setDelegate(delegate)`
+**Delegate**: `setDelegate(delegate)`
 
-**缩放级别配置**: `ZoomLevelConfig`（seat/row/zone/venue，控制 ZoomBased 模式座位渲染时机）
+**Zoom Level Config**: `ZoomLevelConfig` (seat/row/zone/venue, controls seat rendering timing in ZoomBased mode)
 
-## 开发指南
+## Development Guide
 
-### 添加新的座位样式
+### Adding New Seat Styles
 
-继承 `SeatStyleConfig` → 实现 `SeatStyleRenderer` → 在 `SeatStyleKey` 中添加样式键 → 在 `SeatStyleConfigJSONHelper` 中添加 JSON 支持 → 注册到渲染器
+1. Inherit from `SeatStyleConfig`
+2. Implement `SeatStyleRenderer`
+3. Add style key to `SeatStyleKey`
+4. Add JSON support in `SeatStyleConfigJSONHelper`
+5. Register with renderer
 
-### 添加新的底图格式
+### Adding New Basemap Formats
 
-实现 `IBaseMapParser` → 在 `BaseMapFormat` 中添加枚举 → 在 `BaseMapParserFactory` 中注册 → 实现解析逻辑返回 `BaseMapParseResult`
+1. Implement `IBaseMapParser`
+2. Add enum to `BaseMapFormat`
+3. Register in `BaseMapParserFactory`
+4. Implement parse logic returning `BaseMapParseResult`
 
-### 自定义渲染通道
+### Custom Render Passes
 
-继承 `CustomRenderPass` → 实现 `onDraw()` → 实现着色器方法 → 实现 `outputImage()` → 在 `SeatCanvasCoreRenderer` 中集成
+1. Inherit from `CustomRenderPass`
+2. Implement `onDraw()`
+3. Implement shader methods
+4. Implement `outputImage()`
+5. Integrate in `SeatCanvasCoreRenderer`
 
-## 依赖与构建
+## Dependencies and Build
 
-**依赖**: tgfx（图形渲染库，SVG 解析和图层支持），json（nlohmann/json，样式配置解析）
+**Dependencies**:
+- tgfx (graphics rendering library, SVG parsing, layer support)
+- json (nlohmann/json for style config parsing)
 
-**构建**: CMake，C++17，支持 iOS/Android/OHOS，启用 tgfx SVG 和 Layers 支持
+**Build**: CMake, C++17, supports iOS/Android/OHOS, enables tgfx SVG and Layers support
 
-## 编码规范
+## Coding Standards
 
-### 开发流程规范
+### Commit Message Format
 
-* **对话语言**: 对话用中文，代码和注释用英语
-* **新需求流程**: 禁止直接编码，先输出关键接口和伪代码，穷尽所有疑问向用户提问，方案确认后才可编码
-* **文档生成**: 不生成说明文件，除非明确要求
-* **代码复用**: 复用项目已有功能，保持变更简洁，避免重复代码
-* **重构原则**: 重构时审查关联代码合理性，顺带清理冗余，不考虑向后兼容
+- **Length**: Within 120 characters
+- **Language**: English only
+- **Ending**: Must end with period (.)
+- **Focus**: User-perceivable changes, not implementation details
+- **Format**: `<verb> <what> <context>.`
 
-### Commit 信息
+**Good Examples**:
+- `Add minimap fade animation for better visual feedback.`
+- `Fix seat selection crash when tapping outside region bounds.`
+- `Optimize GPU rendering by reducing draw calls with instancing.`
 
-* 120 字符内的英语概括，以英文句号结尾，中间无其他标点，侧重描述用户可感知的变化
+**Bad Examples**:
+- `update code` (too vague)
+- `修复bug` (wrong language)
+- `Add feature, fix bug, refactor` (multiple changes, has comma)
 
+### C++ Coding Standards
 
-### C++ 代码规范
+#### Code Formatting
 
-#### 代码格式化
+Use **clang-format 14.x** with `.clang-format` config. Run `./codeformat.sh` to format all code.
 
-使用 **clang-format 14.x** 格式化，配置文件 `.clang-format`，运行 `./codeformat.sh` 格式化所有代码。
+#### Naming Conventions
 
-#### 命名规范
+* **Classes**: PascalCase (`SeatCanvasCoreRenderer`)
+* **Functions**: camelCase (`setBaseMapConfig`, `getZoomScale`)
+  - Class static methods, global functions/variables: Start with uppercase
+  - Member methods/variables, local variables: Start with lowercase
+* **Member Variables**: camelCase
+* **Constants**: UPPER_SNAKE_CASE (`MINIMAP_FADE_DURATION_MS`)
+* **Namespaces**: lowercase, supports nesting (`namespace kk::renderer`)
+* **Enums**: PascalCase (`enum class GestureState`)
+* **Variable Naming**: Avoid abbreviations, keep short and semantically clear
 
-* **类名**: PascalCase（`SeatCanvasCoreRenderer`）
-* **函数名**: camelCase（`setBaseMapConfig`, `getZoomScale`）
-  - 类静态方法、全局函数/变量：大写开头
-  - 成员方法/变量、局部变量：小写开头
-* **成员变量**: camelCase
-* **常量**: 全大写下划线（`MINIMAP_FADE_DURATION_MS`）
-* **命名空间**: 小写，支持嵌套（`namespace kk::renderer`）
-* **枚举**: PascalCase（`enum class GestureState`）
-* **变量命名**: 避免缩写，简短且语义明确
+#### Code Style
 
-#### 代码风格
+* **Variable Init**: Always initialize variables at declaration (even `= {}`), smart pointers initialized with `nullptr`
+* **Function Order**: Implementation order in .cpp files should match header declaration order whenever possible
+* **Smart Pointers**: Prefer smart pointers for memory management
+* **Const Correctness**: Use const wherever possible
+* **Move Semantics**: Prefer move semantics for large objects
+* **Memory Optimization**: Use `reserve` for vectors when size is known in advance
 
-* **变量初始化**: 声明时一律赋初始值（即使是 `= {}`），智能指针初始值使用 `nullptr`
-* **函数顺序**: CPP 文件里的函数实现顺序与头文件中定义的顺序尽可能一致
-* **智能指针**: 优先使用智能指针管理内存
-* **const 正确性**: 尽可能使用 const
-* **移动语义**: 大对象优先使用移动语义
-* **内存优化**: vector 能预知大小时，使用 `reserve` 提前分配内存
+#### Comment Standards
 
-#### 注释规范
+* **include/ Directory APIs**: Require detailed comments with parameter descriptions
+* **Other Public Methods**: One-sentence description of main functionality
+* **Private Methods**: No comments required
+* **In-Function Code**: No inline comments unless design intent cannot be understood from code alone
+* **Documentation Comments**: Use Doxygen style (`///` or `/** */`)
 
-* **include/ 目录 API**: 需详细注释含参数描述
-* **其他公开方法**: 一段话描述主要功能
-* **私有方法**: 不加注释
-* **函数内代码**: 不加行注释，除非只看代码无法理解设计意图
-* **文档注释**: 使用 Doxygen 风格（`///` 或 `/** */`）
+#### Git Commits
 
-#### Git 提交
+Project has pre-commit hook that auto-formats code (C++ with clang-format, Swift with swiftformat).
 
-项目配置了 pre-commit hook，提交前自动格式化代码（C++ 用 clang-format，Swift 用 swiftformat）。
+## Performance Optimization
 
-## 性能优化
+Instanced rendering reduces draw calls → Texture atlas manages styles → Mesh caching → Conditional rendering (zoom levels) → DisplayLink frame rate control → Incremental updates
 
-实例化渲染减少 Draw Call → 纹理图集（Atlas）管理样式 → 网格缓存管理 → 条件渲染（缩放级别） → DisplayLink 帧率控制 → 增量更新
+## Important Notes
 
-## 注意事项
+* Rendering operations execute on main thread
+* Use smart pointers for memory management
+* Properly release C++ resources when platform views are destroyed
+* Distinguish between screen coordinates, content coordinates, and original coordinates
+* Handle gesture recognizer conflicts and priorities
+* Use `getFPS()` to monitor performance
+* Choose render mode based on use case
 
-* 渲染操作在主线程执行
-* 使用智能指针管理内存
-* 平台视图销毁时正确释放 C++ 资源
-* 区分屏幕坐标、内容坐标、原始坐标
-* 处理手势识别器冲突和优先级
-* 使用 `getFPS()` 监控性能
-* 根据场景选择渲染模式
+## Common Tasks
 
-## 常见任务
+### Loading Seat Map
 
-### 加载座位图
+Prepare SVG basemap → `setBaseMapConfig()` → `setStyleKeyToConfigFromJSON()` → Auto-extract regions and seat info
 
-准备 SVG 底图 → `setBaseMapConfig()` → `setStyleKeyToConfigFromJSON()` → 自动提取区域和座位信息
+### Handling Seat Tap
 
-### 处理座位点击
+Implement `SeatCanvasCoreRendererDelegate` → `setDelegate()` → `handleTap()` → `getSeatRegionDataByPoint()` to find region
 
-实现 `SeatCanvasCoreRendererDelegate` → `setDelegate()` → `handleTap()` → `getSeatRegionDataByPoint()` 查找区域
+### Custom Seat Styles
 
-### 自定义座位样式
+Prepare style JSON → `setStyleKeyToConfigFromJSON()` → Auto-update texture atlas → Apply styles via `SeatStyleKey`
 
-准备样式 JSON → `setStyleKeyToConfigFromJSON()` → 自动更新纹理图集 → 根据 `SeatStyleKey` 应用样式
+### Region Zoom
 
-### 区域缩放
+`zoomToRect()` to zoom to region (with animation params) → `getVisibleOriginalRect()` to get visible area → `setSelectedzoneId()` to set selected region (ClickToEnter mode)
 
-`zoomToRect()` 缩放到区域（可指定动画参数）→ `getVisibleOriginalRect()` 获取可见区域 → `setSelectedzoneId()` 设置选中区域（ClickToEnter 模式）
+### Switching Render Modes
 
-### 切换渲染模式
+Specify `SeatRenderMode` in `setBaseMapConfig()`: `ZoomBased` (auto-show based on zoom) or `ClickToEnter` (tap to enter region view)
 
-在 `setBaseMapConfig()` 时指定 `SeatRenderMode`：`ZoomBased`（缩放级别自动显示）或 `ClickToEnter`（点击进入区域视图）
+## Troubleshooting
 
-## 相关文件
+**Build fails with missing dependencies**
+→ Run `./sync_deps.sh` to sync all dependencies
 
-- **README.md**: 项目基本信息和构建说明
-- **CMakeLists.txt**: CMake 构建配置
-- **docs/layer_version_implementation.md**: 图层版本实现文档
-- **include/**: 公共头文件
-- **src/**: 源代码实现
-- **platform/**: 平台特定代码
+**Code formatting hook fails**
+→ Ensure clang-format 14.x is installed: `brew install clang-format@14`
+
+**iOS build fails with signing error**
+→ Add `CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO` to xcodebuild command
+
+**GPU rendering issues**
+→ Check `getFPS()` output, ensure PlatformView is properly initialized
+
+**OHOS dependencies fail to install**
+→ Check registry: `ohpm config set registry https://ohpm.openharmony.cn/ohpm/`
+
+**Pre-commit hook reformats code unexpectedly**
+→ This is expected behavior - commit will succeed after auto-formatting
+
+**Seat selection not working**
+→ Verify delegate is set via `setDelegate()` and `shouldSelectSeat()` returns true
+
+**Zoom animation stuttering**
+→ Check frame rate with `getFPS()`, ensure no blocking operations on main thread
+
+## Related Files
+
+- **README.md**: Project overview and build instructions
+- **CMakeLists.txt**: CMake build configuration
+- **docs/layer_version_implementation.md**: Layer version implementation documentation
+- **include/**: Public header files
+- **src/**: Source code implementation
+- **platform/**: Platform-specific code
