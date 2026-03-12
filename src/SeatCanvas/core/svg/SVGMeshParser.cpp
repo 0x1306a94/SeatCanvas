@@ -31,6 +31,13 @@
 
 namespace kk::svg {
 
+static tgfx::Matrix MakeCombinedTransform(const tgfx::Matrix &parentTransform,
+                                          const tgfx::Matrix &nodeTransform) {
+    tgfx::Matrix combinedTransform = nodeTransform;
+    combinedTransform.postConcat(parentTransform);
+    return combinedTransform;
+}
+
 std::unique_ptr<SVGMeshParseResult> SVGMeshParser::parse(std::shared_ptr<tgfx::SVGDOM> dom) {
     if (dom == nullptr) {
         return nullptr;
@@ -67,7 +74,7 @@ std::unique_ptr<SVGMeshParseResult> SVGMeshParser::parse(std::shared_ptr<tgfx::S
 
     auto &children = rootNode->getChildren();
     for (const auto &child : children) {
-        parseNode(child.get(), viewportLengthContext);
+        parseNode(child.get(), viewportLengthContext, tgfx::Matrix::I());
     }
 
     for (auto &item : shapeOrders) {
@@ -83,7 +90,8 @@ std::unique_ptr<SVGMeshParseResult> SVGMeshParser::parse(std::shared_ptr<tgfx::S
     return result;
 }
 
-void SVGMeshParser::parseNode(tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext) {
+void SVGMeshParser::parseNode(tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext,
+                              const tgfx::Matrix &parentTransform) {
     if (node == nullptr) {
         return;
     }
@@ -91,32 +99,32 @@ void SVGMeshParser::parseNode(tgfx::SVGNode *node, const tgfx::SVGLengthContext 
     auto tag = node->tag();
     switch (tag) {
         case tgfx::SVGTag::G: {
-            parseGroup(static_cast<tgfx::SVGGroup *>(node), lengthContext);
+            parseGroup(static_cast<tgfx::SVGGroup *>(node), lengthContext, parentTransform);
             break;
         }
         case tgfx::SVGTag::Line: {
-            parseLine(static_cast<tgfx::SVGLine *>(node), lengthContext);
+            parseLine(static_cast<tgfx::SVGLine *>(node), lengthContext, parentTransform);
             break;
         }
         case tgfx::SVGTag::Circle: {
-            parseCircle(static_cast<tgfx::SVGCircle *>(node), lengthContext);
+            parseCircle(static_cast<tgfx::SVGCircle *>(node), lengthContext, parentTransform);
             break;
         }
         case tgfx::SVGTag::Ellipse: {
-            parseEllipse(static_cast<tgfx::SVGEllipse *>(node), lengthContext);
+            parseEllipse(static_cast<tgfx::SVGEllipse *>(node), lengthContext, parentTransform);
             break;
         }
         case tgfx::SVGTag::Rect: {
-            parseRect(static_cast<tgfx::SVGRect *>(node), lengthContext);
+            parseRect(static_cast<tgfx::SVGRect *>(node), lengthContext, parentTransform);
             break;
         }
         case tgfx::SVGTag::Path: {
-            parsePath(static_cast<tgfx::SVGPath *>(node), lengthContext);
+            parsePath(static_cast<tgfx::SVGPath *>(node), lengthContext, parentTransform);
             break;
         }
         case tgfx::SVGTag::Polygon:
         case tgfx::SVGTag::Polyline: {
-            parsePoly(static_cast<tgfx::SVGPoly *>(node), lengthContext);
+            parsePoly(static_cast<tgfx::SVGPoly *>(node), lengthContext, parentTransform);
             break;
         }
         default:
@@ -125,16 +133,19 @@ void SVGMeshParser::parseNode(tgfx::SVGNode *node, const tgfx::SVGLengthContext 
     }
 }
 
-void SVGMeshParser::parseGroup(tgfx::SVGGroup *node, const tgfx::SVGLengthContext &lengthContext) {
+void SVGMeshParser::parseGroup(tgfx::SVGGroup *node, const tgfx::SVGLengthContext &lengthContext,
+                               const tgfx::Matrix &parentTransform) {
     if (!node->hasChildren()) {
         return;
     }
+    const auto combinedTransform = MakeCombinedTransform(parentTransform, node->getTransform());
     for (const auto &child : node->getChildren()) {
-        parseNode(child.get(), lengthContext);
+        parseNode(child.get(), lengthContext, combinedTransform);
     }
 }
 
-void SVGMeshParser::parseLine(tgfx::SVGLine *node, const tgfx::SVGLengthContext &lengthContext) {
+void SVGMeshParser::parseLine(tgfx::SVGLine *node, const tgfx::SVGLengthContext &lengthContext,
+                              const tgfx::Matrix &parentTransform) {
     const auto x1 = lengthContext.resolve(node->getX1(), tgfx::SVGLengthContext::LengthType::Horizontal);
     const auto y1 = lengthContext.resolve(node->getY1(), tgfx::SVGLengthContext::LengthType::Vertical);
     const auto x2 = lengthContext.resolve(node->getX2(), tgfx::SVGLengthContext::LengthType::Horizontal);
@@ -142,24 +153,26 @@ void SVGMeshParser::parseLine(tgfx::SVGLine *node, const tgfx::SVGLengthContext 
     tgfx::Path path;
     path.moveTo(x1, y1);
     path.lineTo(x2, y2);
-    path.transform(node->getTransform());
+    path.transform(MakeCombinedTransform(parentTransform, node->getTransform()));
 
     shapeOrders.push_back(std::make_pair(node, std::move(path)));
 }
 
-void SVGMeshParser::parseCircle(tgfx::SVGCircle *node, const tgfx::SVGLengthContext &lengthContext) {
+void SVGMeshParser::parseCircle(tgfx::SVGCircle *node, const tgfx::SVGLengthContext &lengthContext,
+                                const tgfx::Matrix &parentTransform) {
     const auto cx = lengthContext.resolve(node->getCx(), tgfx::SVGLengthContext::LengthType::Horizontal);
     const auto cy = lengthContext.resolve(node->getCy(), tgfx::SVGLengthContext::LengthType::Vertical);
     const auto r = lengthContext.resolve(node->getR(), tgfx::SVGLengthContext::LengthType::Other);
 
     tgfx::Path path;
     path.addOval(tgfx::Rect::MakeXYWH(cx - r, cy - r, 2 * r, 2 * r));
-    path.transform(node->getTransform());
+    path.transform(MakeCombinedTransform(parentTransform, node->getTransform()));
 
     shapeOrders.push_back(std::make_pair(node, std::move(path)));
 }
 
-void SVGMeshParser::parseEllipse(tgfx::SVGEllipse *node, const tgfx::SVGLengthContext &lengthContext) {
+void SVGMeshParser::parseEllipse(tgfx::SVGEllipse *node, const tgfx::SVGLengthContext &lengthContext,
+                                 const tgfx::Matrix &parentTransform) {
     const auto cx = lengthContext.resolve(node->getCx(), tgfx::SVGLengthContext::LengthType::Horizontal);
     const auto cy = lengthContext.resolve(node->getCy(), tgfx::SVGLengthContext::LengthType::Vertical);
     const auto [rx, ry] = lengthContext.resolveOptionalRadii(node->getRx(), node->getRy());
@@ -170,12 +183,13 @@ void SVGMeshParser::parseEllipse(tgfx::SVGEllipse *node, const tgfx::SVGLengthCo
 
     tgfx::Path path;
     path.addOval(tgfx::Rect::MakeXYWH(cx - rx, cy - ry, rx * 2, ry * 2));
-    path.transform(node->getTransform());
+    path.transform(MakeCombinedTransform(parentTransform, node->getTransform()));
 
     shapeOrders.push_back(std::make_pair(node, std::move(path)));
 }
 
-void SVGMeshParser::parseRect(tgfx::SVGRect *node, const tgfx::SVGLengthContext &lengthContext) {
+void SVGMeshParser::parseRect(tgfx::SVGRect *node, const tgfx::SVGLengthContext &lengthContext,
+                              const tgfx::Matrix &parentTransform) {
     const auto rect = lengthContext.resolveRect(node->getX(), node->getY(), node->getWidth(), node->getHeight());
     const auto [rx, ry] = lengthContext.resolveOptionalRadii(node->getRx(), node->getRy());
 
@@ -184,12 +198,13 @@ void SVGMeshParser::parseRect(tgfx::SVGRect *node, const tgfx::SVGLengthContext 
 
     tgfx::Path path;
     path.addRRect(rrect);
-    path.transform(node->getTransform());
+    path.transform(MakeCombinedTransform(parentTransform, node->getTransform()));
 
     shapeOrders.push_back(std::make_pair(node, std::move(path)));
 }
 
-void SVGMeshParser::parsePath(tgfx::SVGPath *node, const tgfx::SVGLengthContext &lengthContext) {
+void SVGMeshParser::parsePath(tgfx::SVGPath *node, const tgfx::SVGLengthContext &lengthContext,
+                              const tgfx::Matrix &parentTransform) {
     (void)lengthContext;
 
     auto path = node->getShapePath();
@@ -197,12 +212,13 @@ void SVGMeshParser::parsePath(tgfx::SVGPath *node, const tgfx::SVGLengthContext 
     if (clipRule) {
         path.setFillType(clipRule->asFillType());
     }
-    path.transform(node->getTransform());
+    path.transform(MakeCombinedTransform(parentTransform, node->getTransform()));
 
     shapeOrders.push_back(std::make_pair(node, std::move(path)));
 }
 
-void SVGMeshParser::parsePoly(tgfx::SVGPoly *node, const tgfx::SVGLengthContext &lengthContext) {
+void SVGMeshParser::parsePoly(tgfx::SVGPoly *node, const tgfx::SVGLengthContext &lengthContext,
+                              const tgfx::Matrix &parentTransform) {
     (void)lengthContext;
 
     auto points = node->getPoints();
@@ -216,7 +232,7 @@ void SVGMeshParser::parsePoly(tgfx::SVGPoly *node, const tgfx::SVGLengthContext 
         path.lineTo(points[i]);
     }
     path.close();
-    path.transform(node->getTransform());
+    path.transform(MakeCombinedTransform(parentTransform, node->getTransform()));
 
     auto clipRule = node->getClipRule().get();
     if (clipRule) {
