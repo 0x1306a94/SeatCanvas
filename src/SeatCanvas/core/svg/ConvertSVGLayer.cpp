@@ -459,14 +459,15 @@ std::shared_ptr<tgfx::Layer> convertGroup(const ConvertSVGLayerOptions &options,
     if (!node->hasChildren()) {
         return nullptr;
     }
-    auto root = tgfx::Layer::Make();
+    auto groupLayer = tgfx::Layer::Make();
+    groupLayer->setMatrix(node->getTransform());
     for (auto const &child : node->getChildren()) {
         auto layer = convertSVGNodeToLayer(child.get(), lengthContext, options);
         if (layer) {
-            root->addChild(layer);
+            groupLayer->addChild(layer);
         }
     }
-    return root;
+    return groupLayer;
 }
 
 std::shared_ptr<kk::layer::SeatZoneLayer> convertLine(tgfx::SVGLine *node, const tgfx::SVGLengthContext &lengthContext) {

@@ -12,6 +12,7 @@
 #include <memory>
 #include <vector>
 
+#include <tgfx/core/Matrix.h>
 #include <tgfx/core/Path.h>
 #include <tgfx/core/Size.h>
 #include <tgfx/svg/SVGLengthContext.h>
@@ -59,14 +60,22 @@ class SVGMeshParser {
     std::unique_ptr<SVGMeshParseResult> parse(std::shared_ptr<tgfx::SVGDOM> dom);
 
   private:
-    void parseNode(tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext);
-    void parseGroup(tgfx::SVGGroup *node, const tgfx::SVGLengthContext &lengthContext);
-    void parseLine(tgfx::SVGLine *node, const tgfx::SVGLengthContext &lengthContext);
-    void parseCircle(tgfx::SVGCircle *node, const tgfx::SVGLengthContext &lengthContext);
-    void parseEllipse(tgfx::SVGEllipse *node, const tgfx::SVGLengthContext &lengthContext);
-    void parseRect(tgfx::SVGRect *node, const tgfx::SVGLengthContext &lengthContext);
-    void parsePath(tgfx::SVGPath *node, const tgfx::SVGLengthContext &lengthContext);
-    void parsePoly(tgfx::SVGPoly *node, const tgfx::SVGLengthContext &lengthContext);
+    void parseNode(tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext,
+                   const tgfx::Matrix &parentTransform);
+    void parseGroup(tgfx::SVGGroup *node, const tgfx::SVGLengthContext &lengthContext,
+                    const tgfx::Matrix &parentTransform);
+    void parseLine(tgfx::SVGLine *node, const tgfx::SVGLengthContext &lengthContext,
+                   const tgfx::Matrix &parentTransform);
+    void parseCircle(tgfx::SVGCircle *node, const tgfx::SVGLengthContext &lengthContext,
+                     const tgfx::Matrix &parentTransform);
+    void parseEllipse(tgfx::SVGEllipse *node, const tgfx::SVGLengthContext &lengthContext,
+                      const tgfx::Matrix &parentTransform);
+    void parseRect(tgfx::SVGRect *node, const tgfx::SVGLengthContext &lengthContext,
+                   const tgfx::Matrix &parentTransform);
+    void parsePath(tgfx::SVGPath *node, const tgfx::SVGLengthContext &lengthContext,
+                   const tgfx::Matrix &parentTransform);
+    void parsePoly(tgfx::SVGPoly *node, const tgfx::SVGLengthContext &lengthContext,
+                   const tgfx::Matrix &parentTransform);
 
     void removeInvisible();
 
