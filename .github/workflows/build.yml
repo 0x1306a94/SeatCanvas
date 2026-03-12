@@ -3,9 +3,9 @@ name: build
 on:
   workflow_dispatch:
   pull_request:
-    branches: [ master, develop ]
+    branches: [master, develop]
   push:
-    branches: [ master, develop ]
+    branches: [master, develop]
 
 jobs:
   ios:
@@ -35,7 +35,13 @@ jobs:
       - name: Build iOS
         run: |
           ./ios/gen_ios -DENABLE_TIME_PROFILER=ON
-          xcodebuild -workspace ios/SeatCanvas.xcworkspace -scheme SeatCanvasSample -configuration Release -sdk iphoneos -arch arm64 CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO
+          xcodebuild -workspace ios/SeatCanvas.xcworkspace \
+          -scheme SeatCanvasSample \
+          -configuration Release \
+          -sdk iphoneos \
+          -arch arm64 \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO
 
       - name: Save Third-Party Cache
         if: ${{ (github.event_name == 'push') && (steps.third-party-cache.outputs.cache-hit != 'true') }}
@@ -71,17 +77,25 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/depctl
-          key: depctl-linux-x86_64-02a04ee0
+          key: depctl-linux-x86_64-69ac32ee
 
       - name: Install depctl
         if: steps.depctl-cache.outputs.cache-hit != 'true'
         run: |
-          DEPCTL_URL="https://github.com/0x1306a94/depctl/releases/download/v1.4.6/depctl-linux-x86_64.tar.gz"
+          DEPCTL_URL="https://github.com/0x1306a94/depctl/releases/download/v1.4.7/depctl-linux-x86_64.tar.gz"
           curl -L -o /tmp/depctl.tar.gz "$DEPCTL_URL"
           rm -rf ~/depctl
           mkdir -p ~/depctl
           tar -xzf /tmp/depctl.tar.gz -C ~/depctl
           chmod +x ~/depctl/depctl
+
+      - name: Save depctl Cache
+        if: steps.depctl-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/depctl
+          key: depctl-linux-x86_64-69ac32ee
 
       - name: Configure depctl PATH
         run: |
@@ -97,9 +111,9 @@ jobs:
 
       - uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
-          cache: 'gradle'
+          distribution: "temurin"
+          java-version: "17"
+          cache: "gradle"
 
       - name: Build Android
         run: |
@@ -121,7 +135,6 @@ jobs:
           name: android_build
           path: android
 
-
   ohos:
     runs-on: macos-latest
     steps:
@@ -134,7 +147,6 @@ jobs:
         with:
           path: ~/ohos-cmd-tools
           key: ohos-cli-6.0.0.868-mac-arm64-v2
-          restore-keys: ohos-cli-
 
       - name: Install CLI Tools
         if: steps.cli-tools-cache.outputs.cache-hit != 'true'
@@ -143,6 +155,14 @@ jobs:
           curl -L -o /tmp/cmdtools.zip "$TOOLS_URL"
           unzip -q /tmp/cmdtools.zip -d /tmp
           mv /tmp/command-line-tools ~/ohos-cmd-tools
+
+      - name: Save CLI Tools Cache
+        if: steps.cli-tools-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/ohos-cmd-tools
+          key: ohos-cli-6.0.0.868-mac-arm64-v2
 
       - name: Configure Environment
         run: |
@@ -181,7 +201,7 @@ jobs:
         with:
           path: third_party
           key: third-party-ohos-${{ hashFiles('DEPS') }}
-      
+
       - uses: tecolicom/actions-use-homebrew-tools@v1
         with:
           tools: ninja yasm 0x1306a94/tap/depctl
