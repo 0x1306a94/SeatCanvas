@@ -12,6 +12,7 @@
 #include "BaseMapParseResult.hpp"
 
 #include <memory>
+#include <utility>
 
 namespace tgfx {
 class Data;
@@ -27,8 +28,9 @@ class IBaseMapParser {
 
     /// 解析底图数据
     /// @param data 原始数据（shared_ptr）
+    /// @param configData 解析配置数据（shared_ptr）
     /// @return 解析结果，失败返回 nullptr
-    virtual std::unique_ptr<BaseMapParseResult> parse(std::shared_ptr<tgfx::Data> data) = 0;
+    virtual std::unique_ptr<BaseMapParseResult> parse(std::shared_ptr<tgfx::Data> data, std::shared_ptr<tgfx::Data> configData) = 0;
 
     /// 获取支持的格式
     /// @return 格式

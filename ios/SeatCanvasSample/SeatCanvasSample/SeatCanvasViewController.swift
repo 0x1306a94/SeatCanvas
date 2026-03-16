@@ -63,7 +63,8 @@ class SeatCanvasViewController: UIViewController {
             return
         }
 
-        seatCanvasView.loadBaseMap(data, format: .svg)
+        let parseConfig = SVGBaseMapParseConfig(zoneIdAttributeNames: ["zoneId", "regioncode"])
+        seatCanvasView.loadBaseMap(data, format: .svg, parseConfig: parseConfig)
     }
 
     func buildCircleSeatStyleConfig() -> Data? {

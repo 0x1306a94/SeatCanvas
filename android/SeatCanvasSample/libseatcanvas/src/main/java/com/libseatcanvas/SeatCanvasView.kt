@@ -179,8 +179,8 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         release()
     }
 
-    fun loadBaseMap(data: ByteArray?, format: BaseMapFormat) {
-        val result = nativeLoadBaseMapFromFormat(data, format.name)
+    fun loadBaseMap(data: ByteArray?, format: BaseMapFormat, parseConfig: BaseMapParseConfig? = null) {
+        val result = nativeLoadBaseMapFromFormat(data, format.name, parseConfig?.serializeToByteArray())
         nativeLoadBaseMap(result)
     }
 
@@ -355,7 +355,7 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         delegate?.didDeselectSeat(zoneId, seatId)
     }
 
-    private external fun nativeLoadBaseMapFromFormat(data: ByteArray?, formatName: String): Long
+    private external fun nativeLoadBaseMapFromFormat(data: ByteArray?, formatName: String, parseConfigJSON: ByteArray?): Long
     private external fun nativeLoadBaseMap(ptr: Long): Boolean
     private external fun nativeSetCanvasColor(color: Int)
     private external fun nativeGetCanvasColor(): Int

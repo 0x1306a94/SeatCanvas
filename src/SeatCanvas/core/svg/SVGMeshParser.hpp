@@ -8,6 +8,8 @@
 #ifndef SVGMeshParser_hpp
 #define SVGMeshParser_hpp
 
+#include "SVGParseConfig.hpp"
+
 #include <map>
 #include <memory>
 #include <vector>
@@ -51,7 +53,7 @@ struct SVGMeshParseResult {
 /// 3. 保存 Path 用于精确 hit-test
 class SVGMeshParser {
   public:
-    SVGMeshParser() = default;
+    explicit SVGMeshParser(const SVGParseConfig &parseConfig = {});
     ~SVGMeshParser() = default;
 
     /// 解析 SVG DOM
@@ -83,6 +85,7 @@ class SVGMeshParser {
     std::shared_ptr<kk::renderer::ZoneMeshInfo> processPath(const tgfx::Path &path, tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext);
 
   private:
+    SVGParseConfig parseConfig = {};
     kk::renderer::BaseMapMeshBuilder *meshBuilder = nullptr;
     std::vector<std::pair<tgfx::SVGNode *, tgfx::Path>> shapeOrders = {};
 };

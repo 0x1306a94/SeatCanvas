@@ -31,6 +31,19 @@
 
 namespace kk::svg {
 
+static bool IsZoneIdAttribute(const SVGParseConfig &parseConfig, const std::string &attributeName) {
+    for (const auto &candidate : parseConfig.zoneIdAttributeNames) {
+        if (candidate == attributeName) {
+            return true;
+        }
+    }
+    return false;
+}
+
+SVGMeshParser::SVGMeshParser(const SVGParseConfig &parseConfig)
+    : parseConfig(parseConfig) {
+}
+
 static tgfx::Matrix MakeCombinedTransform(const tgfx::Matrix &parentTransform,
                                           const tgfx::Matrix &nodeTransform) {
     tgfx::Matrix combinedTransform = nodeTransform;
@@ -282,7 +295,7 @@ std::shared_ptr<kk::renderer::ZoneMeshInfo> SVGMeshParser::processPath(const tgf
             continue;
         }
 
-        if (item.name == "zoneId") {
+        if (IsZoneIdAttribute(parseConfig, item.name)) {
             zoneId = item.value;
         }
         attributes[item.name] = item.value;

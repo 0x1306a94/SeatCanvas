@@ -99,7 +99,9 @@ bool SeatCanvasCoreRendererReplacePlatformView(CPPObject *_Nonnull cppObject, CA
     return true;
 }
 
-void *_Nullable SeatCanvasCoreRendererParseBaseMap(const void *_Nullable __sized_by_or_null(len) bytes, size_t len, kk::parser::BaseMapFormat format, UIImage *_Nullable *_Nullable miniMapImage) {
+void *_Nullable SeatCanvasCoreRendererParseBaseMap(const void *_Nullable __sized_by_or_null(len) bytes, size_t len, kk::parser::BaseMapFormat format,
+                                                   const void *_Nullable __sized_by_or_null(parseConfigLen) parseConfigBytes, size_t parseConfigLen,
+                                                   UIImage *_Nullable *_Nullable miniMapImage) {
     if (bytes == nullptr || len == 0) {
         tgfx::PrintError("bytes is null or len is zero");
         return nullptr;
@@ -112,7 +114,11 @@ void *_Nullable SeatCanvasCoreRendererParseBaseMap(const void *_Nullable __sized
 
     PROFILE_TIME(std::string("LoadBaseMapFrom") + kk::parser::formatNameToString(format));
     auto data = tgfx::Data::MakeWithoutCopy(bytes, len);
-    auto result = kk::parser::BaseMapParserFactory::parse(data, format);
+    std::shared_ptr<tgfx::Data> parseConfigData = nullptr;
+    if (parseConfigBytes != nullptr && parseConfigLen > 0) {
+        parseConfigData = tgfx::Data::MakeWithCopy(parseConfigBytes, parseConfigLen);
+    }
+    auto result = kk::parser::BaseMapParserFactory::parse(data, format, parseConfigData);
     if (!result) {
         tgfx::PrintError("parse result is null");
         return nullptr;
@@ -134,7 +140,7 @@ void *_Nullable SeatCanvasCoreRendererParseBaseMap(const void *_Nullable __sized
 }
 
 void *_Nullable SeatCanvasCoreRendererParseBaseMapFromSVG(const void *_Nullable __sized_by_or_null(len) bytes, size_t len, UIImage *_Nullable *_Nullable miniMapImage) {
-    return SeatCanvasCoreRendererParseBaseMap(bytes, len, kk::parser::BaseMapFormat::SVG, miniMapImage);
+    return SeatCanvasCoreRendererParseBaseMap(bytes, len, kk::parser::BaseMapFormat::SVG, nullptr, 0, miniMapImage);
 }
 
 bool SeatCanvasCoreRendererLoadBaseMap(CPPObject *_Nonnull cppObject, void **_Nullable loadResult) {

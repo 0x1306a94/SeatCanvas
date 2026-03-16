@@ -48,7 +48,7 @@ bool SeatCanvasCoreRendererReplacePlatformView(CPPObject *_Nonnull cppObject, CA
 ///   - format: 格式
 ///   - miniMapImage: 生成的minimap 图片（可选）
 /// - Returns: 解析成功则返回不透明数据指针，失败时返回 nullptr
-void *_Nullable SeatCanvasCoreRendererParseBaseMap(const void *_Nullable __sized_by_or_null(len) bytes, size_t len, kk::parser::BaseMapFormat format, UIImage *_Nullable *_Nullable miniMapImage);
+void *_Nullable SeatCanvasCoreRendererParseBaseMap(const void *_Nullable __sized_by_or_null(len) bytes, size_t len, kk::parser::BaseMapFormat format, const void *_Nullable __sized_by_or_null(parseConfigLen) parseConfigBytes, size_t parseConfigLen, UIImage *_Nullable *_Nullable miniMapImage);
 
 /// 解析 SVG 底图（向后兼容接口）
 /// - Parameters:

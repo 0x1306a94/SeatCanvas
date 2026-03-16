@@ -15,6 +15,7 @@ import com.libseatcanvas.SeatCanvasRendererDelegate
 import com.libseatcanvas.SeatData
 import com.libseatcanvas.SeatZoneColor
 import com.libseatcanvas.style.SeatStyleConfigBuilder
+import com.libseatcanvas.SVGBaseMapParseConfig
 import com.seatcanvas.sample.databinding.FragmentSecondBinding
 
 /**
@@ -43,7 +44,8 @@ class SecondFragment : Fragment() {
 
         val baseMapInfo = arguments?.getParcelable<BaseMapFileInfo>(ARG_BASE_MAP_INFO) ?: return
         val data = readAssetFileToByteArray(requireContext(), baseMapInfo.assetPath) ?: return
-        binding.seatCanvasView.loadBaseMap(data, BaseMapFormat.SVG)
+        val parseConfig = SVGBaseMapParseConfig(listOf("zoneId", "regioncode"))
+        binding.seatCanvasView.loadBaseMap(data, BaseMapFormat.SVG, parseConfig)
         binding.seatCanvasView.canvasColor = ContextCompat.getColor(context, R.color.canvas_bg)
         // 应用默认样式（SVG样式）
         binding.seatCanvasView.applySeatStyleJSONConfig(buildSVGSeatStyleConfig())

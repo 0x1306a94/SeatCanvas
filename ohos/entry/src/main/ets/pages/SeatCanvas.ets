@@ -4,7 +4,8 @@ import {
   SeatCanvasView,
   SeatCanvasViewController,
   SeatData,
-  SeatZoneColor
+  SeatZoneColor,
+  SVGBaseMapParseConfig
 } from 'libseatcanvas';
 import { SeatStyleBuilder } from './SeatStyleBuilder';
 import { resourceManager } from '@kit.LocalizationKit';
@@ -195,7 +196,8 @@ export struct SeatCanvas {
 
       let manager = getContext(this).resourceManager;
       this.applySVGSeatStyleConfig();
-      await this.controller.loadFromAssets(manager, this.baseMap.assetPath, BaseMapFormat.SVG);
+      let parseConfig = new SVGBaseMapParseConfig(['zoneId', 'regioncode'])
+      await this.controller.loadFromAssets(manager, this.baseMap.assetPath, BaseMapFormat.SVG, parseConfig);
       console.log(`底图: ${this.baseMap.assetPath} 加载成功`);
       this.loadMockData();
     })
