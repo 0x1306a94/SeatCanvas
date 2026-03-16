@@ -114,7 +114,8 @@ extern "C" {
 JNIEXPORT jlong JNICALL
 Java_com_libseatcanvas_SeatCanvasView_nativeLoadBaseMapFromFormat(JNIEnv *env, jobject thiz,
                                                                   jbyteArray srcData,
-                                                                  jstring jformatName) {
+                                                                  jstring jformatName,
+                                                                  jbyteArray parseConfigData) {
     if (srcData == nullptr) {
         tgfx::PrintError("data is null");
         return 0;
@@ -137,8 +138,21 @@ Java_com_libseatcanvas_SeatCanvasView_nativeLoadBaseMapFromFormat(JNIEnv *env, j
     PROFILE_TIME(std::string("LoadBaseMapFrom") + kk::parser::formatNameToString(format));
 
     auto data = tgfx::Data::MakeWithoutCopy(bytes, len);
-    auto result = kk::parser::BaseMapParserFactory::parse(data, format);
+    jbyte *parseConfigBytes = nullptr;
+    jsize parseConfigLen = 0;
+    if (parseConfigData != nullptr) {
+        parseConfigBytes = env->GetByteArrayElements(parseConfigData, nullptr);
+        parseConfigLen = env->GetArrayLength(parseConfigData);
+    }
+    std::shared_ptr<tgfx::Data> parseConfig = nullptr;
+    if (parseConfigBytes != nullptr && parseConfigLen > 0) {
+        parseConfig = tgfx::Data::MakeWithCopy(parseConfigBytes, parseConfigLen);
+    }
+    auto result = kk::parser::BaseMapParserFactory::parse(data, format, parseConfig);
     env->ReleaseByteArrayElements(srcData, bytes, 0);
+    if (parseConfigBytes != nullptr) {
+        env->ReleaseByteArrayElements(parseConfigData, parseConfigBytes, JNI_ABORT);
+    }
     if (!result) {
         tgfx::PrintError("parse result is null");
         return 0;

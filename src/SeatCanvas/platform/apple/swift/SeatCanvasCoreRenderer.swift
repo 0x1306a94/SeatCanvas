@@ -90,7 +90,7 @@ extension SeatCanvasCoreRenderer {
         return kk.bridge.SeatCanvasCoreRendererReplacePlatformView(cppObject, eaglLayer)
     }
 
-    func loadBaseMap(_ data: Data?, format: BaseMapFormat) {
+    func loadBaseMap(_ data: Data?, format: BaseMapFormat, parseConfigJSON: Data?) {
         guard let cppObject else {
             return
         }
@@ -106,9 +106,31 @@ extension SeatCanvasCoreRenderer {
         }
 
         DispatchQueue.global(qos: .userInteractive).async {
-            var loadResult = data.withUnsafeBytes { buffer in
-                let result = kk.bridge.SeatCanvasCoreRendererParseBaseMap(buffer.baseAddress, buffer.count, cppFormat, nil)
-                return result
+            var loadResult: UnsafeMutableRawPointer?
+            if let parseConfigJSON {
+                loadResult = parseConfigJSON.withUnsafeBytes { parseConfigBuffer in
+                    data.withUnsafeBytes { buffer in
+                        kk.bridge.SeatCanvasCoreRendererParseBaseMap(
+                            buffer.baseAddress,
+                            buffer.count,
+                            cppFormat,
+                            parseConfigBuffer.baseAddress,
+                            parseConfigBuffer.count,
+                            nil
+                        )
+                    }
+                }
+            } else {
+                loadResult = data.withUnsafeBytes { buffer in
+                    kk.bridge.SeatCanvasCoreRendererParseBaseMap(
+                        buffer.baseAddress,
+                        buffer.count,
+                        cppFormat,
+                        nil,
+                        0,
+                        nil
+                    )
+                }
             }
 
             DispatchQueue.main.async { [weak self] in

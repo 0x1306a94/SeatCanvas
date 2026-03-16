@@ -29,6 +29,7 @@
 
 #include <cstdint>
 #include <unordered_map>
+#include <vector>
 
 #include <tgfx/core/Data.h>
 #include <tgfx/core/Stream.h>
@@ -79,6 +80,7 @@ struct LoadBaseMapTaskData {
     NativeResourceManager *mNativeResMgr{nullptr};
     std::string filename{""};
     kk::parser::BaseMapFormat format{kk::parser::BaseMapFormat::Unknown};
+    std::string parseConfigJSON{""};
     LoadBaseMapResult *result{nullptr};
 };
 
@@ -96,7 +98,11 @@ static void LoadBaseMapTaskExecute(napi_env env, void *userdata) {
     }
 
     PROFILE_TIME(std::string("LoadBaseMapFrom") + kk::parser::formatNameToString(taskData->format));
-    auto result = kk::parser::BaseMapParserFactory::parse(data, taskData->format);
+    std::shared_ptr<tgfx::Data> parseConfigData = nullptr;
+    if (!taskData->parseConfigJSON.empty()) {
+        parseConfigData = tgfx::Data::MakeWithCopy(taskData->parseConfigJSON.data(), taskData->parseConfigJSON.length());
+    }
+    auto result = kk::parser::BaseMapParserFactory::parse(data, taskData->format, parseConfigData);
     if (!result) {
         tgfx::PrintError("parse result is null");
         return;
@@ -138,8 +144,8 @@ static napi_value InitSystemProperties(napi_env env, napi_callback_info info) {
 
 static napi_value ParseBaseMapFromAssets(napi_env env, napi_callback_info info) {
     napi_value jsView = nullptr;
-    size_t argc = 3;
-    napi_value args[3] = {nullptr};
+    size_t argc = 4;
+    napi_value args[4] = {nullptr};
     napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
 
     NativeResourceManager *mNativeResMgr = OH_ResourceManager_InitNativeResourceManager(env, args[0]);
@@ -155,6 +161,11 @@ static napi_value ParseBaseMapFromAssets(napi_env env, napi_callback_info info) 
     char format[128];
     napi_get_value_string_utf8(env, args[2], format, sizeof(format), &formatLength);
 
+    std::string parseConfigJSON = "";
+    if (argc >= 4 && args[3] != nullptr) {
+        parseConfigJSON = GetUtf8String(env, args[3]);
+    }
+
     napi_value promise = nullptr;
     napi_deferred deferred = nullptr;
     napi_create_promise(env, &deferred, &promise);
@@ -164,6 +175,7 @@ static napi_value ParseBaseMapFromAssets(napi_env env, napi_callback_info info) 
     taskData->mNativeResMgr = mNativeResMgr;
     taskData->filename = std::string(name);
     taskData->format = kk::parser::parseFormatName(format);
+    taskData->parseConfigJSON = parseConfigJSON;
 
     napi_value resourceName = nullptr;
     napi_create_string_utf8(env, "LoadBaseMapTask", NAPI_AUTO_LENGTH, &resourceName);

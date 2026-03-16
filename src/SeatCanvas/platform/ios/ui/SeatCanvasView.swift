@@ -55,13 +55,14 @@ public class SeatCanvasView: UIView {
         }
     }
 
-    /// 加载底图（指定格式）
+    /// 加载底图（指定格式和解析配置）
     /// - Parameters:
     ///   - data: 底图数据
     ///   - format: 格式
+    ///   - parseConfig: 解析配置
     @objc
-    public func loadBaseMap(_ data: Data?, format: BaseMapFormat) {
-        renderer?.loadBaseMap(data, format: format)
+    public func loadBaseMap(_ data: Data?, format: BaseMapFormat, parseConfig: BaseMapParseConfig? = nil) {
+        renderer?.loadBaseMap(data, format: format, parseConfigJSON: parseConfig?.serializeToData())
     }
 
     /// 应用样式配置（使用 SeatStyleConfigBuilder 构建）

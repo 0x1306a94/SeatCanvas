@@ -4,6 +4,7 @@ import { display } from '@kit.ArkUI';
 import { SeatCanvasInit } from '../utils/SeatCanvasInit';
 import { BaseMapFormat } from '../utils/BaseMapFormat';
 import { SeatCanvasRendererDelegate } from './SeatCanvasRendererDelegate';
+import { BaseMapParseConfig } from './BaseMapParseConfig';
 import { SeatData } from './SeatData';
 import { SeatZoneColor } from './SeatZoneColor';
 import { ZoomLevel } from './ZoomLevel';
@@ -77,8 +78,8 @@ export class SeatCanvasViewController {
    * @param name 资源名称
    * @param format 格式
    */
-  async loadFromAssets(manager: resourceManager.ResourceManager, name: string, format: BaseMapFormat) {
-    let nativePtr = await seatcanvas.JRendererCore.ParseBaseMapFromAssets(manager, name, format)
+  async loadFromAssets(manager: resourceManager.ResourceManager, name: string, format: BaseMapFormat, parseConfig: BaseMapParseConfig | null = null) {
+    let nativePtr = await seatcanvas.JRendererCore.ParseBaseMapFromAssets(manager, name, format, parseConfig?.serializeToString() ?? null)
     this.jView.loadBaseMap(nativePtr);
   }
 

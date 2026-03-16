@@ -89,7 +89,7 @@ std::shared_ptr<ZoneMeshInfo> BaseMapMeshBuilder::findZoneContainingPoint(const 
     // 从后往前查找，返回最上层的区域（最后添加的）
     for (auto iter = zoneMeshInfos.rbegin(); iter != zoneMeshInfos.rend(); ++iter) {
         const auto &zoneInfo = *iter;
-        if (!zoneInfo || !zoneInfo->path) {
+        if (!zoneInfo || !zoneInfo->path || zoneInfo->zoneId.empty()) {
             continue;
         }
 

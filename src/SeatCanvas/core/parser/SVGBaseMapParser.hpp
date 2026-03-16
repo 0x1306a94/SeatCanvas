@@ -9,6 +9,7 @@
 #define SVGBaseMapParser_hpp
 
 #include "IBaseMapParser.hpp"
+#include "core/svg/SVGParseConfig.hpp"
 
 namespace kk::parser {
 
@@ -21,12 +22,13 @@ class SVGBaseMapParser : public IBaseMapParser {
 
     /// 解析 SVG 格式的底图数据
     /// @param data SVG 二进制数据（shared_ptr）
+    /// @param configData SVG 解析配置数据（shared_ptr）
     /// @return 解析结果，失败返回 nullptr
-    std::unique_ptr<BaseMapParseResult> parse(std::shared_ptr<tgfx::Data> data) override;
+    virtual std::unique_ptr<BaseMapParseResult> parse(std::shared_ptr<tgfx::Data> data, std::shared_ptr<tgfx::Data> configData) override;
 
     /// 获取格式名称
     /// @return BaseMapFormat::SVG
-    BaseMapFormat getFormat() const override {
+    virtual BaseMapFormat getFormat() const override {
         return BaseMapFormat::SVG;
     }
 };

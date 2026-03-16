@@ -12,6 +12,7 @@
 #include "BaseMapParseResult.hpp"
 #include "IBaseMapParser.hpp"
 
+#include <cstddef>
 #include <memory>
 #include <string>
 
@@ -31,11 +32,25 @@ class BaseMapParserFactory {
     /// @return 解析结果，失败返回 nullptr
     static std::unique_ptr<BaseMapParseResult> parse(std::shared_ptr<tgfx::Data> data, const std::string &formatName);
 
+    /// 根据格式名称和解析配置解析底图数据
+    /// @param data 原始数据（shared_ptr）
+    /// @param formatName 格式名称（如 "svg", "json", "geojson"）
+    /// @param configData 解析配置数据
+    /// @return 解析结果，失败返回 nullptr
+    static std::unique_ptr<BaseMapParseResult> parse(std::shared_ptr<tgfx::Data> data, const std::string &formatName, std::shared_ptr<tgfx::Data> configData);
+
     /// 根据格式枚举解析底图数据
     /// @param data 原始数据（shared_ptr）
     /// @param format 格式枚举
     /// @return 解析结果，失败返回 nullptr
     static std::unique_ptr<BaseMapParseResult> parse(std::shared_ptr<tgfx::Data> data, BaseMapFormat format);
+
+    /// 根据格式枚举和解析配置解析底图数据
+    /// @param data 原始数据（shared_ptr）
+    /// @param format 格式枚举
+    /// @param configData 解析配置数据
+    /// @return 解析结果，失败返回 nullptr
+    static std::unique_ptr<BaseMapParseResult> parse(std::shared_ptr<tgfx::Data> data, BaseMapFormat format, std::shared_ptr<tgfx::Data> configData);
 
     /// 创建指定格式的解析器
     /// @param format 格式枚举

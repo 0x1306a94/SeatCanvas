@@ -17,7 +17,7 @@
 
 namespace kk::parser {
 
-std::unique_ptr<BaseMapParseResult> SVGBaseMapParser::parse(std::shared_ptr<tgfx::Data> data) {
+std::unique_ptr<BaseMapParseResult> SVGBaseMapParser::parse(std::shared_ptr<tgfx::Data> data, std::shared_ptr<tgfx::Data> configData) {
     if (!data || data->empty()) {
         return nullptr;
     }
@@ -34,7 +34,8 @@ std::unique_ptr<BaseMapParseResult> SVGBaseMapParser::parse(std::shared_ptr<tgfx
     }
 
     // 使用 SVGMeshParser 解析 mesh 数据
-    kk::svg::SVGMeshParser meshParser;
+    auto parseConfig = kk::svg::SVGParseConfig::FromJSON(configData);
+    kk::svg::SVGMeshParser meshParser(parseConfig);
     auto meshResult = meshParser.parse(dom);
     if (!meshResult) {
         return nullptr;

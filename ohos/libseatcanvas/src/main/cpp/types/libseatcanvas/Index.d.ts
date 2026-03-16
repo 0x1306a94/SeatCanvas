@@ -65,7 +65,7 @@ export declare namespace seatcanvas {
      * @returns 解析结果 C++ 对象地址
      */
     static ParseBaseMapFromAssets(manager: resourceManager.ResourceManager, name: string,
-      format: string): Promise<number>;
+      format: string, parseConfigJSON?: string | null): Promise<number>;
 
     /**
      * 当前实例唯一标识符，用于绑定 XComponent
