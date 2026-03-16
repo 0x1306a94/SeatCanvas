@@ -7,9 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3C508F5D2F67EAA300EC455B /* LookinServer in Frameworks */ = {isa = PBXBuildFile; productRef = 3C508F5C2F67EAA300EC455B /* LookinServer */; };
 		3C50A0132EC41E0B00014F5E /* SeatCanvas.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3C50A0122EC41E0B00014F5E /* SeatCanvas.framework */; };
 		3C50A0142EC41E0B00014F5E /* SeatCanvas.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 3C50A0122EC41E0B00014F5E /* SeatCanvas.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		3C50A01A2EC4216200014F5E /* LookinServer in Frameworks */ = {isa = PBXBuildFile; productRef = 3C50A0192EC4216200014F5E /* LookinServer */; };
+		3C7E691C2F67EBDE00512FD7 /* LookinServer in Frameworks */ = {isa = PBXBuildFile; productRef = 3C7E691B2F67EBDE00512FD7 /* LookinServer */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -80,7 +81,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				3C50A0132EC41E0B00014F5E /* SeatCanvas.framework in Frameworks */,
-				3C50A01A2EC4216200014F5E /* LookinServer in Frameworks */,
+				3C7E691C2F67EBDE00512FD7 /* LookinServer in Frameworks */,
+				3C508F5D2F67EAA300EC455B /* LookinServer in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -147,7 +149,8 @@
 			);
 			name = SeatCanvasSample;
 			packageProductDependencies = (
-				3C50A0192EC4216200014F5E /* LookinServer */,
+				3C508F5C2F67EAA300EC455B /* LookinServer */,
+				3C7E691B2F67EBDE00512FD7 /* LookinServer */,
 			);
 			productName = SeatCanvasSample;
 			productReference = 3C509FC22EC41C3D00014F5E /* SeatCanvasSample.app */;
@@ -178,7 +181,7 @@
 			mainGroup = 3C509FB92EC41C3D00014F5E;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				3C50A0182EC4216200014F5E /* XCRemoteSwiftPackageReference "LookinServer" */,
+				3C7E691A2F67EBDE00512FD7 /* XCLocalSwiftPackageReference "../third_party/LookinServer" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3C509FC32EC41C3D00014F5E /* Products */;
@@ -464,21 +467,20 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		3C50A0182EC4216200014F5E /* XCRemoteSwiftPackageReference "LookinServer" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/QMUI/LookinServer";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.2.8;
-			};
+/* Begin XCLocalSwiftPackageReference section */
+		3C7E691A2F67EBDE00512FD7 /* XCLocalSwiftPackageReference "../third_party/LookinServer" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../third_party/LookinServer;
 		};
-/* End XCRemoteSwiftPackageReference section */
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		3C50A0192EC4216200014F5E /* LookinServer */ = {
+		3C508F5C2F67EAA300EC455B /* LookinServer */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 3C50A0182EC4216200014F5E /* XCRemoteSwiftPackageReference "LookinServer" */;
+			productName = LookinServer;
+		};
+		3C7E691B2F67EBDE00512FD7 /* LookinServer */ = {
+			isa = XCSwiftPackageProductDependency;
 			productName = LookinServer;
 		};
 /* End XCSwiftPackageProductDependency section */
