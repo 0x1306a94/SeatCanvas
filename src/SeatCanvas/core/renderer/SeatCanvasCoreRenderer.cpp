@@ -1033,7 +1033,7 @@ void SeatCanvasCoreRenderer::hideMinimapWithAnimation() {
 
     kk::animation::AnimationOptions options{};
     options.durationMs = 350.0;
-    options.delayMs = 400.0;
+    options.delayMs = 1500.0;
     options.curve = kk::animation::AnimationCurve::EaseOut;
 
     const auto platform = Platform::Current();
@@ -1363,7 +1363,11 @@ void SeatCanvasCoreRenderer::handleAutoZoomOnTap(const tgfx::Point &location) {
     scrollViewWithLocation(location);
 }
 
-static tgfx::Point ComputeClampedOffset(const tgfx::Point &screenPoint, const tgfx::Point &contentPoint, float zoom, const tgfx::Size &viewportSize, const tgfx::Size &contentSize) {
+static tgfx::Point ComputeClampedOffset(const tgfx::Point &screenPoint, const tgfx::Point &contentPoint, float zoom, const tgfx::Size &viewportSize, const tgfx::Size &contentSize, const EdgeInsets &contentInset) {
+    // 计算有效视口范围（考虑 contentInset）
+    const float effectiveWidth = viewportSize.width - contentInset.left - contentInset.right;
+    const float effectiveHeight = viewportSize.height - contentInset.top - contentInset.bottom;
+
     float ox = screenPoint.x - contentPoint.x * zoom;
     float oy = screenPoint.y - contentPoint.y * zoom;
 
@@ -1372,18 +1376,19 @@ static tgfx::Point ComputeClampedOffset(const tgfx::Point &screenPoint, const tg
 
     float minX, maxX, minY, maxY;
 
-    if (scaledW <= viewportSize.width) {
-        minX = maxX = (viewportSize.width - scaledW) * 0.5f;
+    if (scaledW <= effectiveWidth) {
+        // 内容比有效视口小，居中
+        minX = maxX = contentInset.left + (effectiveWidth - scaledW) * 0.5f;
     } else {
         minX = viewportSize.width - scaledW;
-        maxX = 0.0f;
+        maxX = contentInset.left;
     }
 
-    if (scaledH <= viewportSize.height) {
-        minY = maxY = (viewportSize.height - scaledH) * 0.5f;
+    if (scaledH <= effectiveHeight) {
+        minY = maxY = contentInset.top + (effectiveHeight - scaledH) * 0.5f;
     } else {
         minY = viewportSize.height - scaledH;
-        maxY = 0.0f;
+        maxY = contentInset.top;
     }
 
     return {
@@ -1502,45 +1507,31 @@ void SeatCanvasCoreRenderer::scrollViewWithZone(const std::string &zoneId) {
     float scaledZoneWidth = contentZoneWidth * targetZoomScale;
     float scaledZoneHeight = contentZoneHeight * targetZoomScale;
 
-    // ---------------- 5. 根据区域位置计算目标屏幕位置 ----------------
-    // 计算区域在规范化内容中的相对位置 (0~1)
-    float relativeX = contentCenterX / normalizedContentSize.width;
-    float relativeY = contentCenterY / normalizedContentSize.height;
-
-    // 计算缩放后规范化内容总尺寸
-    float scaledContentWidth = normalizedContentSize.width * targetZoomScale;
-    float scaledContentHeight = normalizedContentSize.height * targetZoomScale;
-
-    // 计算区域中心应该出现在屏幕上的目标位置
-    // 策略：根据区域在内容中的相对位置，智能决定对齐方式
-    float targetScreenX, targetScreenY;
-
-    // X 轴：
-    // - 区域靠左时（relativeX 小），将区域放在视口左侧
-    // - 区域靠右时（relativeX 大），将区域放在视口右侧
-    // - 区域居中时，将区域放在视口中心
-    float leftBound = contentInset.left + scaledZoneWidth / 2 + contentInset.left;
-    float rightBound = viewport.width - contentInset.right - scaledZoneWidth / 2 - contentInset.right;
+    // ---------------- 5. 计算目标屏幕位置（优先居中，边界时clamp）----------------
+    // 先尝试让区域中心对齐视口中心
     float centerX = contentInset.left + effectiveWidth / 2;
-
-    // 如果区域太大无法留边距，则居中显示
-    if (leftBound >= rightBound) {
-        targetScreenX = centerX;
-    } else {
-        // 使用平滑插值：根据相对位置在左、中、右之间过渡
-        targetScreenX = leftBound + (rightBound - leftBound) * relativeX;
-    }
-
-    // Y 轴：同样的逻辑
-    float topBound = contentInset.top + scaledZoneHeight / 2 + contentInset.top;
-    float bottomBound = viewport.height - contentInset.bottom - scaledZoneHeight / 2 - contentInset.bottom;
     float centerY = contentInset.top + effectiveHeight / 2;
 
-    if (topBound >= bottomBound) {
-        targetScreenY = centerY;
-    } else {
-        targetScreenY = topBound + (bottomBound - topBound) * relativeY;
+    float targetScreenX = centerX;
+    float targetScreenY = centerY;
+
+    // 计算区域中心在屏幕上的有效范围（边界限制）
+    float minScreenX = contentInset.left + scaledZoneWidth / 2;
+    float maxScreenX = viewport.width - contentInset.right - scaledZoneWidth / 2;
+    float minScreenY = contentInset.top + scaledZoneHeight / 2;
+    float maxScreenY = viewport.height - contentInset.bottom - scaledZoneHeight / 2;
+
+    // 如果区域太大无法居中，则clamp到有效范围
+    if (minScreenX < maxScreenX) {
+        targetScreenX = std::clamp(targetScreenX, minScreenX, maxScreenX);
     }
+    if (minScreenY < maxScreenY) {
+        targetScreenY = std::clamp(targetScreenY, minScreenY, maxScreenY);
+    }
+
+    // 计算缩放后规范化内容总尺寸（用于后续offset计算）
+    float scaledContentWidth = normalizedContentSize.width * targetZoomScale;
+    float scaledContentHeight = normalizedContentSize.height * targetZoomScale;
 
     // ---------------- 6. 计算目标 contentOffset ----------------
     // 公式：screenPos = contentPos * zoom + offset
@@ -1660,17 +1651,18 @@ void SeatCanvasCoreRenderer::zoomToPoint(const tgfx::Point &location, float scal
 
     const float currentZoomScale = _zoomPanController->getZoomScale();
     const tgfx::Point currentOffset = _zoomPanController->getContentOffset();
+    const auto contentInset = _zoomPanController->getContentInset();
 
     // ---- 2. screen -> normalized content（当前 zoom 下）----
     const tgfx::Point contentPoint{
         (location.x - currentOffset.x) / currentZoomScale,
         (location.y - currentOffset.y) / currentZoomScale};
 
-    // ---- 3. 计算起始和目标 offset（都进行 clamp）----
+    // ---- 3. 计算起始和目标 offset（都进行 clamp，考虑 contentInset）----
     // 计算起始 offset（基于当前 zoom），确保在有效范围内
-    const tgfx::Point startOffset = ComputeClampedOffset(location, contentPoint, currentZoomScale, viewport, normalizedContentSize);
+    const tgfx::Point startOffset = ComputeClampedOffset(location, contentPoint, currentZoomScale, viewport, normalizedContentSize, contentInset);
     // 计算目标 offset（基于目标 zoom），确保在有效范围内
-    const tgfx::Point finalOffset = ComputeClampedOffset(location, contentPoint, targetZoomScale, viewport, normalizedContentSize);
+    const tgfx::Point finalOffset = ComputeClampedOffset(location, contentPoint, targetZoomScale, viewport, normalizedContentSize, contentInset);
 
     // ---- 4. 动画准备 ----
     _zoomPanController->stopAllAnimations();
