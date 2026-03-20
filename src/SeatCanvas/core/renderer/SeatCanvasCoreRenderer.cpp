@@ -1356,7 +1356,7 @@ void SeatCanvasCoreRenderer::handleAutoZoomOnTap(const tgfx::Point &location) {
         if (_delegate) {
             _delegate->didTapZone(_coreID, zoneInfo->zoneId);
         }
-        scrollViewWithZone(zoneInfo->zoneId);
+        scrollViewWithZone(zoneInfo);
         return;
     }
 
@@ -1434,8 +1434,8 @@ void SeatCanvasCoreRenderer::scrollViewWithLocation(const tgfx::Point &location)
     }
 }
 
-void SeatCanvasCoreRenderer::scrollViewWithZone(const std::string &zoneId) {
-    if (zoneId.empty()) {
+void SeatCanvasCoreRenderer::scrollViewWithZone(const std::shared_ptr<ZoneMeshInfo> &zoneInfo) {
+    if (!zoneInfo) {
         return;
     }
 
@@ -1450,11 +1450,6 @@ void SeatCanvasCoreRenderer::scrollViewWithZone(const std::string &zoneId) {
 
     auto meshBuilder = baseMapConfig->meshBuilder();
     if (meshBuilder == nullptr) {
-        return;
-    }
-
-    auto zoneInfo = meshBuilder->findZoneById(zoneId);
-    if (!zoneInfo) {
         return;
     }
 

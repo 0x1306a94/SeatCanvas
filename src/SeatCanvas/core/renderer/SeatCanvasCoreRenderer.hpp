@@ -71,6 +71,7 @@ class CustomSeatPass;
 class SeatStyleAtlasManager;
 class SeatCanvasCoreRendererState;
 class BaseMapMeshBuilder;
+struct ZoneMeshInfo;
 class SeatCanvasCoreRenderer {
   public:
     explicit SeatCanvasCoreRenderer(
@@ -294,7 +295,7 @@ class SeatCanvasCoreRenderer {
     /// @param location 缩放目标位置（viewport 坐标系，像素单位）
     void scrollViewWithLocation(const tgfx::Point &location);
 
-    void scrollViewWithZone(const std::string &zoneId);
+    void scrollViewWithZone(const std::shared_ptr<ZoneMeshInfo> &zoneInfo);
 
     void zoomToPoint(const tgfx::Point &location, float scale, bool animated = true, float padding = 0.0f, double durationMs = 300.0);
 
