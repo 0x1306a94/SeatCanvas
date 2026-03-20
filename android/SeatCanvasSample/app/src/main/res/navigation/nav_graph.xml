@@ -22,9 +22,10 @@
         tools:layout="@layout/fragment_second">
 
         <argument
-            android:name="baseMapName"
-            app:argType="string"
-            android:defaultValue="svg/performbg.svg" />
+            android:name="baseMapInfo"
+            app:argType="com.seatcanvas.sample.BaseMapFileInfo"
+            android:defaultValue="@null"
+            app:nullable="true" />
 
         <action
             android:id="@+id/action_SecondFragment_to_FirstFragment"

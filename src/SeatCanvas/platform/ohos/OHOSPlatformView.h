@@ -16,19 +16,21 @@ namespace kk::renderer {
 class OHOSPlatformView : public PlatformView {
   public:
     explicit OHOSPlatformView(OH_NativeXComponent *component, void *nativeWindow);
-    ~OHOSPlatformView();
+    virtual ~OHOSPlatformView();
 
-    std::shared_ptr<tgfx::Window> getWindow() override;
+    virtual std::shared_ptr<tgfx::Window> getWindow() override;
+    virtual std::shared_ptr<tgfx::Surface> getSurface(tgfx::Context *context) override;
     virtual void invalidSize() override;
-    tgfx::ISize getSize() override;
-    float getDensity() override;
+    virtual tgfx::ISize getSize() override;
+    virtual float getDensity() override;
 
     static void UpdateDensity(float density);
 
   private:
-    OH_NativeXComponent *component{nullptr};
-    void *nativeWindow{nullptr};
-    std::shared_ptr<tgfx::Window> window{nullptr};
+    OH_NativeXComponent *_component{nullptr};
+    void *_nativeWindow{nullptr};
+    std::shared_ptr<tgfx::Window> _window{nullptr};
+    std::shared_ptr<tgfx::Surface> _surface{nullptr};
 };
 };  // namespace kk::renderer
 

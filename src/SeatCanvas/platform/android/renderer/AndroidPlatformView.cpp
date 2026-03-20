@@ -7,6 +7,7 @@
 
 #include "AndroidPlatformView.hpp"
 
+#include <tgfx/core/Surface.h>
 #include <tgfx/gpu/opengl/egl/EGLWindow.h>
 #include <tgfx/platform/Print.h>
 
@@ -28,10 +29,20 @@ std::shared_ptr<tgfx::Window> AndroidPlatformView::getWindow() {
     return _window;
 }
 
-void AndroidPlatformView::invalidSize() {
-    if (_window) {
-        _window->invalidSize();
+std::shared_ptr<tgfx::Surface> AndroidPlatformView::getSurface(tgfx::Context *context) {
+    if (context == nullptr) {
+        return nullptr;
     }
+
+    if (!_surface && _window) {
+        _surface = tgfx::Surface::MakeFrom(context, _window);
+    }
+
+    return _surface;
+}
+
+void AndroidPlatformView::invalidSize() {
+    _surface = nullptr;
 }
 
 tgfx::ISize AndroidPlatformView::getSize() {
