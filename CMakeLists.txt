@@ -24,6 +24,11 @@ set(PROJECT_THIRD_PARTY_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/third_party)
 
 set(TGFX_BUILD_SVG ON CACHE INTERNAL "")
 set(TGFX_BUILD_LAYERS ON CACHE INTERNAL "")
+
+if(MACOS OR IOS)
+    set(TGFX_USE_METAL ON CACHE INTERNAL "")
+endif()
+
 add_subdirectory(third_party/tgfx)
 
 

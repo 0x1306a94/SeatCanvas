@@ -5,6 +5,7 @@
 //  Created by king on 2025/11/12.
 //
 
+import SeatCanvas
 import UIKit
 
 class ViewController: UIViewController {
@@ -21,6 +22,14 @@ class ViewController: UIViewController {
         baseMapSections.append(Bundle.Sample.customizedBaseMaps())
 
         setupTableView()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+
+        DispatchQueue.global(qos: .utility).async {
+            SeatCanvasView.prewarmShaderCompiler()
+        }
     }
 }
 

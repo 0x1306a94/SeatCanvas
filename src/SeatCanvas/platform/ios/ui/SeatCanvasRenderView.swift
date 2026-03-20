@@ -5,13 +5,11 @@
 //  Created by king on 2025/11/11.
 //
 
+import MetalKit
 import UIKit
 
-class SeatCanvasRenderView: UIView {
+class SeatCanvasRenderView: MTKView {
     var didUpdateSize: ((SeatCanvasRenderView) -> Void)?
-    override class var layerClass: AnyClass {
-        CAEAGLLayer.classForCoder()
-    }
 
 //    override func layoutSubviews() {
 //        super.layoutSubviews()

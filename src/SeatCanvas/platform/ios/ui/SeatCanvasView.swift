@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Metal
 import UIKit
 
 internal import SeatCanvas_Private
@@ -29,6 +30,17 @@ public class SeatCanvasView: UIView {
     public var canvasColor: UIColor? {
         set {
             renderer?.backgroundColor = newValue
+            var clearColor = MTLClearColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.0)
+            if let newValue {
+                var r: CGFloat = 0
+                var g: CGFloat = 0
+                var b: CGFloat = 0
+                var a: CGFloat = 0
+                if newValue.getRed(&r, green: &g, blue: &b, alpha: &a) {
+                    clearColor = MTLClearColor(red: r, green: g, blue: b, alpha: a)
+                }
+            }
+            renderView.clearColor = clearColor
         }
         get {
             renderer?.backgroundColor ?? .clear
@@ -53,6 +65,13 @@ public class SeatCanvasView: UIView {
         } else {
             renderer?.stopDrawLoop()
         }
+    }
+
+    /// Temporary warmup entry for shader compiler initialization.
+    /// TODO: Remove this API after warmup is integrated into renderer startup flow.
+    @objc
+    public nonisolated static func prewarmShaderCompiler() {
+        SeatCanvasCoreRenderer.prewarmShaderCompiler()
     }
 
     /// 加载底图（指定格式和解析配置）
@@ -171,7 +190,9 @@ extension SeatCanvasView {
     }
 
     func setupViews() {
-        renderView = SeatCanvasRenderView(frame: bounds)
+        renderView = SeatCanvasRenderView(frame: bounds, device: MTLCreateSystemDefaultDevice())
+        renderView.backgroundColor = .clear
+        renderView.clearColor = MTLClearColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.0)
         renderView.translatesAutoresizingMaskIntoConstraints = false
         renderView.contentScaleFactor = UIScreen.main.scale
         renderView.didUpdateSize = { [weak self] _ in
@@ -203,7 +224,7 @@ extension SeatCanvasView {
     }
 
     func setupRenderer() {
-        renderer = SeatCanvasCoreRenderer(eaglLayer: renderView.layer as? CAEAGLLayer)
+        renderer = SeatCanvasCoreRenderer(metalView: renderView)
         if let coreID = renderer?.coreID {
             SeatCanvasRendererDelegateRegistry.shared.register(coreID: coreID, delegate: self)
         }

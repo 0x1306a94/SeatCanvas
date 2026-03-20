@@ -78,8 +78,8 @@ class CustomSeatPass : public CustomRenderPass {
     tgfx::Attribute position;
     tgfx::Attribute textureCoord;
     tgfx::Attribute positionOffset;
-    tgfx::Attribute textureCoordIndex;
     tgfx::Attribute rotation;
+    tgfx::Attribute textureCoordIndex;
 
     Uniform mvpUniform;
     Uniform textureCoordRectsUniform;
