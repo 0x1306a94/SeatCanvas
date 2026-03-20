@@ -14,13 +14,16 @@
 
 namespace tgfx {
 class Window;
-};
+class Surface;
+class Context;
+};  // namespace tgfx
 
 namespace kk::renderer {
 class PlatformView {
   public:
     virtual ~PlatformView() = default;
     virtual std::shared_ptr<tgfx::Window> getWindow() = 0;
+    virtual std::shared_ptr<tgfx::Surface> getSurface(tgfx::Context *context) = 0;
     virtual void invalidSize() = 0;
     virtual tgfx::ISize getSize() = 0;
     virtual float getDensity() = 0;

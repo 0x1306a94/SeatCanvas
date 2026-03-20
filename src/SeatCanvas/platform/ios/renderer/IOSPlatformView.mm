@@ -7,8 +7,9 @@
 
 #import "IOSPlatformView.h"
 
+#import <tgfx/core/Surface.h>
 #import <tgfx/gpu/opengl/eagl/EAGLWindow.h>
-#include <tgfx/platform/Print.h>
+#import <tgfx/platform/Print.h>
 
 #import <cmath>
 
@@ -30,10 +31,20 @@ std::shared_ptr<tgfx::Window> IOSPlatformView::getWindow() {
     return _window;
 }
 
-void IOSPlatformView::invalidSize() {
-    if (_window) {
-        _window->invalidSize();
+std::shared_ptr<tgfx::Surface> IOSPlatformView::getSurface(tgfx::Context *context) {
+    if (context == nullptr) {
+        return nullptr;
     }
+
+    if (!_surface && _window) {
+        _surface = tgfx::Surface::MakeFrom(context, _window);
+    }
+
+    return _surface;
+}
+
+void IOSPlatformView::invalidSize() {
+    _surface = nullptr;
 }
 
 tgfx::ISize IOSPlatformView::getSize() {

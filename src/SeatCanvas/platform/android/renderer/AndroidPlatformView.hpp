@@ -17,15 +17,17 @@ namespace kk::renderer {
 class AndroidPlatformView : public PlatformView {
   public:
     explicit AndroidPlatformView(ANativeWindow *nativeWindow, float density);
-    ~AndroidPlatformView();
+    virtual ~AndroidPlatformView();
 
-    std::shared_ptr<tgfx::Window> getWindow() override;
+    virtual std::shared_ptr<tgfx::Window> getWindow() override;
+    virtual std::shared_ptr<tgfx::Surface> getSurface(tgfx::Context *context) override;
     virtual void invalidSize() override;
-    tgfx::ISize getSize() override;
-    float getDensity() override;
+    virtual tgfx::ISize getSize() override;
+    virtual float getDensity() override;
 
   private:
     std::shared_ptr<tgfx::Window> _window{nullptr};
+    std::shared_ptr<tgfx::Surface> _surface{nullptr};
     ANativeWindow *_nativeWindow{nullptr};
     float _density{1.0f};
 };

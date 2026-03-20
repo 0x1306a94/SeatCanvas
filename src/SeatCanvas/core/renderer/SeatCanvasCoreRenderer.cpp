@@ -467,7 +467,7 @@ void SeatCanvasCoreRenderer::draw(bool force) {
     PROFILE_STAGE_START(group, surface, "Create Surface");
 
     auto context = lockGuard.context();
-    auto surface = window->getSurface(context);
+    auto surface = _platformView ? _platformView->getSurface(context) : nullptr;
     if (surface == nullptr) {
         PROFILE_GROUP_DISABLE_AUTO_LOG(group);
         return;
@@ -539,10 +539,6 @@ void SeatCanvasCoreRenderer::draw(bool force) {
         context->submit(std::move(recording));
         PROFILE_STAGE_END(group, Submit);
     }
-
-    PROFILE_STAGE_START(group, present, "Present");
-    window->present(context);
-    PROFILE_STAGE_END(group, present);
 
     _invalidate = false;
 }

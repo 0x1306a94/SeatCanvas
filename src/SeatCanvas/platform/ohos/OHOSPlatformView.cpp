@@ -7,42 +7,58 @@
 
 #include "OHOSPlatformView.h"
 
+#include <tgfx/core/Surface.h>
 #include <tgfx/gpu/opengl/egl/EGLWindow.h>
+#include <tgfx/platform/Print.h>
 
 namespace kk::renderer {
 
 static float screenDensity = 1.0f;
 OHOSPlatformView::OHOSPlatformView(OH_NativeXComponent *component, void *nativeWindow)
-    : component(component)
-    , nativeWindow(nativeWindow)
-    , window(nullptr) {
+    : _component(component)
+    , _nativeWindow(nativeWindow)
+    , _window(nullptr)
+    , _surface(nullptr) {
+    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
 }
+
 OHOSPlatformView::~OHOSPlatformView() {
+    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
 }
 
 std::shared_ptr<tgfx::Window> OHOSPlatformView::getWindow() {
-    if (nativeWindow == nullptr) {
+    if (_nativeWindow == nullptr) {
         return nullptr;
     }
-    if (window == nullptr) {
-        window = tgfx::EGLWindow::MakeFrom(reinterpret_cast<EGLNativeWindowType>(nativeWindow));
+    if (_window == nullptr) {
+        _window = tgfx::EGLWindow::MakeFrom(reinterpret_cast<EGLNativeWindowType>(_nativeWindow));
     }
-    return window;
+    return _window;
+}
+
+std::shared_ptr<tgfx::Surface> OHOSPlatformView::getSurface(tgfx::Context *context) {
+    if (context == nullptr) {
+        return nullptr;
+    }
+
+    if (!_surface && _window) {
+        _surface = tgfx::Surface::MakeFrom(context, _window);
+    }
+
+    return _surface;
 }
 
 void OHOSPlatformView::invalidSize() {
-    if (window) {
-        window->invalidSize();
-    }
+    _surface = nullptr;
 }
 
 tgfx::ISize OHOSPlatformView::getSize() {
-    if (component == nullptr || nativeWindow == nullptr) {
+    if (_component == nullptr || _nativeWindow == nullptr) {
         return tgfx::ISize::MakeEmpty();
     }
     uint64_t width;
     uint64_t height;
-    int32_t ret = OH_NativeXComponent_GetXComponentSize(component, nativeWindow, &width, &height);
+    int32_t ret = OH_NativeXComponent_GetXComponentSize(_component, _nativeWindow, &width, &height);
     if (ret != OH_NATIVEXCOMPONENT_RESULT_SUCCESS) {
         return tgfx::ISize::MakeEmpty();
     }
