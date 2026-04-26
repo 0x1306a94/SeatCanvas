@@ -1,5 +1,5 @@
 //
-//  SwiftBridge.swift
+//  SwiftBridgeCAPI.swift
 //  SeatCanvas
 //
 //  Created by king on 2025/12/11.
@@ -9,11 +9,20 @@ import Foundation
 
 // MARK: - C++ 到 Swift 的桥接函数
 
+private func bridgeString(_ value: UnsafePointer<CChar>?) -> String {
+    guard let value else {
+        return ""
+    }
+    return String(cString: value)
+}
+
 /// 点击区域回调，由 C++ 层调用(仅内部调用)
 /// - Parameters:
 ///   - coreID: 座位渲染器实例ID
 ///   - zoneId: 区域ID
-public func switf_bridge_didTapZone(coreID: UInt32, zoneId: String) {
+@c(switf_bridge_didTapZone)
+func switf_bridge_didTapZone(_ coreID: UInt32, _ zoneId: UnsafePointer<CChar>?) {
+    let zoneIdString = bridgeString(zoneId)
     return MainActor.assumeIsolated {
         guard let delegate = SeatCanvasRendererDelegateRegistry.shared.delegate(for: coreID) else {
             #if DEBUG
@@ -22,7 +31,7 @@ public func switf_bridge_didTapZone(coreID: UInt32, zoneId: String) {
             return
         }
 
-        delegate.seatCanvasRendererDidTapZone(zoneId: zoneId)
+        delegate.seatCanvasRendererDidTapZone(zoneId: zoneIdString)
     }
 }
 
@@ -31,7 +40,10 @@ public func switf_bridge_didTapZone(coreID: UInt32, zoneId: String) {
 ///   - coreID: 座位渲染器实例ID
 ///   - zoneId: 区域ID
 ///   - seatId: 座位ID
-public func switf_bridge_shouldSelectSeat(coreID: UInt32, zoneId: String, seatId: String) -> Bool {
+@c(switf_bridge_shouldSelectSeat)
+func switf_bridge_shouldSelectSeat(_ coreID: UInt32, _ zoneId: UnsafePointer<CChar>?, _ seatId: UnsafePointer<CChar>?) -> Bool {
+    let zoneIdString = bridgeString(zoneId)
+    let seatIdString = bridgeString(seatId)
     return MainActor.assumeIsolated {
         guard let delegate = SeatCanvasRendererDelegateRegistry.shared.delegate(for: coreID) else {
             #if DEBUG
@@ -40,7 +52,7 @@ public func switf_bridge_shouldSelectSeat(coreID: UInt32, zoneId: String, seatId
             return false
         }
 
-        return delegate.seatCanvasRendererShouldSelectSeat(zoneId: zoneId, seatId: seatId)
+        return delegate.seatCanvasRendererShouldSelectSeat(zoneId: zoneIdString, seatId: seatIdString)
     }
 }
 
@@ -49,7 +61,10 @@ public func switf_bridge_shouldSelectSeat(coreID: UInt32, zoneId: String, seatId
 ///   - coreID: 座位渲染器实例ID
 ///   - zoneId: 区域ID
 ///   - seatId: 座位ID
-public func switf_bridge_didSelectSeat(coreID: UInt32, zoneId: String, seatId: String) {
+@c(switf_bridge_didSelectSeat)
+func switf_bridge_didSelectSeat(_ coreID: UInt32, _ zoneId: UnsafePointer<CChar>?, _ seatId: UnsafePointer<CChar>?) {
+    let zoneIdString = bridgeString(zoneId)
+    let seatIdString = bridgeString(seatId)
     return MainActor.assumeIsolated {
         guard let delegate = SeatCanvasRendererDelegateRegistry.shared.delegate(for: coreID) else {
             #if DEBUG
@@ -58,7 +73,7 @@ public func switf_bridge_didSelectSeat(coreID: UInt32, zoneId: String, seatId: S
             return
         }
 
-        delegate.seatCanvasRendererDidSelectSeat(zoneId: zoneId, seatId: seatId)
+        delegate.seatCanvasRendererDidSelectSeat(zoneId: zoneIdString, seatId: seatIdString)
     }
 }
 
@@ -67,7 +82,10 @@ public func switf_bridge_didSelectSeat(coreID: UInt32, zoneId: String, seatId: S
 ///   - coreID: 座位渲染器实例ID
 ///   - zoneId: 区域ID
 ///   - seatId: 座位ID
-public func switf_bridge_didDeselectSeat(coreID: UInt32, zoneId: String, seatId: String) {
+@c(switf_bridge_didDeselectSeat)
+func switf_bridge_didDeselectSeat(_ coreID: UInt32, _ zoneId: UnsafePointer<CChar>?, _ seatId: UnsafePointer<CChar>?) {
+    let zoneIdString = bridgeString(zoneId)
+    let seatIdString = bridgeString(seatId)
     return MainActor.assumeIsolated {
         guard let delegate = SeatCanvasRendererDelegateRegistry.shared.delegate(for: coreID) else {
             #if DEBUG
@@ -76,6 +94,6 @@ public func switf_bridge_didDeselectSeat(coreID: UInt32, zoneId: String, seatId:
             return
         }
 
-        delegate.seatCanvasRendererDidDeselectSeat(zoneId: zoneId, seatId: seatId)
+        delegate.seatCanvasRendererDidDeselectSeat(zoneId: zoneIdString, seatId: seatIdString)
     }
 }
