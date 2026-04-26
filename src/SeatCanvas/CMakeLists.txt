@@ -166,7 +166,7 @@ if(MACOS OR IOS)
       XCODE_ATTRIBUTE_COPY_PHASE_STRIP "YES"
       XCODE_ATTRIBUTE_STRIP_INSTALLED_PRODUCT "YES"
       XCODE_ATTRIBUTE_STRIP_STYLE "non-global"
-      XCODE_ATTRIBUTE_SWIFT_VERSION "6.0"
+      XCODE_ATTRIBUTE_SWIFT_VERSION "6.3"
       XCODE_ATTRIBUTE_BUILD_LIBRARY_FOR_DISTRIBUTION "YES"
       XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS "YES"
       XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
@@ -181,17 +181,17 @@ if(MACOS OR IOS)
         "$<$<COMPILE_LANGUAGE:Swift>:-emit-module-interface>"
     )
     
-    _swift_generate_cxx_header_from_sources(${LIB_TARGET_NAME} 
-        ${LIB_TARGET_NAME}-Bridge-swift.h
-        SWIFT_SOURCES
-            "${CMAKE_CURRENT_LIST_DIR}/platform/apple/swift/SeatCanvasRendererDelegate.swift"
-            "${CMAKE_CURRENT_LIST_DIR}/platform/apple/swift/SeatCanvasRendererDelegateRegistry.swift"
-            "${CMAKE_CURRENT_LIST_DIR}/platform/apple/swift/SwiftBridge.swift"
-        MODULE_NAME
-            "${LIB_TARGET_NAME}"
-        SEARCH_PATHS 
-            "${CMAKE_CURRENT_LIST_DIR}"
-    )
+    # _swift_generate_cxx_header_from_sources(${LIB_TARGET_NAME} 
+    #     ${LIB_TARGET_NAME}-Bridge-swift.h
+    #     SWIFT_SOURCES
+    #         "${CMAKE_CURRENT_LIST_DIR}/platform/apple/swift/SeatCanvasRendererDelegate.swift"
+    #         "${CMAKE_CURRENT_LIST_DIR}/platform/apple/swift/SeatCanvasRendererDelegateRegistry.swift"
+    #         "${CMAKE_CURRENT_LIST_DIR}/platform/apple/swift/SwiftBridge.swift"
+    #     MODULE_NAME
+    #         "${LIB_TARGET_NAME}"
+    #     SEARCH_PATHS 
+    #         "${CMAKE_CURRENT_LIST_DIR}"
+    # )
 endif()
 
 if (SeatCanvas_BUILD_FRAMEWORK)

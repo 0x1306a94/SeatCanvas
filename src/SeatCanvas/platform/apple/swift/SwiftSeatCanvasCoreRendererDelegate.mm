@@ -11,9 +11,7 @@
 
 #import <tgfx/platform/Print.h>
 
-#import "SeatCanvas-Bridge-swift.h"
-
-#import <swift/bridging>
+#import "SwiftBridgeCAPI.h"
 
 namespace kk::bridge {
 SwiftSeatCanvasCoreRendererDelegate::SwiftSeatCanvasCoreRendererDelegate() {
@@ -25,19 +23,19 @@ SwiftSeatCanvasCoreRendererDelegate::~SwiftSeatCanvasCoreRendererDelegate() {
 }
 
 void SwiftSeatCanvasCoreRendererDelegate::didTapZone(uint32_t coreID, const std::string &zoneId) {
-    SeatCanvas::switf_bridge_didTapZone(coreID, zoneId);
+    ::switf_bridge_didTapZone(coreID, zoneId.c_str());
 }
 
 bool SwiftSeatCanvasCoreRendererDelegate::shouldSelectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId) {
-    return SeatCanvas::switf_bridge_shouldSelectSeat(coreID, zoneId, seatId);
+    return ::switf_bridge_shouldSelectSeat(coreID, zoneId.c_str(), seatId.c_str());
 }
 
 void SwiftSeatCanvasCoreRendererDelegate::didSelectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId) {
-    SeatCanvas::switf_bridge_didSelectSeat(coreID, zoneId, seatId);
+    ::switf_bridge_didSelectSeat(coreID, zoneId.c_str(), seatId.c_str());
 }
 
 void SwiftSeatCanvasCoreRendererDelegate::didDeselectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId) {
-    SeatCanvas::switf_bridge_didDeselectSeat(coreID, zoneId, seatId);
+    ::switf_bridge_didDeselectSeat(coreID, zoneId.c_str(), seatId.c_str());
 }
 
 };  // namespace kk::bridge
