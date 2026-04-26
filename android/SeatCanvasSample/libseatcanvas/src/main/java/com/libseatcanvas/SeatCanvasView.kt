@@ -65,8 +65,8 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
     private var delegate: SeatCanvasRendererDelegate? = null
 
     /**
-     * 设置座位渲染器代理
-     * @param delegate 代理对象，用于处理座位选择相关的回调
+     * 设置座位渲染器代理（样式 ID、座位点击、区域点击等回调）。
+     * @param delegate 代理，可为 null 表示不接收回调
      */
     fun setDelegate(delegate: SeatCanvasRendererDelegate?) {
         this.delegate = delegate
@@ -232,6 +232,16 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
     }
 
     /**
+     * 清除全部座位数据
+     */
+    fun clearSeatData() {
+        if (!nativeInitialized()) {
+            return
+        }
+        nativeClearSeatData()
+    }
+
+    /**
      * 座位大小
      */
     var seatSize: Float
@@ -328,31 +338,17 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
     }
 
     /**
-     * 由 C++ 层调用，转发给 delegate
-     * @param zoneId 区域ID
-     * @param seatId 座位ID
-     * @return true 表示可以选中，false 表示不能选中
+     * 由 native 层调用：查询座位对应样式 ID；返回 null 表示不绘制该座位。
      */
-    private fun nativeOnShouldSelectSeat(zoneId: String, seatId: String): Boolean {
-        return delegate?.shouldSelectSeat(zoneId, seatId) ?: false
+    private fun nativeOnStyleIdForSeat(zoneId: String, seatId: String): String? {
+        return delegate?.styleIdForSeat(zoneId, seatId)
     }
 
     /**
-     * 由 C++ 层调用，转发给 delegate
-     * @param zoneId 区域ID
-     * @param seatId 座位ID
+     * 由 native 层调用：处理座位点击；返回 true 表示状态已变且需要重绘。
      */
-    private fun nativeOnDidSelectSeat(zoneId: String, seatId: String) {
-        delegate?.didSelectSeat(zoneId, seatId)
-    }
-
-    /**
-     * 由 C++ 层调用，转发给 delegate
-     * @param zoneId 区域ID
-     * @param seatId 座位ID
-     */
-    private fun nativeOnDidDeselectSeat(zoneId: String, seatId: String) {
-        delegate?.didDeselectSeat(zoneId, seatId)
+    private fun nativeOnDidTapSeat(zoneId: String, seatId: String): Boolean {
+        return delegate?.didTapSeat(zoneId, seatId) ?: false
     }
 
     private external fun nativeLoadBaseMapFromFormat(data: ByteArray?, formatName: String, parseConfigJSON: ByteArray?): Long
@@ -362,6 +358,7 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
     private external fun nativeSetSeatStyleJSONConfig(data: ByteArray?, len: Int)
     private external fun nativeUpdateSeatZoneAlternateColors(zones: Array<SeatZoneColor>)
     private external fun nativeUpdateSeats(zoneId: String, seats: Array<SeatData>)
+    private external fun nativeClearSeatData()
     private external fun nativeGetSeatSize(): Float
     private external fun nativeSetSeatSize(seatSize: Float)
     private external fun nativeGetSeatRenderZoomThreshold(): Float

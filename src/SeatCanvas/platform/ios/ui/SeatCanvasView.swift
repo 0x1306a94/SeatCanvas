@@ -107,6 +107,12 @@ public class SeatCanvasView: UIView {
         renderer?.updateSeatDatas(zoneId: zoneId, seats: seats)
     }
 
+    /// 清除全部座位数据
+    @objc
+    public func clearSeatData() {
+        renderer?.clearSeatData()
+    }
+
     /// 座位大小
     @objc
     public var seatSize: CGFloat {
@@ -349,15 +355,11 @@ extension SeatCanvasView: SeatCanvasRendererDelegate {
         delegate?.seatCanvasView(self, didTapZone: zoneId)
     }
 
-    func seatCanvasRendererShouldSelectSeat(zoneId: String, seatId: String) -> Bool {
-        delegate?.seatCanvasView(self, shouldSelectSeat: zoneId, seatId: seatId) ?? false
+    func seatCanvasRendererStyleIdForSeat(zoneId: String, seatId: String) -> String? {
+        delegate?.seatCanvasView(self, styleIdForSeat: zoneId, seatId: seatId)
     }
 
-    func seatCanvasRendererDidSelectSeat(zoneId: String, seatId: String) {
-        delegate?.seatCanvasView(self, didSelectSeat: zoneId, seatId: seatId)
-    }
-
-    func seatCanvasRendererDidDeselectSeat(zoneId: String, seatId: String) {
-        delegate?.seatCanvasView(self, didDeselectSeat: zoneId, seatId: seatId)
+    func seatCanvasRendererDidTapSeat(zoneId: String, seatId: String) -> Bool {
+        delegate?.seatCanvasView(self, didTapSeat: zoneId, seatId: seatId) ?? false
     }
 }

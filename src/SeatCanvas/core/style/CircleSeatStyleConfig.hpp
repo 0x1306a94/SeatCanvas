@@ -12,6 +12,7 @@
 #include "SeatStyleType.hpp"
 
 #include <memory>
+#include <optional>
 #include <tgfx/core/Color.h>
 
 namespace kk::renderer {
@@ -24,32 +25,32 @@ class CircleSeatStyleConfig : public SeatStyleConfig {
     virtual ~CircleSeatStyleConfig() = default;
 
     static std::shared_ptr<CircleSeatStyleConfig> Make(const tgfx::Color &fillColor,
-                                                       const tgfx::Color &overlayColor,
-                                                       const tgfx::Color &checkmarkColor);
+                                                       const std::optional<tgfx::Color> &overlayColor = std::nullopt,
+                                                       const std::optional<tgfx::Color> &checkmarkColor = std::nullopt);
 
     const tgfx::Color &getFillColor() const {
         return fillColor;
     }
 
-    const tgfx::Color &getOverlayColor() const {
+    const std::optional<tgfx::Color> &getOverlayColor() const {
         return overlayColor;
     }
 
-    const tgfx::Color &getCheckmarkColor() const {
+    const std::optional<tgfx::Color> &getCheckmarkColor() const {
         return checkmarkColor;
     }
 
   protected:
     CircleSeatStyleConfig(const tgfx::Color &fillColor,
-                          const tgfx::Color &overlayColor,
-                          const tgfx::Color &checkmarkColor);
+                          const std::optional<tgfx::Color> &overlayColor,
+                          const std::optional<tgfx::Color> &checkmarkColor);
 
     bool isEqual(const SeatStyleConfig &other) const override;
 
   private:
     tgfx::Color fillColor = {};
-    tgfx::Color overlayColor = {};
-    tgfx::Color checkmarkColor = {};
+    std::optional<tgfx::Color> overlayColor = std::nullopt;
+    std::optional<tgfx::Color> checkmarkColor = std::nullopt;
 };
 
 }  // namespace kk::renderer

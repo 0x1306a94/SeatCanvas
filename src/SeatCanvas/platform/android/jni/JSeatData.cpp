@@ -13,13 +13,11 @@
 namespace kk::jni {
 
 static kk::jni::Global<jclass> SeatDataClass;
-static jfieldID SeatData_seatId;
-static jfieldID SeatData_status;
-static jfieldID SeatData_selected;
-static jfieldID SeatData_x;
-static jfieldID SeatData_y;
-static jfieldID SeatData_rotation;
-static jmethodID SeatData_constructor;
+static jfieldID SeatData_seatId = nullptr;
+static jfieldID SeatData_x = nullptr;
+static jfieldID SeatData_y = nullptr;
+static jfieldID SeatData_rotation = nullptr;
+static jmethodID SeatData_constructor = nullptr;
 
 void JSeatData::InitJNI(JNIEnv *env) {
     SeatDataClass = env->FindClass("com/libseatcanvas/SeatData");
@@ -28,13 +26,10 @@ void JSeatData::InitJNI(JNIEnv *env) {
         return;
     }
     SeatData_seatId = env->GetFieldID(SeatDataClass.get(), "seatId", "Ljava/lang/String;");
-    SeatData_status = env->GetFieldID(SeatDataClass.get(), "status", "I");
-    SeatData_selected = env->GetFieldID(SeatDataClass.get(), "selected", "Z");
     SeatData_x = env->GetFieldID(SeatDataClass.get(), "x", "F");
     SeatData_y = env->GetFieldID(SeatDataClass.get(), "y", "F");
     SeatData_rotation = env->GetFieldID(SeatDataClass.get(), "rotation", "F");
-    SeatData_constructor =
-        env->GetMethodID(SeatDataClass.get(), "<init>", "(Ljava/lang/String;IZFFF)V");
+    SeatData_constructor = env->GetMethodID(SeatDataClass.get(), "<init>", "(Ljava/lang/String;FFF)V");
     if (SeatData_constructor == nullptr) {
         tgfx::PrintError("Could not get SeatData constructor!");
     }
@@ -47,12 +42,10 @@ std::optional<kk::SeatData> JSeatData::FromJava(JNIEnv *env, jobject object) {
     }
     auto jseatId = static_cast<jstring>(env->GetObjectField(object, SeatData_seatId));
     auto seatId = SafeConvertToStdString(env, jseatId);
-    auto status = static_cast<uint32_t>(env->GetIntField(object, SeatData_status));
-    auto selected = env->GetBooleanField(object, SeatData_selected) == JNI_TRUE;
     auto x = env->GetFloatField(object, SeatData_x);
     auto y = env->GetFloatField(object, SeatData_y);
-    auto rotation = SeatData_rotation != nullptr ? env->GetFloatField(object, SeatData_rotation) : 0.0f;
-    return kk::SeatData(seatId, status, selected, x, y, rotation);
+    auto rotation = env->GetFloatField(object, SeatData_rotation);
+    return kk::SeatData(seatId, x, y, rotation);
 }
 
 jobject JSeatData::ToJava(JNIEnv *env, const kk::SeatData &data) {
@@ -61,11 +54,8 @@ jobject JSeatData::ToJava(JNIEnv *env, const kk::SeatData &data) {
         return nullptr;
     }
     auto jseatId = SafeConvertToJString(env, data.seatId);
-    jobject result =
-        env->NewObject(clazz, SeatData_constructor, jseatId,
-                       static_cast<jint>(data.status), static_cast<jboolean>(data.selected),
-                       static_cast<jfloat>(data.x), static_cast<jfloat>(data.y),
-                       static_cast<jfloat>(data.rotation));
+    jobject result = env->NewObject(clazz, SeatData_constructor, jseatId, static_cast<jfloat>(data.x),
+                                    static_cast<jfloat>(data.y), static_cast<jfloat>(data.rotation));
     if (jseatId != nullptr) {
         env->DeleteLocalRef(jseatId);
     }

@@ -10,8 +10,8 @@
 namespace kk::renderer {
 
 CircleSeatStyleConfig::CircleSeatStyleConfig(const tgfx::Color &fillColor,
-                                             const tgfx::Color &overlayColor,
-                                             const tgfx::Color &checkmarkColor)
+                                             const std::optional<tgfx::Color> &overlayColor,
+                                             const std::optional<tgfx::Color> &checkmarkColor)
     : SeatStyleConfig(SeatStyleType::Circle)
     , fillColor(fillColor)
     , overlayColor(overlayColor)
@@ -19,8 +19,8 @@ CircleSeatStyleConfig::CircleSeatStyleConfig(const tgfx::Color &fillColor,
 }
 
 std::shared_ptr<CircleSeatStyleConfig> CircleSeatStyleConfig::Make(const tgfx::Color &fillColor,
-                                                                   const tgfx::Color &overlayColor,
-                                                                   const tgfx::Color &checkmarkColor) {
+                                                                   const std::optional<tgfx::Color> &overlayColor,
+                                                                   const std::optional<tgfx::Color> &checkmarkColor) {
     return std::shared_ptr<CircleSeatStyleConfig>(new CircleSeatStyleConfig(fillColor, overlayColor, checkmarkColor));
 }
 

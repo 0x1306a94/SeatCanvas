@@ -18,7 +18,7 @@
 
 namespace kk::renderer {
 
-SeatStyleAtlasManager::SeatStyleAtlasManager(const std::unordered_map<kk::SeatStyleKey, std::shared_ptr<SeatStyleConfig>> &styleConfigs)
+SeatStyleAtlasManager::SeatStyleAtlasManager(const std::unordered_map<std::string, std::shared_ptr<SeatStyleConfig>> &styleConfigs)
     : styleConfigs(styleConfigs) {
 }
 
@@ -111,28 +111,26 @@ void SeatStyleAtlasManager::generateAtlas() {
 
     uvRects.clear();
     uvOffsets.clear();
-    keyToIndexMap.clear();
+    styleIdToIndexMap.clear();
 
     int32_t index = 0;
-    for (const auto &[key, rect] : renderedRects) {
+    for (const auto &[styleId, rect] : renderedRects) {
         float uMin = rect.x() / static_cast<float>(atlasWidth);
         float vMin = rect.y() / static_cast<float>(atlasHeight);
         float uMax = (rect.x() + rect.width()) / static_cast<float>(atlasWidth);
         float vMax = (rect.y() + rect.height()) / static_cast<float>(atlasHeight);
 
-        uvRects[key] = tgfx::Rect::MakeLTRB(uMin, vMin, uMax, vMax);
+        uvRects[styleId] = tgfx::Rect::MakeLTRB(uMin, vMin, uMax, vMax);
 
-        // 存储到顺序容器中（Float4 格式：uvMin.x, uvMin.y, uvMax.x, uvMax.y）
         uvOffsets.push_back(uMin);
         uvOffsets.push_back(vMin);
         uvOffsets.push_back(uMax);
         uvOffsets.push_back(vMax);
 
-        keyToIndexMap[key] = index;
+        styleIdToIndexMap[styleId] = index;
         index++;
     }
 
-    // 提交
     context->flushAndSubmit();
 
     atlasTexture = texture;
@@ -141,17 +139,16 @@ void SeatStyleAtlasManager::generateAtlas() {
         return;
     }
 
-    // 调用生成成功回调
     if (onAtlasGenerated) {
         onAtlasGenerated(this);
     }
 }
 
-bool SeatStyleAtlasManager::setStyleKeyToConfigs(const std::unordered_map<kk::SeatStyleKey, std::shared_ptr<SeatStyleConfig>> &styleConfigs) {
+bool SeatStyleAtlasManager::setStyleIdToConfigs(const std::unordered_map<std::string, std::shared_ptr<SeatStyleConfig>> &styleConfigs) {
     if (this->styleConfigs.size() == styleConfigs.size()) {
         bool isEqual = true;
-        for (const auto &[key, config] : styleConfigs) {
-            auto iter = this->styleConfigs.find(key);
+        for (const auto &[styleId, config] : styleConfigs) {
+            auto iter = this->styleConfigs.find(styleId);
             if (iter == this->styleConfigs.end()) {
                 isEqual = false;
                 break;
@@ -179,9 +176,8 @@ std::shared_ptr<SeatStyleRenderer> SeatStyleAtlasManager::getStyleRenderer() {
     return styleRenderer;
 }
 
-bool SeatStyleAtlasManager::getUVCoords(uint32_t status, bool selected, tgfx::Point &uvMin, tgfx::Point &uvMax) const {
-    kk::SeatStyleKey key(status, selected);
-    auto iter = uvRects.find(key);
+bool SeatStyleAtlasManager::getUVCoords(const std::string &styleId, tgfx::Point &uvMin, tgfx::Point &uvMax) const {
+    auto iter = uvRects.find(styleId);
     if (iter == uvRects.end()) {
         return false;
     }
@@ -192,10 +188,9 @@ bool SeatStyleAtlasManager::getUVCoords(uint32_t status, bool selected, tgfx::Po
     return true;
 }
 
-int32_t SeatStyleAtlasManager::getUVOffsetIndex(uint32_t status, bool selected) const {
-    kk::SeatStyleKey key(status, selected);
-    auto iter = keyToIndexMap.find(key);
-    if (iter == keyToIndexMap.end()) {
+int32_t SeatStyleAtlasManager::getUVOffsetIndex(const std::string &styleId) const {
+    auto iter = styleIdToIndexMap.find(styleId);
+    if (iter == styleIdToIndexMap.end()) {
         return -1;
     }
     return iter->second;
@@ -205,7 +200,7 @@ void SeatStyleAtlasManager::clear() {
     atlasTexture.reset();
     uvRects.clear();
     uvOffsets.clear();
-    keyToIndexMap.clear();
+    styleIdToIndexMap.clear();
 }
 
 };  // namespace kk::renderer

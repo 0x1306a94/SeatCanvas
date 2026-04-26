@@ -16,6 +16,9 @@ class SeatCanvasViewController: UIViewController {
 
     var seatCanvasView: SeatCanvasView!
 
+    private var seatStatusMap: [String: UInt32] = [:]
+    private var selectedSeatIds: Set<String> = []
+
     var baseMap: BaseMapFileInfo?
     convenience init(baseMap: BaseMapFileInfo) {
         self.init(nibName: nil, bundle: nil)
@@ -75,17 +78,18 @@ class SeatCanvasViewController: UIViewController {
         let disabled = UIColor(named: "seat_disableed")!
         let overlay = UIColor.black.withAlphaComponent(0.7)
         let checkmark = UIColor.white
-        builder.addCircleStyle(status: 0, selected: false, fill: availabe, overlay: overlay, checkmark: checkmark)
-        builder.addCircleStyle(status: 0, selected: true, fill: availabe, overlay: overlay, checkmark: checkmark)
 
-        builder.addCircleStyle(status: 1, selected: false, fill: sold, overlay: overlay, checkmark: checkmark)
-        builder.addCircleStyle(status: 1, selected: true, fill: sold, overlay: overlay, checkmark: checkmark)
+        builder.addCircleStyle(styleId: styleId(status: 0, selected: false), fill: availabe)
+        builder.addCircleStyle(styleId: styleId(status: 0, selected: true), fill: availabe, overlay: overlay, checkmark: checkmark)
 
-        builder.addCircleStyle(status: 2, selected: false, fill: locked, overlay: overlay, checkmark: checkmark)
-        builder.addCircleStyle(status: 2, selected: true, fill: locked, overlay: overlay, checkmark: checkmark)
+        builder.addCircleStyle(styleId: styleId(status: 1, selected: false), fill: sold)
+        builder.addCircleStyle(styleId: styleId(status: 1, selected: true), fill: sold, overlay: overlay, checkmark: checkmark)
 
-        builder.addCircleStyle(status: 3, selected: false, fill: disabled, overlay: overlay, checkmark: checkmark)
-        builder.addCircleStyle(status: 3, selected: true, fill: disabled, overlay: overlay, checkmark: checkmark)
+        builder.addCircleStyle(styleId: styleId(status: 2, selected: false), fill: locked)
+        builder.addCircleStyle(styleId: styleId(status: 2, selected: true), fill: locked, overlay: overlay, checkmark: checkmark)
+
+        builder.addCircleStyle(styleId: styleId(status: 3, selected: false), fill: disabled)
+        builder.addCircleStyle(styleId: styleId(status: 3, selected: true), fill: disabled, overlay: overlay, checkmark: checkmark)
 
         return builder.toJSONData()
     }
@@ -100,17 +104,17 @@ class SeatCanvasViewController: UIViewController {
             return nil
         }
 
-        builder.addSVGStyle(status: 0, selected: false, content: availabe)
-        builder.addSVGStyle(status: 0, selected: true, content: selected)
+        builder.addSVGStyle(styleId: styleId(status: 0, selected: false), content: availabe)
+        builder.addSVGStyle(styleId: styleId(status: 0, selected: true), content: selected)
 
-        builder.addSVGStyle(status: 1, selected: false, content: disabled)
-        builder.addSVGStyle(status: 1, selected: true, content: disabled)
+        builder.addSVGStyle(styleId: styleId(status: 1, selected: false), content: disabled)
+        builder.addSVGStyle(styleId: styleId(status: 1, selected: true), content: disabled)
 
-        builder.addSVGStyle(status: 2, selected: false, content: disabled)
-        builder.addSVGStyle(status: 2, selected: true, content: disabled)
+        builder.addSVGStyle(styleId: styleId(status: 2, selected: false), content: disabled)
+        builder.addSVGStyle(styleId: styleId(status: 2, selected: true), content: disabled)
 
-        builder.addSVGStyle(status: 3, selected: false, content: disabled)
-        builder.addSVGStyle(status: 3, selected: true, content: disabled)
+        builder.addSVGStyle(styleId: styleId(status: 3, selected: false), content: disabled)
+        builder.addSVGStyle(styleId: styleId(status: 3, selected: true), content: disabled)
 
         return builder.toJSONData()
     }
@@ -133,8 +137,14 @@ class SeatCanvasViewController: UIViewController {
         seatCanvasView.updateSeatZoneAlternateColors(colors: zoneColors)
 
         let seats = loadSeatDatas()
-        for seat in seats {
-            seatCanvasView.updateSeatDatas(zoneId: seat.key, seats: seat.value.map { SeatData(seatId: $0.seatId, status: $0.status, selected: $0.selected, position: $0.position, rotation: $0.rotation) })
+        for zoneSeat in seats {
+            for seat in zoneSeat.value {
+                seatStatusMap[seat.seatId] = seat.status
+                if seat.selected {
+                    selectedSeatIds.insert(seat.seatId)
+                }
+            }
+            seatCanvasView.updateSeatDatas(zoneId: zoneSeat.key, seats: zoneSeat.value.map { SeatData(seatId: $0.seatId, position: $0.position, rotation: $0.rotation) })
         }
     }
 
@@ -153,6 +163,10 @@ class SeatCanvasViewController: UIViewController {
             print(error)
             return []
         }
+    }
+
+    private func styleId(status: UInt32, selected: Bool) -> String {
+        "status_\(status)_selected_\(selected ? 1 : 0)"
     }
 
     func loadSeatDatas() -> [String: [MockSeatData]] {
@@ -174,38 +188,40 @@ class SeatCanvasViewController: UIViewController {
 }
 
 extension SeatCanvasViewController: SeatCanvasViewDelegate {
+    /// 根据区域和座位ID返回样式ID。
+    /// - Parameters:
+    ///   - view: SeatCanvasView 实例
+    ///   - zoneId: 区域ID
+    ///   - seatId: 座位ID（由业务保证全局唯一）
+    /// - Returns: 样式ID。返回 nil 或空字符串表示该座位不渲染。
+    func seatCanvasView(_: SeatCanvasView, styleIdForSeat _: String, seatId: String) -> String? {
+        guard let status = seatStatusMap[seatId] else {
+            return nil
+        }
+        return styleId(status: status, selected: selectedSeatIds.contains(seatId))
+    }
+
+    /// 点击某个座位，业务层处理状态变更。
+    /// - Parameters:
+    ///   - view: SeatCanvasView 实例
+    ///   - zoneId: 区域ID
+    ///   - seatId: 座位ID
+    /// - Returns: 是否发生了状态变化。true 则触发重绘。
+    func seatCanvasView(_: SeatCanvasView, didTapSeat zoneId: String, seatId: String) -> Bool {
+        if selectedSeatIds.contains(seatId) {
+            selectedSeatIds.remove(seatId)
+        } else {
+            selectedSeatIds.insert(seatId)
+        }
+        print(#function, zoneId, seatId)
+        return true
+    }
+
     /// 点击某个区域
     /// - Parameters:
     ///   - view: SeatCanvasView 实例
     ///   - zoneId: 区域ID
     func seatCanvasView(_: SeatCanvasView, didTapZone zoneId: String) {
         print(#function, zoneId)
-    }
-
-    /// 是否可以选中座位
-    /// - Parameters:
-    ///   - view: SeatCanvasView 实例
-    ///   - zoneId: 区域ID
-    ///   - seatId: 座位ID
-    func seatCanvasView(_: SeatCanvasView, shouldSelectSeat _: String, seatId _: String) -> Bool {
-        true
-    }
-
-    /// 选中某个座位
-    /// - Parameters:
-    ///   - view: SeatCanvasView 实例
-    ///   - zoneId: 区域ID
-    ///   - seatId: 座位ID
-    func seatCanvasView(_: SeatCanvasView, didSelectSeat zoneId: String, seatId: String) {
-        print(#function, zoneId, seatId)
-    }
-
-    /// 取消选中某个座位
-    /// - Parameters:
-    ///   - view: SeatCanvasView 实例
-    ///   - zoneId: 区域ID
-    ///   - seatId: 座位ID
-    func seatCanvasView(_: SeatCanvasView, didDeselectSeat zoneId: String, seatId: String) {
-        print(#function, zoneId, seatId)
     }
 }

@@ -612,7 +612,7 @@ static napi_value HandlePinch(napi_env env, napi_callback_info info) {
     return nullptr;
 }
 
-static napi_value SetShouldSelectSeatCallback(napi_env env, napi_callback_info info) {
+static napi_value SetStyleIdForSeatCallback(napi_env env, napi_callback_info info) {
     kk::js::NapiEnvHolder::setEnv(env);
     napi_value jsView = nullptr;
     size_t argc = 1;
@@ -634,12 +634,12 @@ static napi_value SetShouldSelectSeatCallback(napi_env env, napi_callback_info i
         callback = args[0];
     }
 
-    delegate->setShouldSelectSeatCallback(env, callback);
+    delegate->setStyleIdForSeatCallback(env, callback);
 
     return nullptr;
 }
 
-static napi_value SetDidSelectSeatCallback(napi_env env, napi_callback_info info) {
+static napi_value SetDidTapSeatCallback(napi_env env, napi_callback_info info) {
     kk::js::NapiEnvHolder::setEnv(env);
     napi_value jsView = nullptr;
     size_t argc = 1;
@@ -661,34 +661,7 @@ static napi_value SetDidSelectSeatCallback(napi_env env, napi_callback_info info
         callback = args[0];
     }
 
-    delegate->setDidSelectSeatCallback(env, callback);
-
-    return nullptr;
-}
-
-static napi_value SetDidDeselectSeatCallback(napi_env env, napi_callback_info info) {
-    kk::js::NapiEnvHolder::setEnv(env);
-    napi_value jsView = nullptr;
-    size_t argc = 1;
-    napi_value args[1] = {0};
-    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
-    JRendererCore *view = nullptr;
-    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
-    if (view == nullptr) {
-        return nullptr;
-    }
-
-    auto delegate = view->getDelegate();
-    if (delegate == nullptr) {
-        return nullptr;
-    }
-
-    napi_value callback = nullptr;
-    if (argc > 0 && args[0] != nullptr) {
-        callback = args[0];
-    }
-
-    delegate->setDidDeselectSeatCallback(env, callback);
+    delegate->setDidTapSeatCallback(env, callback);
 
     return nullptr;
 }
@@ -858,6 +831,27 @@ static napi_value UpdateSeats(napi_env env, napi_callback_info info) {
     return nullptr;
 }
 
+static napi_value ClearSeatData(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+
+    napi_value jsView = nullptr;
+    size_t argc = 0;
+    napi_get_cb_info(env, info, &argc, nullptr, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr) {
+        return nullptr;
+    }
+
+    auto renderer = view->internalRenderer();
+    if (renderer == nullptr) {
+        return nullptr;
+    }
+
+    renderer->clearSeatData();
+    return nullptr;
+}
+
 napi_value JRendererCore::Constructor(napi_env env, napi_callback_info info) {
     napi_value jsView = nullptr;
     size_t argc = 0;
@@ -901,12 +895,12 @@ bool JRendererCore::Init(napi_env env, napi_value exports) {
         JS_DEFAULT_METHOD_ENTRY(handlePan, HandlePan),
         JS_DEFAULT_METHOD_ENTRY(handlePinch, HandlePinch),
         JS_DEFAULT_METHOD_ENTRY(zoomToRect, ZoomToRect),
-        JS_DEFAULT_METHOD_ENTRY(setShouldSelectSeatCallback, SetShouldSelectSeatCallback),
-        JS_DEFAULT_METHOD_ENTRY(setDidSelectSeatCallback, SetDidSelectSeatCallback),
-        JS_DEFAULT_METHOD_ENTRY(setDidDeselectSeatCallback, SetDidDeselectSeatCallback),
+        JS_DEFAULT_METHOD_ENTRY(setStyleIdForSeatCallback, SetStyleIdForSeatCallback),
+        JS_DEFAULT_METHOD_ENTRY(setDidTapSeatCallback, SetDidTapSeatCallback),
         JS_DEFAULT_METHOD_ENTRY(setDidTapZoneCallback, SetDidTapZoneCallback),
         JS_DEFAULT_METHOD_ENTRY(updateSeatZoneAlternateColors, UpdateSeatZoneAlternateColors),
         JS_DEFAULT_METHOD_ENTRY(updateSeats, UpdateSeats),
+        JS_DEFAULT_METHOD_ENTRY(clearSeatData, ClearSeatData),
     };
 
     auto status = DefineClass(env, exports, ClassName(), sizeof(classProp) / sizeof(classProp[0]), classProp, Constructor, "");

@@ -40,8 +40,6 @@ export declare namespace seatcanvas {
 
   export interface SeatData {
     seatId: string;
-    status: number;
-    selected: boolean;
     x: number;
     y: number;
     rotation?: number;
@@ -173,17 +171,26 @@ export declare namespace seatcanvas {
      */
     zoomToRect(bounds: Rect, animated: boolean, padding: number, duration: number);
 
-    setShouldSelectSeatCallback(callback: (zoneId: string, seatId: string) => boolean);
+    /**
+     * 解析座位样式 ID；返回 null 表示不绘制。
+     */
+    setStyleIdForSeatCallback(callback: ((zoneId: string, seatId: string) => string | null) | null);
 
-    setDidSelectSeatCallback(callback: (zoneId: string, seatId: string) => void);
+    /**
+     * 座位点击；返回 true 表示需要重绘。
+     */
+    setDidTapSeatCallback(callback: ((zoneId: string, seatId: string) => boolean) | null);
 
-    setDidDeselectSeatCallback(callback: (zoneId: string, seatId: string) => void);
-
-    setDidTapZoneCallback(callback: (zoneId: string) => void);
+    setDidTapZoneCallback(callback: ((zoneId: string) => void) | null);
 
     updateSeatZoneAlternateColors(colors: SeatZoneColor[]);
 
     updateSeats(zoneId: string, seats: SeatData[]);
+
+    /**
+     * 清除全部座位数据
+     */
+    clearSeatData(): void;
   }
 
 }

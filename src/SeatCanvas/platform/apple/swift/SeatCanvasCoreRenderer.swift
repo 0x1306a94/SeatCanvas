@@ -245,10 +245,17 @@ extension SeatCanvasCoreRenderer {
 
         var builder = kk.bridge.CreateSeatDataBuilder()
         for seat in seats {
-            kk.bridge.SeatDataBuilderPut(builder, std.string(seat.seatId), seat.status, seat.selected, seat.position, seat.rotation)
+            kk.bridge.SeatDataBuilderPut(builder, std.string(seat.seatId), seat.position, seat.rotation)
         }
 
         kk.bridge.SeatCanvasCoreRendererSetSeatDatas(cppObject, std.string(zoneId), builder)
         kk.bridge.ReleaseCPPObject(&builder)
+    }
+
+    func clearSeatData() {
+        guard let cppObject else {
+            return
+        }
+        kk.bridge.SeatCanvasCoreRendererClearSeatData(cppObject)
     }
 }

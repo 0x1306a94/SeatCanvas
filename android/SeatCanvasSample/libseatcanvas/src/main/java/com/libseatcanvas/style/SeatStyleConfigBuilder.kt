@@ -4,53 +4,46 @@ import androidx.annotation.ColorInt
 import org.json.JSONArray
 import org.json.JSONObject
 
+/**
+ * 构建座位样式 JSON，格式与核心层解析协议一致：顶层为数组，元素含字符串键 `key` 与对象 `config`。
+ */
 class SeatStyleConfigBuilder {
-    private val configs = mutableMapOf<SeatStyleKey, SeatStyleConfig>()
+    private val configs = mutableMapOf<String, SeatStyleConfig>()
 
     /**
-     * 添加圆形样式配置
-     * @param status 座位状态
-     * @param selected 是否选中
-     * @param fill 填充颜色（ARGB 格式的 Int 值，可使用 Color.parseColor() 或 Color.rgb() 等方法创建）
-     * @param overlay 覆盖层颜色（选中时显示，ARGB 格式的 Int 值）
-     * @param checkmark 勾选标记颜色（ARGB 格式的 Int 值）
-     * @return Builder 实例，支持链式调用
+     * 注册圆形样式。
+     * @param styleId 样式键（与 delegate 返回的样式 ID 对应）
+     * @param fill 填充色
+     * @param overlay 遮罩色，仅选中态需要时可传
+     * @param checkmark 对勾色，仅选中态需要时可传
      */
     fun addCircleStyle(
-        status: UInt,
-        selected: Boolean,
+        styleId: String,
         @ColorInt fill: Int,
-        @ColorInt overlay: Int,
-        @ColorInt checkmark: Int
+        @ColorInt overlay: Int? = null,
+        @ColorInt checkmark: Int? = null
     ): SeatStyleConfigBuilder {
-        val key = SeatStyleKey(status, selected)
-        val config = CircleSeatStyleConfig(fill, overlay, checkmark)
-        configs[key] = config
+        if (styleId.isEmpty()) {
+            return this
+        }
+        configs[styleId] = CircleSeatStyleConfig(fill, overlay, checkmark)
         return this
     }
 
     /**
-     * 添加 SVG 样式配置
-     * @param status 座位状态
-     * @param selected 是否选中
-     * @param content SVG 内容
-     * @return Builder 实例，支持链式调用
+     * 注册 SVG 样式。
+     * @param styleId 样式键
+     * @param content SVG 字符串内容
      */
-    fun addSVGStyle(
-        status: UInt,
-        selected: Boolean,
-        content: String
-    ): SeatStyleConfigBuilder {
-        val key = SeatStyleKey(status, selected)
-        val config = SVGSeatStyleConfig(content)
-        configs[key] = config
+    fun addSVGStyle(styleId: String, content: String): SeatStyleConfigBuilder {
+        if (styleId.isEmpty()) {
+            return this
+        }
+        configs[styleId] = SVGSeatStyleConfig(content)
         return this
     }
 
-    /**
-     * 序列化为 JSON 数据
-     * @return JSON 字节数组，如果序列化失败则返回 null
-     */
+    /** 序列化为 UTF-8 JSON 字节，失败返回 null。 */
     fun toJSONData(): ByteArray? {
         return try {
             val jsonString = toJSONString()
@@ -60,37 +53,25 @@ class SeatStyleConfigBuilder {
         }
     }
 
-    /**
-     * 序列化为 JSON 字符串
-     * @return JSON 字符串，如果序列化失败则返回 null
-     */
+    /** 序列化为 JSON 字符串，失败返回 null。 */
     fun toJSONString(): String? {
         return try {
             val jsonArray = JSONArray()
-            for ((key, config) in configs) {
+            for ((styleId, config) in configs) {
                 val entry = JSONObject()
-                
-                // 构建 key 对象
-                val keyObj = JSONObject()
-                keyObj.put("status", key.status.toLong())
-                keyObj.put("selected", key.selected)
-                entry.put("key", keyObj)
-                
-                // 构建 config 对象
+                entry.put("key", styleId)
                 val configObj = JSONObject()
                 configObj.put("type", config.type.value)
-                
                 when (config) {
                     is CircleSeatStyleConfig -> {
                         configObj.put("fill", config.fill.toARGBHex())
-                        configObj.put("overlay", config.overlay.toARGBHex())
-                        configObj.put("checkmark", config.checkmark.toARGBHex())
+                        config.overlay?.let { configObj.put("overlay", it.toARGBHex()) }
+                        config.checkmark?.let { configObj.put("checkmark", it.toARGBHex()) }
                     }
                     is SVGSeatStyleConfig -> {
                         configObj.put("content", config.content)
                     }
                 }
-                
                 entry.put("config", configObj)
                 jsonArray.put(entry)
             }
@@ -100,9 +81,7 @@ class SeatStyleConfigBuilder {
         }
     }
 
-    /**
-     * 清空所有配置
-     */
+    /** 清空已注册的样式。 */
     fun clear() {
         configs.clear()
     }

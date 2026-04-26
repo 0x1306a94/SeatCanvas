@@ -12,34 +12,12 @@
 #include "core/style/ColorHexParser.hpp"
 #include "core/style/SVGSeatStyleConfig.hpp"
 #include "core/style/SeatStyleConfig.hpp"
-#include "core/style/SeatStyleKey.hpp"
 #include "core/style/SeatStyleType.hpp"
 
 #include <nlohmann/json.hpp>
 #include <tgfx/platform/Print.h>
 
 namespace nlohmann {
-
-template <>
-struct adl_serializer<kk::SeatStyleKey> {
-    static void to_json(json &j, const kk::SeatStyleKey &key) {
-        j = json{
-            {"status", key.getStatus()},
-            {"selected", key.isSelected()},
-        };
-    }
-
-    static void from_json(const json &j, kk::SeatStyleKey &key) {
-        if (!j.contains("status") || !j.contains("selected")) {
-            tgfx::PrintError("SeatStyleKey: missing required fields");
-            key = kk::SeatStyleKey(0, false);
-            return;
-        }
-        uint32_t status = j.value("status", 0U);
-        bool selected = j.value("selected", false);
-        key = kk::SeatStyleKey(status, selected);
-    }
-};
 
 template <>
 struct adl_serializer<std::shared_ptr<kk::renderer::CircleSeatStyleConfig>> {
@@ -52,14 +30,22 @@ struct adl_serializer<std::shared_ptr<kk::renderer::CircleSeatStyleConfig>> {
         j = json{
             {"type", static_cast<int>(config->getType())},
             {"fill", kk::renderer::ColorToARGBHex(config->getFillColor())},
-            {"overlay", kk::renderer::ColorToARGBHex(config->getOverlayColor())},
-            {"checkmark", kk::renderer::ColorToARGBHex(config->getCheckmarkColor())},
         };
+
+        const auto &overlayColor = config->getOverlayColor();
+        if (overlayColor.has_value()) {
+            j["overlay"] = kk::renderer::ColorToARGBHex(*overlayColor);
+        }
+
+        const auto &checkmarkColor = config->getCheckmarkColor();
+        if (checkmarkColor.has_value()) {
+            j["checkmark"] = kk::renderer::ColorToARGBHex(*checkmarkColor);
+        }
     }
 
     static void from_json(const json &j, std::shared_ptr<kk::renderer::CircleSeatStyleConfig> &config) {
-        if (!j.contains("fill") || !j.contains("overlay") || !j.contains("checkmark")) {
-            tgfx::PrintError("Missing color fields in CircleSeatStyleConfig");
+        if (!j.contains("fill")) {
+            tgfx::PrintError("Missing fill field in CircleSeatStyleConfig");
             config = nullptr;
             return;
         }
@@ -68,13 +54,33 @@ struct adl_serializer<std::shared_ptr<kk::renderer::CircleSeatStyleConfig>> {
         std::string overlayHex = j.value("overlay", "");
         std::string checkmarkHex = j.value("checkmark", "");
 
-        tgfx::Color fillColor, overlayColor, checkmarkColor;
-        if (!kk::renderer::ParseColorFromARGBHex(fillHex, fillColor) ||
-            !kk::renderer::ParseColorFromARGBHex(overlayHex, overlayColor) ||
-            !kk::renderer::ParseColorFromARGBHex(checkmarkHex, checkmarkColor)) {
-            tgfx::PrintError("Failed to parse color hex strings");
+        tgfx::Color fillColor = {};
+        if (!kk::renderer::ParseColorFromARGBHex(fillHex, fillColor)) {
+            tgfx::PrintError("Failed to parse fill color hex string");
             config = nullptr;
             return;
+        }
+
+        std::optional<tgfx::Color> overlayColor = std::nullopt;
+        if (!overlayHex.empty()) {
+            tgfx::Color parsedOverlayColor = {};
+            if (!kk::renderer::ParseColorFromARGBHex(overlayHex, parsedOverlayColor)) {
+                tgfx::PrintError("Failed to parse overlay color hex string");
+                config = nullptr;
+                return;
+            }
+            overlayColor = parsedOverlayColor;
+        }
+
+        std::optional<tgfx::Color> checkmarkColor = std::nullopt;
+        if (!checkmarkHex.empty()) {
+            tgfx::Color parsedCheckmarkColor = {};
+            if (!kk::renderer::ParseColorFromARGBHex(checkmarkHex, parsedCheckmarkColor)) {
+                tgfx::PrintError("Failed to parse checkmark color hex string");
+                config = nullptr;
+                return;
+            }
+            checkmarkColor = parsedCheckmarkColor;
         }
 
         config = kk::renderer::CircleSeatStyleConfig::Make(fillColor, overlayColor, checkmarkColor);
@@ -156,13 +162,13 @@ struct adl_serializer<std::shared_ptr<kk::renderer::SeatStyleConfig>> {
         kk::renderer::SeatStyleType type = static_cast<kk::renderer::SeatStyleType>(typeValue);
         switch (type) {
             case kk::renderer::SeatStyleType::Circle: {
-                std::shared_ptr<kk::renderer::CircleSeatStyleConfig> circleConfig;
+                std::shared_ptr<kk::renderer::CircleSeatStyleConfig> circleConfig = nullptr;
                 j.get_to(circleConfig);
                 config = circleConfig;
                 break;
             }
             case kk::renderer::SeatStyleType::SVG: {
-                std::shared_ptr<kk::renderer::SVGSeatStyleConfig> svgConfig;
+                std::shared_ptr<kk::renderer::SVGSeatStyleConfig> svgConfig = nullptr;
                 j.get_to(svgConfig);
                 config = svgConfig;
                 break;

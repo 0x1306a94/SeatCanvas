@@ -263,6 +263,12 @@ Java_com_libseatcanvas_SeatCanvasView_nativeUpdateSeats(JNIEnv *env, jobject thi
     renderer->setSeatData(zoneId, seats);
 }
 
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeClearSeatData(JNIEnv *env, jobject thiz) {
+    GetCPPObjectOrReturn(env, thiz, renderer);
+    renderer->clearSeatData();
+}
+
 JNIEXPORT jfloat JNICALL
 Java_com_libseatcanvas_SeatCanvasView_nativeGetSeatSize(JNIEnv *env, jobject thiz) {
     GetCPPObjectOrReturnValue(env, thiz, renderer, 36.0f);

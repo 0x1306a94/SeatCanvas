@@ -82,6 +82,10 @@ void SeatCanvasCoreRendererSetSeatZoneAlternateColors(CPPObject *_Nonnull cppObj
 ///   - seatBuilder: 座位信息
 void SeatCanvasCoreRendererSetSeatDatas(CPPObject *_Nonnull cppObject, const std::string &zoneId, CPPObject *_Nullable seatBuilder);
 
+/// 清除全部座位数据
+/// - Parameter cppObject: C++渲染器实例
+void SeatCanvasCoreRendererClearSeatData(CPPObject *_Nonnull cppObject);
+
 /// 设置座位样式
 /// - Parameters:
 ///   - cppObject: C++渲染器实例
@@ -171,7 +175,7 @@ void SeatCanvasCoreRendererSetBackgroundColor(CPPObject *_Nonnull cppObject, UIC
 ///   - cppObject: C++渲染器实例
 ///   - color: 背景色
 /// - Returns: 内容大小
-UIColor *SeatCanvasCoreRendererGetBackgroundColor(CPPObject *_Nonnull cppObject);
+UIColor *_Nonnull SeatCanvasCoreRendererGetBackgroundColor(CPPObject *_Nonnull cppObject);
 
 /// 获取座位大小
 /// - Parameter cppObject: C++渲染器实例

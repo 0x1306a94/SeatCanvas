@@ -281,12 +281,10 @@ std::optional<kk::SeatData> GetSeatData(napi_env env, napi_value value) {
     if (seatId.empty()) {
         return std::nullopt;
     }
-    auto status = ReadUInt32(env, value, "status");
-    auto selected = ReadBoolean(env, value, "selected");
     auto x = ReadDouble(env, value, "x");
     auto y = ReadDouble(env, value, "y");
     auto rotation = static_cast<float>(ReadDouble(env, value, "rotation"));
-    return {kk::SeatData(seatId, status, selected, static_cast<float>(x), static_cast<float>(y), rotation)};
+    return {kk::SeatData(seatId, static_cast<float>(x), static_cast<float>(y), rotation)};
 }
 
 std::shared_ptr<tgfx::Data> LoadDataFromAsset(NativeResourceManager *mNativeResMgr, const char *name) {
