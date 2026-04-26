@@ -4,11 +4,11 @@
 
 **Main Files**:
 - `src/SeatCanvas/platform/ios/` — C++ platform code
-- `src/SeatCanvas/swift/` — Swift bridging
-- `src/SeatCanvas/platform/ios/renderer/IOSPlatformView.mm` — OpenGL ES context
+- `src/SeatCanvas/platform/apple/swift/` — Swift bridging
+- `src/SeatCanvas/platform/ios/renderer/IOSPlatformView.mm` — Metal surface (`MTKView` / tgfx `MetalWindow`)
 - Platform-facing UI: `ios/` sample app
 
-**Usage**: Swift/Objective-C++ bridging, OpenGL ES rendering, CADisplayLink render loop
+**Usage**: Swift/Objective-C++ bridging, Metal rendering via `MTKView`, CADisplayLink render loop
 
 ```swift
 let seatCanvasView = SeatCanvasView(frame: view.bounds)

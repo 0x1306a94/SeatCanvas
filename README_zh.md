@@ -183,6 +183,14 @@ SeatCanvasSample.bundle/
 **平台资源路径：**
 - 通过软连复用 `SeatCanvasSample.bundle`
 
+## 座位数据、样式键与渲染代理
+
+- **字符串样式键**：座位样式 JSON 为若干条记录，每条含字符串 `key` 与 `config`（圆形或 SVG）。用 `SeatStyleConfigBuilder` 注册键名；渲染时由 `styleIdForSeat`（或各平台等价回调）返回相同样式 ID，才会按该配置绘制。未注册或空键则跳过该座位。
+- **每座位的 styleId**：`SeatData` 可带可选 `styleId`；若实现了代理，最终以代理返回的样式为准。
+- **更新与清空**：使用 `updateSeatDatas`（iOS）/ `updateSeats`（Android、鸿蒙）按区域写入几何信息；调用视图或控制器上的 `clearSeatData` 可清空全部座位数据并重绘。
+- **圆形样式**：在支持的 Builder 上，`overlay` 与 `checkmark` 为可选，仅 `fill` 必填。
+- **代理**：实现 `styleIdForSeat`、`didTapSeat`，可选 `didTapZone`，用于样式解析、点击与选座逻辑（详见各端类型定义与示例）。
+
 ## 使用示例
 
 ### iOS
@@ -199,10 +207,17 @@ seatCanvasView.loadBaseMap(svgData)
 
 ```swift
 let builder = SeatStyleConfigBuilder()
-builder.addCircleStyle(status: 0, selected: false, fill: .red, overlay: .black, checkmark: .white)
-builder.addSVGStyle(status: 0, selected: false, content: svgContent)
+builder.addCircleStyle(styleId: "selectable_unselected", fill: .red, overlay: .black, checkmark: .white)
+builder.addSVGStyle(styleId: "custom_svg", content: svgContent)
 
 seatCanvasView.applySeatStyleJSONConfig(builder.toJSONData())
+```
+
+#### 座位数据与清空
+
+```swift
+seatCanvasView.updateSeatDatas(zoneId: "37492", seats: seatDataArray)
+seatCanvasView.clearSeatData()
 ```
 
 ### Android
@@ -218,10 +233,17 @@ seatCanvasView.loadBaseMap(svgData)
 
 ```kotlin
 val builder = SeatStyleConfigBuilder()
-builder.addCircleStyle(0U, false, Color.RED, Color.BLACK, Color.WHITE)
-builder.addSVGStyle(0U, false, svgContent)
+builder.addCircleStyle("selectable_unselected", Color.RED, Color.BLACK, Color.WHITE)
+builder.addSVGStyle("custom_svg", svgContent)
 
 seatCanvasView.applySeatStyleJSONConfig(builder.toJSONData())
+```
+
+#### 座位数据与清空
+
+```kotlin
+seatCanvasView.updateSeats("37492", seatDataArray)
+seatCanvasView.clearSeatData()
 ```
 
 ### OHOS
@@ -252,11 +274,11 @@ SeatCanvas 支持两种座位样式：**圆形样式**和 **SVG 样式**。
 import { SeatStyleConfigBuilder } from 'libseatcanvas';
 
 let builder = new SeatStyleConfigBuilder();
-builder.addCircleStyle(0, false, '#FFFF0000', '#B2000000', '#FFFFFFFF'); // 可选座位，未选中
-builder.addCircleStyle(0, true, '#FFFF0000', '#B2000000', '#FFFFFFFF');   // 可选座位，已选中
-builder.addCircleStyle(1, false, '#FFAAAAAA', '#B2000000', '#FFFFFFFF');   // 已售座位
-builder.addCircleStyle(2, false, '#FF999999', '#B2000000', '#FFFFFFFF');   // 锁定座位
-builder.addCircleStyle(3, false, '#FF666666', '#B2000000', '#FFFFFFFF');   // 禁用座位
+builder.addCircleStyle('selectable_unselected', '#FFFF0000', '#B2000000', '#FFFFFFFF');
+builder.addCircleStyle('selectable_selected', '#FFFF0000', '#B2000000', '#FFFFFFFF');
+builder.addCircleStyle('sold', '#FFAAAAAA');
+builder.addCircleStyle('locked', '#FF999999');
+builder.addCircleStyle('disabled', '#FF666666');
 
 let config = builder.toJSONString();
 controller.applySeatStyleJSONConfig(config);
@@ -279,25 +301,25 @@ controller.applySeatStyleJSONConfig(config);
 - `SeatCanvasSample.bundle/default/seatstyle/icon_chooseSeat_selected.svg` - 已选座位
 - `SeatCanvasSample.bundle/default/seatstyle/icon_chooseSeat_noSelected.svg` - 不可选座位（已售/锁定/禁用）
 
-#### 设置座位选择代理
+#### 渲染代理与清空座位
 
 ```typescript
 import { SeatCanvasRendererDelegate } from 'libseatcanvas';
 
 let delegate: SeatCanvasRendererDelegate = {
-  shouldSelectSeat: (zoneId: string, seatId: string) => {
-    // 返回 true 表示可以选中，false 表示不能选中
+  styleIdForSeat: (zoneId: string, seatId: string) => {
+    return 'selectable_unselected';
+  },
+  didTapSeat: (zoneId: string, seatId: string) => {
     return true;
   },
-  didSelectSeat: (zoneId: string, seatId: string) => {
-    console.log(`座位已选中: zoneId=${zoneId}, seatId=${seatId}`);
-  },
-  didDeselectSeat: (zoneId: string, seatId: string) => {
-    console.log(`座位已取消选中: zoneId=${zoneId}, seatId=${seatId}`);
+  didTapZone: (zoneId: string) => {
   },
 };
 
 controller.setDelegate(delegate);
+controller.updateSeats('37492', seatDataArray);
+controller.clearSeatData();
 ```
 
 ### Web (计划中)

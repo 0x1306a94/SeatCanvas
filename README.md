@@ -183,6 +183,14 @@ Seat data (`seatdata/*.json`) format:
 **Platform Resource Paths:**
 - Shared `SeatCanvasSample.bundle` via symlinks
 
+## Seat Data, Style Keys, and Renderer Delegate
+
+- **String style keys**: Seat style JSON is a list of entries, each with a string `key` and a `config` (circle or SVG). Register keys with `SeatStyleConfigBuilder`; the same strings must be returned from `styleIdForSeat` (or the platform equivalent) so each seat resolves to a registered style. Unknown or empty keys skip drawing that seat.
+- **Per-seat `styleId`**: `SeatData` may carry an optional `styleId`. The renderer still consults your delegate for the final style when implemented.
+- **Updating and clearing**: Use `updateSeatDatas` (iOS) / `updateSeats` (Android, OHOS) to set geometry per zone. Call `clearSeatData` on the view or controller to remove all seat data and refresh rendering.
+- **Circle style**: For builders that support it, `overlay` and `checkmark` are optional; only `fill` is required.
+- **Delegate**: Implement `styleIdForSeat`, `didTapSeat`, and optionally `didTapZone` to drive selection and redraws (see platform types in the sample app).
+
 ## Usage Examples
 
 ### iOS
@@ -199,10 +207,17 @@ seatCanvasView.loadBaseMap(svgData)
 
 ```swift
 let builder = SeatStyleConfigBuilder()
-builder.addCircleStyle(status: 0, selected: false, fill: .red, overlay: .black, checkmark: .white)
-builder.addSVGStyle(status: 0, selected: false, content: svgContent)
+builder.addCircleStyle(styleId: "selectable_unselected", fill: .red, overlay: .black, checkmark: .white)
+builder.addSVGStyle(styleId: "custom_svg", content: svgContent)
 
 seatCanvasView.applySeatStyleJSONConfig(builder.toJSONData())
+```
+
+#### Seat data and clearing
+
+```swift
+seatCanvasView.updateSeatDatas(zoneId: "37492", seats: seatDataArray)
+seatCanvasView.clearSeatData()
 ```
 
 ### Android
@@ -218,10 +233,17 @@ seatCanvasView.loadBaseMap(svgData)
 
 ```kotlin
 val builder = SeatStyleConfigBuilder()
-builder.addCircleStyle(0U, false, Color.RED, Color.BLACK, Color.WHITE)
-builder.addSVGStyle(0U, false, svgContent)
+builder.addCircleStyle("selectable_unselected", Color.RED, Color.BLACK, Color.WHITE)
+builder.addSVGStyle("custom_svg", svgContent)
 
 seatCanvasView.applySeatStyleJSONConfig(builder.toJSONData())
+```
+
+#### Seat data and clearing
+
+```kotlin
+seatCanvasView.updateSeats("37492", seatDataArray)
+seatCanvasView.clearSeatData()
 ```
 
 ### OHOS
@@ -252,11 +274,11 @@ SeatCanvas supports two seat styles: **circle style** and **SVG style**.
 import { SeatStyleConfigBuilder } from 'libseatcanvas';
 
 let builder = new SeatStyleConfigBuilder();
-builder.addCircleStyle(0, false, '#FFFF0000', '#B2000000', '#FFFFFFFF'); // Selectable seat, unselected
-builder.addCircleStyle(0, true, '#FFFF0000', '#B2000000', '#FFFFFFFF');   // Selectable seat, selected
-builder.addCircleStyle(1, false, '#FFAAAAAA', '#B2000000', '#FFFFFFFF');   // Sold seat
-builder.addCircleStyle(2, false, '#FF999999', '#B2000000', '#FFFFFFFF');   // Locked seat
-builder.addCircleStyle(3, false, '#FF666666', '#B2000000', '#FFFFFFFF');   // Disabled seat
+builder.addCircleStyle('selectable_unselected', '#FFFF0000', '#B2000000', '#FFFFFFFF');
+builder.addCircleStyle('selectable_selected', '#FFFF0000', '#B2000000', '#FFFFFFFF');
+builder.addCircleStyle('sold', '#FFAAAAAA');
+builder.addCircleStyle('locked', '#FF999999');
+builder.addCircleStyle('disabled', '#FF666666');
 
 let config = builder.toJSONString();
 controller.applySeatStyleJSONConfig(config);
@@ -279,25 +301,25 @@ controller.applySeatStyleJSONConfig(config);
 - `SeatCanvasSample.bundle/default/seatstyle/icon_chooseSeat_selected.svg` - Selected seat
 - `SeatCanvasSample.bundle/default/seatstyle/icon_chooseSeat_noSelected.svg` - Non-selectable seat (sold/locked/disabled)
 
-#### Setting Seat Selection Delegate
+#### Renderer delegate and clearing seats
 
 ```typescript
 import { SeatCanvasRendererDelegate } from 'libseatcanvas';
 
 let delegate: SeatCanvasRendererDelegate = {
-  shouldSelectSeat: (zoneId: string, seatId: string) => {
-    // Return true to allow selection, false to prevent selection
+  styleIdForSeat: (zoneId: string, seatId: string) => {
+    return 'selectable_unselected';
+  },
+  didTapSeat: (zoneId: string, seatId: string) => {
     return true;
   },
-  didSelectSeat: (zoneId: string, seatId: string) => {
-    console.log(`Seat selected: zoneId=${zoneId}, seatId=${seatId}`);
-  },
-  didDeselectSeat: (zoneId: string, seatId: string) => {
-    console.log(`Seat deselected: zoneId=${zoneId}, seatId=${seatId}`);
+  didTapZone: (zoneId: string) => {
   },
 };
 
 controller.setDelegate(delegate);
+controller.updateSeats('37492', seatDataArray);
+controller.clearSeatData();
 ```
 
 ### Web (Planned)
