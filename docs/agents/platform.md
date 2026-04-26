@@ -50,7 +50,7 @@ SeatCanvasView({ controller: this.controller })
 → Check `getFPS()` output, ensure PlatformView is properly initialized
 
 **Seat selection not working**
-→ Verify delegate is set via `setDelegate()` and `shouldSelectSeat()` returns true
+→ Verify delegate is set via `setDelegate()`, `styleIdForSeat` returns a registered style id, and `didTapSeat` runs for hits
 
 **Zoom animation stuttering**
 → Check `getFPS()`, ensure no blocking operations on main thread

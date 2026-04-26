@@ -166,14 +166,14 @@ JNIEXPORT jboolean JNICALL
 Java_com_libseatcanvas_SeatCanvasView_nativeLoadBaseMap(JNIEnv *env, jobject thiz, jlong dataPtr) {
     GetCPPObjectOrReturnValue(env, thiz, renderer, false);
     if (dataPtr == 0) {
-        renderer->setBaseMapConfig(nullptr, kk::SeatRenderMode::ZoomBased);
+        renderer->setBaseMapConfig(nullptr);
         return false;
     }
 
     auto map = reinterpret_cast<kk::jni::LoadBaseMapResult *>(dataPtr);
     auto baseMapConfig = std::make_shared<kk::BaseMapConfig>(map->meshBuilder, map->textLayer,
                                                              map->miniLayer, map->baseMapSize);
-    renderer->setBaseMapConfig(std::move(baseMapConfig), kk::SeatRenderMode::ZoomBased);
+    renderer->setBaseMapConfig(std::move(baseMapConfig));
     delete map;
 
     return true;

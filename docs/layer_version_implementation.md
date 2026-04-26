@@ -587,7 +587,7 @@ auto svgDom = tgfx::SVGDOM::MakeFromData(svgData);
 auto convertResult = kk::svg::convertSVGDomToLayer(svgDom);
 
 // 3. 设置底图
-renderer->setBaseMapConfig(baseMapConfig, SeatRenderMode::ZoomBased);
+renderer->setBaseMapConfig(std::move(baseMapConfig));
 
 // 4. 启动渲染循环
 renderer->start();

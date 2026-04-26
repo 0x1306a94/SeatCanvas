@@ -46,8 +46,8 @@ SeatCanvas/
 │   ├── platform/                # Platform-specific implementations
 │   │   ├── ios/
 │   │   ├── android/
-│   │   └── ohos/
-│   └── swift/                   # Swift bridging code
+│   │   ├── ohos/
+│   │   └── apple/swift/         # Swift bridging (iOS)
 ├── ios/                         # iOS sample app
 ├── android/                     # Android sample app
 ├── ohos/                        # OHOS sample app

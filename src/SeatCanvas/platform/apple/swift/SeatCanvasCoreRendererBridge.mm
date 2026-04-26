@@ -191,7 +191,7 @@ void *_Nullable SeatCanvasCoreRendererParseBaseMapFromSVG(const void *_Nullable 
 bool SeatCanvasCoreRendererLoadBaseMap(CPPObject *_Nonnull cppObject, void *_Nullable *_Nullable loadResult) {
     GetCPPObjectOrReturnValue(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer, false);
     if (loadResult == nullptr || *loadResult == nullptr) {
-        renderer->setBaseMapConfig(nullptr, kk::SeatRenderMode::ZoomBased);
+        renderer->setBaseMapConfig(nullptr);
         return true;
     }
 
@@ -217,7 +217,7 @@ bool SeatCanvasCoreRendererLoadBaseMap(CPPObject *_Nonnull cppObject, void *_Nul
     }
 
     auto baseMapConfig = std::make_shared<kk::BaseMapConfig>(map->meshBuilder, map->textLayer, map->miniLayer, map->baseMapSize);
-    renderer->setBaseMapConfig(std::move(baseMapConfig), kk::SeatRenderMode::ZoomBased);
+    renderer->setBaseMapConfig(std::move(baseMapConfig));
 
     delete map;
     *loadResult = nullptr;

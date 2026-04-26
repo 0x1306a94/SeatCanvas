@@ -63,11 +63,8 @@ Parse result: `BaseMapParseResult` (Layer + RegionInfo + SeatInfo)
 
 **Configuration**: `BaseMapConfig` (BaseMapMeshBuilder + Layer + BaseMapRootLayer + original dimensions)
 
-### Render Modes
-**Location**: `src/SeatCanvas/core/SeatRenderMode.hpp`
-
-- `ClickToEnter` — tap to enter region view; seat coordinates relative to region
-- `ZoomBased` — auto-show based on zoom level; seat coordinates relative to canvas
+### Seat visibility (zoom)
+Seat rendering visibility is controlled by `ZoomLevelConfig` (per-scale thresholds for seats, row labels, zone labels, and venue). Load the basemap with `setBaseMapConfig()`, then adjust zoom thresholds and gestures as needed.
 
 ### Layer System
 **Location**: `src/SeatCanvas/core/layers/`
@@ -90,9 +87,9 @@ Parse result: `BaseMapParseResult` (Layer + RegionInfo + SeatInfo)
 ### Delegate Pattern
 **Location**: `src/SeatCanvas/core/renderer/SeatCanvasCoreRendererDelegate.hpp`
 
-- `shouldSelectSeat()` — can prevent selection
-- `didSelectSeat()`
-- `didDeselectSeat()`
+- `didTapZone(coreID, zoneId)` — user tapped a region
+- `styleIdForSeat(coreID, zoneId, seatId, outStyleId)` — resolve style for a seat
+- `didTapSeat(coreID, zoneId, seatId)` — return whether the tap was handled
 
 ## Render Pipeline
 
@@ -105,7 +102,7 @@ Parse result: `BaseMapParseResult` (Layer + RegionInfo + SeatInfo)
 
 ## Key APIs
 
-**Basemap**: `setBaseMapConfig(baseMapConfig, renderMode)`
+**Basemap**: `setBaseMapConfig(baseMapConfig)`
 
 **Style**: `setStyleKeyToConfig()`, `setStyleKeyToConfigFromJSON(bytes, len)`
 
@@ -119,7 +116,7 @@ Parse result: `BaseMapParseResult` (Layer + RegionInfo + SeatInfo)
 
 **Render control**: `start()`, `stop()`, `draw(force)`, `invalidateContent()`, `getFPS()`
 
-**Config**: `setDelegate(delegate)`, `ZoomLevelConfig` (seat/row/zone/venue — controls seat rendering timing in ZoomBased mode)
+**Config**: `setDelegate(delegate)`, `ZoomLevelConfig` (seat/row/zone/venue — per-scale visibility thresholds)
 
 ## Performance
 

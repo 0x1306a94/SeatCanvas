@@ -57,11 +57,8 @@ Prepare style JSON
 ```
 zoomToRect()           → zoom to region (with animation params)
 getVisibleOriginalRect() → get visible area
-setSelectedzoneId()    → set selected region (ClickToEnter mode)
 ```
 
-### Switching Render Modes
+### Zoom and seat visibility
 
-Specify `SeatRenderMode` in `setBaseMapConfig()`:
-- `ZoomBased` — auto-show seats based on zoom level
-- `ClickToEnter` — tap to enter region view
+`ZoomLevelConfig` sets scale thresholds for when seats, row labels, zone labels, and venue labels are shown. Call `setBaseMapConfig()` with a prepared `BaseMapConfig`, then tune zoom range and `ZoomLevelConfig` as needed.

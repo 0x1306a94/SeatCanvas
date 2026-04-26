@@ -285,10 +285,6 @@ void SeatCanvasCoreRenderer::setStyleKeyToConfigFromJSON(const void *bytes, size
     setStyleIdToConfig(styleIdToConfig);
 }
 
-kk::SeatRenderMode SeatCanvasCoreRenderer::seatRenderMode() const {
-    return _renderMode;
-}
-
 // 手势处理方法，由平台层调用
 
 void SeatCanvasCoreRenderer::handleTap(const tgfx::Point &location) {
@@ -365,11 +361,9 @@ void SeatCanvasCoreRenderer::handlePinch(kk::gesture::GestureState state, float 
     updateZoomPanControllerState();
 }
 
-void SeatCanvasCoreRenderer::setBaseMapConfig(std::shared_ptr<kk::BaseMapConfig> baseMapConfig, kk::SeatRenderMode renderMode) {
-    _renderMode = renderMode;
+void SeatCanvasCoreRenderer::setBaseMapConfig(std::shared_ptr<kk::BaseMapConfig> baseMapConfig) {
     if (baseMapConfig == nullptr) {
         _baseMapConfig = nullptr;
-        _virtualBaseMapConfig.clear();
         updateUseBaseMapConfig(nullptr);
         return;
     }
@@ -379,7 +373,6 @@ void SeatCanvasCoreRenderer::setBaseMapConfig(std::shared_ptr<kk::BaseMapConfig>
     }
 
     _baseMapConfig = std::move(baseMapConfig);
-    _virtualBaseMapConfig.clear();
     updateUseBaseMapConfig(_baseMapConfig);
 }
 
@@ -868,17 +861,6 @@ void SeatCanvasCoreRenderer::setMiniMapLayer(std::shared_ptr<kk::layer::BaseMapR
     // minimap 使用与 baseMap 相同的尺寸
     tgfx::Size baseMapSize = _state->getOriginSize();
     _overlayLayer->setBaseMapLayer(std::move(layer), baseMapSize);
-}
-
-/// 设置选中的区域ID（仅对 ClickToEnter 模式有效）
-/// @param zoneId 区域ID，为空表示取消选择，恢复到全区域视图
-void SeatCanvasCoreRenderer::setSelectedzoneId(const std::string &zoneId) {
-    if (zoneId.empty()) {
-        updateUseBaseMapConfig(_baseMapConfig);
-        return;
-    }
-
-    // TODO: 构建虚拟BaseMapLayer
 }
 
 /// 为区域创建虚拟的 BaseMapLayer

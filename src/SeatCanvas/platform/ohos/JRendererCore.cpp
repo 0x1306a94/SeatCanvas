@@ -218,12 +218,12 @@ static napi_value LoadBaseMap(napi_env env, napi_callback_info info) {
     auto renderer = view->internalRenderer();
     auto map = reinterpret_cast<LoadBaseMapResult *>(nativePtr);
     if (map == nullptr) {
-        renderer->setBaseMapConfig(nullptr, kk::SeatRenderMode::ZoomBased);
+        renderer->setBaseMapConfig(nullptr);
         return nullptr;
     }
 
     auto baseMapConfig = std::make_shared<kk::BaseMapConfig>(map->meshBuilder, map->textLayer, map->miniLayer, map->baseMapSize);
-    renderer->setBaseMapConfig(std::move(baseMapConfig), kk::SeatRenderMode::ZoomBased);
+    renderer->setBaseMapConfig(std::move(baseMapConfig));
 
     delete map;
 

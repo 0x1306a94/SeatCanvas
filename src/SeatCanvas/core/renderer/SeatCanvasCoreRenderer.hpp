@@ -22,7 +22,6 @@
 
 #include "core/BaseMapColorState.h"
 #include "core/SeatData.hpp"
-#include "core/SeatRenderMode.hpp"
 #include "core/ZoomLevelConfig.hpp"
 #include "core/ZoomScaleConfig.hpp"
 #include "core/gesture/GestureState.hpp"
@@ -134,8 +133,6 @@ class SeatCanvasCoreRenderer {
      */
     void setStyleKeyToConfigFromJSON(const void *bytes, size_t len);
 
-    kk::SeatRenderMode seatRenderMode() const;
-
     /// 获取当前帧率（每秒帧数）
     float getFPS() const;
 
@@ -162,7 +159,7 @@ class SeatCanvasCoreRenderer {
     /// 设置底图配置
     /// - Parameter baseMapConfig: 底图配置
     /// - Parameter renderMode: 渲染模式
-    void setBaseMapConfig(std::shared_ptr<kk::BaseMapConfig> baseMapConfig, kk::SeatRenderMode renderMode);
+    void setBaseMapConfig(std::shared_ptr<kk::BaseMapConfig> baseMapConfig);
 
     void invalidateContent();
 
@@ -216,10 +213,6 @@ class SeatCanvasCoreRenderer {
     /// @param padding 区域周围的边距（在内容坐标系中），默认为 0
     /// @param durationMs 动画持续时间（毫秒），仅在 animated 为 true 时有效，默认 300ms
     void zoomToRect(const tgfx::Rect &rect, bool animated = true, float padding = 0.0f, double durationMs = 300.0);
-
-    /// 设置选中的区域ID（仅对 ClickToEnter 模式有效）
-    /// @param zoneId 区域ID，为空表示取消选择，恢复到全区域视图
-    void setSelectedzoneId(const std::string &zoneId);
 
     /// 更新区域颜色
     /// @param colors 颜色表
@@ -321,7 +314,6 @@ class SeatCanvasCoreRenderer {
     std::unique_ptr<tgfx::Recording> _lastRecording = {nullptr};
     std::shared_ptr<kk::DisplayLink> _displayLink = {nullptr};
     std::shared_ptr<kk::BaseMapConfig> _baseMapConfig = {nullptr};
-    std::unordered_map<std::string, std::shared_ptr<kk::BaseMapConfig>> _virtualBaseMapConfig = {};
     std::weak_ptr<kk::BaseMapConfig> _useBaseMapConfig;
 
     tgfx::Color _backgroundColor = {tgfx::Color::White()};
@@ -332,7 +324,6 @@ class SeatCanvasCoreRenderer {
     bool _invalidate = {true};
     float _maxWidth = {1000.f};
     float _svgModelScale = {1.0f};
-    kk::SeatRenderMode _renderMode = {kk::SeatRenderMode::ZoomBased};
     kk::ZoomLevelConfig _zoomLevelConfig = {};
     float _seatRenderZoomThreshold = {0.0f};
     uint32_t _minimapAnimationId = {0};
