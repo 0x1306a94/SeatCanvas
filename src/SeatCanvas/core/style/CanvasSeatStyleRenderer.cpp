@@ -17,7 +17,6 @@
 
 #include "CircleSeatStyleConfig.hpp"
 #include "SVGSeatStyleConfig.hpp"
-#include "SeatStyleKey.hpp"
 #include "SeatStyleType.hpp"
 
 namespace kk::renderer {
@@ -25,24 +24,23 @@ namespace kk::renderer {
 CanvasSeatStyleRenderer::CanvasSeatStyleRenderer() {
 }
 
-std::unordered_map<kk::SeatStyleKey, tgfx::Rect> CanvasSeatStyleRenderer::renderAllSeatStyles(
+std::unordered_map<std::string, tgfx::Rect> CanvasSeatStyleRenderer::renderAllSeatStyles(
     tgfx::Canvas *canvas,
     const tgfx::Size &itemSize,
     int columns,
     int itemSpacing,
     float density,
-    const std::unordered_map<kk::SeatStyleKey, std::shared_ptr<SeatStyleConfig>> &styleKeyToConfig) {
-    std::unordered_map<kk::SeatStyleKey, tgfx::Rect> result;
+    const std::unordered_map<std::string, std::shared_ptr<SeatStyleConfig>> &styleIdToConfig) {
+    std::unordered_map<std::string, tgfx::Rect> result = {};
 
-    if (!canvas || itemSize.width <= 0 || itemSize.height <= 0 || styleKeyToConfig.empty()) {
+    if (!canvas || itemSize.width <= 0 || itemSize.height <= 0 || styleIdToConfig.empty()) {
         return result;
     }
 
     float startX = static_cast<float>(itemSpacing);
     float startY = static_cast<float>(itemSpacing);
 
-    for (const auto &[key, config] : styleKeyToConfig) {
-
+    for (const auto &[styleId, config] : styleIdToConfig) {
         tgfx::Rect itemRect = tgfx::Rect::MakeXYWH(startX, startY, itemSize.width, itemSize.height);
 
         if (config) {
@@ -54,7 +52,7 @@ std::unordered_map<kk::SeatStyleKey, tgfx::Rect> CanvasSeatStyleRenderer::render
                 case SeatStyleType::Circle: {
                     auto circleConfig = std::static_pointer_cast<CircleSeatStyleConfig>(config);
                     if (circleConfig) {
-                        renderCircleStyle(canvas, itemSize, *circleConfig, key.isSelected(), density);
+                        renderCircleStyle(canvas, itemSize, *circleConfig, density);
                     }
                     break;
                 }
@@ -70,7 +68,7 @@ std::unordered_map<kk::SeatStyleKey, tgfx::Rect> CanvasSeatStyleRenderer::render
             }
         }
 
-        result[key] = itemRect;
+        result[styleId] = itemRect;
 
         startX += itemSize.width + static_cast<float>(itemSpacing);
         if (startX + itemSize.width > static_cast<float>(columns * (itemSize.width + itemSpacing) + itemSpacing)) {
@@ -85,35 +83,32 @@ std::unordered_map<kk::SeatStyleKey, tgfx::Rect> CanvasSeatStyleRenderer::render
 void CanvasSeatStyleRenderer::renderCircleStyle(tgfx::Canvas *canvas,
                                                 const tgfx::Size &itemSize,
                                                 const CircleSeatStyleConfig &config,
-                                                bool selected,
                                                 float density) {
-
-    // 绘制座位主体（圆形）
     tgfx::Rect ovalRect = tgfx::Rect::MakeWH(itemSize.width, itemSize.height);
-    tgfx::Path ovalPath;
+    tgfx::Path ovalPath = {};
     ovalPath.addOval(ovalRect);
 
-    tgfx::Paint paint;
+    tgfx::Paint paint = {};
 
-    // 绘制填充
     paint.setColor(config.getFillColor());
     canvas->drawPath(ovalPath, paint);
 
-    // 如果选中，绘制选中效果
-    if (selected) {
-        // 绘制覆盖层
-        paint.setColor(config.getOverlayColor());
+    const auto &overlayColor = config.getOverlayColor();
+    if (overlayColor.has_value()) {
+        paint.setColor(*overlayColor);
         canvas->drawPath(ovalPath, paint);
+    }
 
-        // 绘制勾选标记
-        tgfx::Path checkmarkPath;
-        float scaleX = itemSize.width / 36.0f;  // 基准大小是 36
+    const auto &checkmarkColor = config.getCheckmarkColor();
+    if (checkmarkColor.has_value()) {
+        tgfx::Path checkmarkPath = {};
+        float scaleX = itemSize.width / 36.0f;
         float scaleY = itemSize.height / 36.0f;
         checkmarkPath.moveTo(11.0f * scaleX, 17.0f * scaleY);
         checkmarkPath.lineTo(16.0f * scaleX, 22.0f * scaleY);
         checkmarkPath.lineTo(24.0f * scaleX, 13.0f * scaleY);
 
-        paint.setColor(config.getCheckmarkColor());
+        paint.setColor(*checkmarkColor);
         paint.setStyle(tgfx::PaintStyle::Stroke);
         paint.setStroke(tgfx::Stroke{4.0f * density, tgfx::LineCap::Round, tgfx::LineJoin::Round});
         canvas->drawPath(checkmarkPath, paint);
@@ -124,7 +119,7 @@ void CanvasSeatStyleRenderer::renderSVGStyle(tgfx::Canvas *canvas,
                                              const tgfx::Size &itemSize,
                                              const SVGSeatStyleConfig &config,
                                              float density) {
-
+    (void)density;
     const auto &content = config.getContent();
     auto data = tgfx::Data::MakeWithoutCopy(content.data(), content.size());
     auto stream = tgfx::Stream::MakeFromData(data);

@@ -3,6 +3,7 @@ package com.seatcanvas.sample
 import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,29 +15,25 @@ import com.libseatcanvas.BaseMapFormat
 import com.libseatcanvas.SeatCanvasRendererDelegate
 import com.libseatcanvas.SeatData
 import com.libseatcanvas.SeatZoneColor
-import com.libseatcanvas.style.SeatStyleConfigBuilder
 import com.libseatcanvas.SVGBaseMapParseConfig
+import com.libseatcanvas.style.SeatStyleConfigBuilder
 import com.seatcanvas.sample.databinding.FragmentSecondBinding
 
-/**
- * A simple [Fragment] subclass as the second destination in the navigation.
- */
 class SecondFragment : Fragment() {
 
     private var _binding: FragmentSecondBinding? = null
-
-    // This property is only valid between onCreateView and
-    // onDestroyView.
     private val binding get() = _binding!!
 
+    private val seatStatusMap: MutableMap<String, UInt> = mutableMapOf()
+    private val selectedSeatIds: MutableSet<String> = mutableSetOf()
+
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-
         _binding = FragmentSecondBinding.inflate(inflater, container, false)
         return binding.root
-
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -46,59 +43,60 @@ class SecondFragment : Fragment() {
         val data = readAssetFileToByteArray(requireContext(), baseMapInfo.assetPath) ?: return
         val parseConfig = SVGBaseMapParseConfig(listOf("zoneId", "regioncode"))
         binding.seatCanvasView.loadBaseMap(data, BaseMapFormat.SVG, parseConfig)
-        binding.seatCanvasView.canvasColor = ContextCompat.getColor(context, R.color.canvas_bg)
-        // 应用默认样式（SVG样式）
+        binding.seatCanvasView.canvasColor = ContextCompat.getColor(requireContext(), R.color.canvas_bg)
         binding.seatCanvasView.applySeatStyleJSONConfig(buildSVGSeatStyleConfig())
 
-        // 设置样式切换开关监听器
         setupStyleSwitches()
 
-        // 设置座位选择代理
         binding.seatCanvasView.setDelegate(object : SeatCanvasRendererDelegate {
-            override fun didTapZone(zoneId: String) {
-                android.util.Log.d(
-                    "SecondFragment",
-                    "didTapZone: zoneId=$zoneId"
-                )
+            override fun styleIdForSeat(zoneId: String, seatId: String): String? {
+                val status = seatStatusMap[seatId] ?: return null
+                return styleId(status, selectedSeatIds.contains(seatId))
             }
 
-            override fun shouldSelectSeat(zoneId: String, seatId: String): Boolean {
-                // 返回 true 表示可以选中，false 表示不能选中
+            override fun didTapSeat(zoneId: String, seatId: String): Boolean {
+                if (selectedSeatIds.contains(seatId)) {
+                    selectedSeatIds.remove(seatId)
+                } else {
+                    selectedSeatIds.add(seatId)
+                }
+                Log.d("SecondFragment", "didTapSeat: zoneId=$zoneId, seatId=$seatId")
                 return true
             }
 
-            override fun didSelectSeat(zoneId: String, seatId: String) {
-                android.util.Log.d(
-                    "SecondFragment",
-                    "didSelectSeat: zoneId=$zoneId, seatId=$seatId"
-                )
-            }
-
-            override fun didDeselectSeat(zoneId: String, seatId: String) {
-                android.util.Log.d(
-                    "SecondFragment",
-                    "didDeselectSeat: zoneId=$zoneId, seatId=$seatId"
-                )
+            override fun didTapZone(zoneId: String) {
+                Log.d("SecondFragment", "didTapZone: zoneId=$zoneId")
             }
         })
 
         loadMockData(baseMapInfo)
     }
 
+    private fun styleId(status: UInt, selected: Boolean): String {
+        return "status_${status}_selected_${if (selected) 1 else 0}"
+    }
+
     private fun loadMockData(baseMapInfo: BaseMapFileInfo) {
+        seatStatusMap.clear()
+        selectedSeatIds.clear()
+
         val colors = loadZoneColors(baseMapInfo)
         binding.seatCanvasView.updateSeatZoneAlternateColors(colors)
 
         val seatDatas = loadSeatDatas(baseMapInfo)
         for ((zoneId, seats) in seatDatas) {
+            for (mockSeat in seats) {
+                seatStatusMap[mockSeat.seatId] = mockSeat.status
+                if (mockSeat.selected) {
+                    selectedSeatIds.add(mockSeat.seatId)
+                }
+            }
             val seatDataArray = seats.map { mockSeat ->
                 SeatData(
                     seatId = mockSeat.seatId,
-                    status = mockSeat.status,
-                    selected = mockSeat.selected,
                     x = mockSeat.x,
                     y = mockSeat.y,
-                    rotation = mockSeat.rotation,
+                    rotation = mockSeat.rotation
                 )
             }.toTypedArray()
             binding.seatCanvasView.updateSeats(zoneId, seatDataArray)
@@ -145,15 +143,6 @@ class SecondFragment : Fragment() {
         }
     }
 
-    override fun onPause() {
-        super.onPause()
-    }
-
-    override fun onResume() {
-//        binding.seatCanvasView.onResume()
-        super.onResume()
-    }
-
     override fun onDestroyView() {
         binding.seatCanvasView.onDestroy()
         super.onDestroyView()
@@ -184,68 +173,24 @@ class SecondFragment : Fragment() {
         val sold = ContextCompat.getColor(context, R.color.seat_sold)
         val locked = ContextCompat.getColor(context, R.color.seat_locked)
         val disabled = ContextCompat.getColor(context, R.color.seat_disabled)
-        val overlay = Color.argb((0.7 * 255).toInt(), 0, 0, 0) // 黑色，透明度 0.7
+        val overlay = Color.argb((0.7 * 255).toInt(), 0, 0, 0)
         val checkmark = Color.WHITE
 
-        builder.addCircleStyle(
-            status = 0U,
-            selected = false,
-            fill = available,
-            overlay = overlay,
-            checkmark = checkmark
-        )
-        builder.addCircleStyle(
-            status = 0U,
-            selected = true,
-            fill = available,
-            overlay = overlay,
-            checkmark = checkmark
-        )
-
-        builder.addCircleStyle(
-            status = 1U,
-            selected = false,
-            fill = sold,
-            overlay = overlay,
-            checkmark = checkmark
-        )
-        builder.addCircleStyle(
-            status = 1U,
-            selected = true,
-            fill = sold,
-            overlay = overlay,
-            checkmark = checkmark
-        )
-
-        builder.addCircleStyle(
-            status = 2U,
-            selected = false,
-            fill = locked,
-            overlay = overlay,
-            checkmark = checkmark
-        )
-        builder.addCircleStyle(
-            status = 2U,
-            selected = true,
-            fill = locked,
-            overlay = overlay,
-            checkmark = checkmark
-        )
-
-        builder.addCircleStyle(
-            status = 3U,
-            selected = false,
-            fill = disabled,
-            overlay = overlay,
-            checkmark = checkmark
-        )
-        builder.addCircleStyle(
-            status = 3U,
-            selected = true,
-            fill = disabled,
-            overlay = overlay,
-            checkmark = checkmark
-        )
+        for (status in 0U..3U) {
+            val fill = when (status.toInt()) {
+                0 -> available
+                1 -> sold
+                2 -> locked
+                else -> disabled
+            }
+            builder.addCircleStyle(styleId = styleId(status, false), fill = fill)
+            builder.addCircleStyle(
+                styleId = styleId(status, true),
+                fill = fill,
+                overlay = overlay,
+                checkmark = checkmark
+            )
+        }
 
         return builder.toJSONData()
     }
@@ -261,17 +206,12 @@ class SecondFragment : Fragment() {
             return null
         }
 
-        builder.addSVGStyle(status = 0U, selected = false, content = available)
-        builder.addSVGStyle(status = 0U, selected = true, content = selected)
-
-        builder.addSVGStyle(status = 1U, selected = false, content = disabled)
-        builder.addSVGStyle(status = 1U, selected = true, content = disabled)
-
-        builder.addSVGStyle(status = 2U, selected = false, content = disabled)
-        builder.addSVGStyle(status = 2U, selected = true, content = disabled)
-
-        builder.addSVGStyle(status = 3U, selected = false, content = disabled)
-        builder.addSVGStyle(status = 3U, selected = true, content = disabled)
+        builder.addSVGStyle(styleId = styleId(0U, false), content = available)
+        builder.addSVGStyle(styleId = styleId(0U, true), content = selected)
+        for (status in 1U..3U) {
+            builder.addSVGStyle(styleId = styleId(status, false), content = disabled)
+            builder.addSVGStyle(styleId = styleId(status, true), content = disabled)
+        }
 
         return builder.toJSONData()
     }

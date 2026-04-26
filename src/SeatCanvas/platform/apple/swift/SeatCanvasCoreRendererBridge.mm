@@ -249,6 +249,11 @@ void SeatCanvasCoreRendererSetSeatDatas(CPPObject *_Nonnull cppObject, const std
     renderer->setSeatData(zoneId, *seats);
 }
 
+void SeatCanvasCoreRendererClearSeatData(CPPObject *_Nonnull cppObject) {
+    GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
+    renderer->clearSeatData();
+}
+
 void SeatCanvasCoreRendererSetSeatStyleJSONConfig(CPPObject *_Nonnull cppObject, const void *_Nullable __sized_by_or_null(len) bytes, size_t len) {
     GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
     renderer->setStyleKeyToConfigFromJSON(bytes, len);

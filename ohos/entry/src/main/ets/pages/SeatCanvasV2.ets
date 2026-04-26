@@ -23,21 +23,33 @@ export struct SeatCanvasV2 {
   @Local useCircleSeatStyle: boolean = false;
   @Local useSVGSeatStyle: boolean = true;
   private delegate: SeatCanvasRendererDelegate | null = null;
+  private seatStatusMap: Map<string, number> = new Map();
+  private selectedSeatIds: Set<string> = new Set();
+
+  private sampleStyleId(status: number, selected: boolean): string {
+    return `status_${status}_selected_${selected ? 1 : 0}`;
+  }
 
   aboutToAppear(): void {
     this.delegate = {
-      didTapZone: (zoneId: string) => {
-        console.log(`tgfx didTapZone: ${zoneId}`)
+      styleIdForSeat: (zoneId: string, seatId: string): string | null => {
+        const status = this.seatStatusMap.get(seatId);
+        if (status === undefined) {
+          return null;
+        }
+        return this.sampleStyleId(status, this.selectedSeatIds.has(seatId));
       },
-      shouldSelectSeat: (zoneId: string, seatId: string) => {
-        console.log(`tgfx shouldSelectSeat: ${zoneId} ${seatId}`)
+      didTapSeat: (zoneId: string, seatId: string): boolean => {
+        if (this.selectedSeatIds.has(seatId)) {
+          this.selectedSeatIds.delete(seatId);
+        } else {
+          this.selectedSeatIds.add(seatId);
+        }
+        console.log(`tgfx didTapSeat: ${zoneId} ${seatId}`);
         return true;
       },
-      didSelectSeat: (zoneId: string, seatId: string) => {
-        console.log(`tgfx didSelectSeat: ${zoneId} ${seatId}`)
-      },
-      didDeselectSeat: (zoneId: string, seatId: string) => {
-        console.log(`tgfx didDeselectSeat: ${zoneId} ${seatId}`)
+      didTapZone: (zoneId: string) => {
+        console.log(`tgfx didTapZone: ${zoneId}`)
       },
     };
 
@@ -67,13 +79,20 @@ export struct SeatCanvasV2 {
     const colors = this.loadZoneColors();
     this.controller.updateSeatZoneAlternateColors(colors);
 
+    this.seatStatusMap.clear();
+    this.selectedSeatIds.clear();
+
     const seatDatas = this.loadSeatDatas();
     for (const zoneId of Object.keys(seatDatas)) {
       const seats = seatDatas[zoneId];
+      for (const mockSeat of seats) {
+        this.seatStatusMap.set(mockSeat.seatId, mockSeat.status);
+        if (mockSeat.selected) {
+          this.selectedSeatIds.add(mockSeat.seatId);
+        }
+      }
       const seatDataArray: SeatData[] = seats.map((mockSeat: MockSeatData): SeatData => ({
         seatId: mockSeat.seatId,
-        status: mockSeat.status,
-        selected: mockSeat.selected || false,
         x: mockSeat.x,
         y: mockSeat.y,
         rotation: mockSeat.rotation,

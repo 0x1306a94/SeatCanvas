@@ -49,7 +49,6 @@
 #include "core/style/SeatStyleAtlasManager.hpp"
 #include "core/style/SeatStyleConfig.hpp"
 #include "core/style/SeatStyleConfigJSONHelper.hpp"
-#include "core/style/SeatStyleKey.hpp"
 #include "core/style/SeatStyleType.hpp"
 #include "core/utils/DisplayLink.hpp"
 #include "core/utils/TimeProfiler.hpp"
@@ -64,7 +63,7 @@ namespace kk::renderer {
 SeatCanvasCoreRenderer::SeatCanvasCoreRenderer(
     std::unique_ptr<PlatformView> platformView,
     std::unique_ptr<kk::gesture::ElasticZoomPanController> zoomPanController,
-    const std::unordered_map<kk::SeatStyleKey, std::shared_ptr<SeatStyleConfig>> &styleKeyToConfig)
+    const std::unordered_map<std::string, std::shared_ptr<SeatStyleConfig>> &styleIdToConfig)
     : _coreID(kk::UniqueID::Next())
     , _delegate(nullptr)
     , _platformView(std::move(platformView))
@@ -218,8 +217,8 @@ void SeatCanvasCoreRenderer::setSeatSize(float seatSize) {
     invalidateContent();
 }
 
-void SeatCanvasCoreRenderer::setStyleKeyToConfig(const std::unordered_map<kk::SeatStyleKey, std::shared_ptr<SeatStyleConfig>> &styleKeyToConfig) {
-    auto changed = _seatAtlasManager->setStyleKeyToConfigs(styleKeyToConfig);
+void SeatCanvasCoreRenderer::setStyleIdToConfig(const std::unordered_map<std::string, std::shared_ptr<SeatStyleConfig>> &styleIdToConfig) {
+    auto changed = _seatAtlasManager->setStyleIdToConfigs(styleIdToConfig);
     if (changed) {
         invalidateContent();
     }
@@ -227,7 +226,7 @@ void SeatCanvasCoreRenderer::setStyleKeyToConfig(const std::unordered_map<kk::Se
 
 void SeatCanvasCoreRenderer::setStyleKeyToConfigFromJSON(const void *bytes, size_t len) {
     if (!bytes || len == 0) {
-        setStyleKeyToConfig({});
+        setStyleIdToConfig({});
         return;
     }
 
@@ -249,7 +248,7 @@ void SeatCanvasCoreRenderer::setStyleKeyToConfigFromJSON(const void *bytes, size
         return;
     }
 
-    std::unordered_map<kk::SeatStyleKey, std::shared_ptr<SeatStyleConfig>> styleKeyToConfig;
+    std::unordered_map<std::string, std::shared_ptr<SeatStyleConfig>> styleIdToConfig = {};
 
     for (const auto &entry : json) {
         if (!entry.contains("key") || !entry.contains("config")) {
@@ -257,30 +256,33 @@ void SeatCanvasCoreRenderer::setStyleKeyToConfigFromJSON(const void *bytes, size
             continue;
         }
 
-        if (!entry["key"].is_object()) {
-            tgfx::PrintError("Invalid JSON entry: 'key' is not an object");
+        if (!entry["key"].is_string()) {
+            tgfx::PrintError("Invalid JSON entry: 'key' is not a string");
             continue;
         }
 
-        kk::SeatStyleKey key;
-        entry["key"].get_to(key);
+        auto styleId = entry["key"].get<std::string>();
+        if (styleId.empty()) {
+            tgfx::PrintError("Invalid JSON entry: styleId is empty");
+            continue;
+        }
 
         if (!entry["config"].is_object()) {
             tgfx::PrintError("Invalid JSON entry: 'config' is not an object");
             continue;
         }
 
-        std::shared_ptr<SeatStyleConfig> config;
+        std::shared_ptr<SeatStyleConfig> config = nullptr;
         entry["config"].get_to(config);
         if (!config) {
             tgfx::PrintError("Failed to parse config");
             continue;
         }
 
-        styleKeyToConfig[key] = config;
+        styleIdToConfig[styleId] = config;
     }
 
-    setStyleKeyToConfig(styleKeyToConfig);
+    setStyleIdToConfig(styleIdToConfig);
 }
 
 kk::SeatRenderMode SeatCanvasCoreRenderer::seatRenderMode() const {
@@ -1144,10 +1146,20 @@ void SeatCanvasCoreRenderer::prepareSeatIfNeeded() {
                 continue;
             }
 
-            auto uvOffsetIndex = _seatAtlasManager->getUVOffsetIndex(seat.status, seat.selected);
+            if (!_delegate) {
+                continue;
+            }
+
+            std::string styleId = {};
+            if (!_delegate->styleIdForSeat(_coreID, zone->zoneId, seat.seatId, styleId) || styleId.empty()) {
+                continue;
+            }
+
+            auto uvOffsetIndex = _seatAtlasManager->getUVOffsetIndex(styleId);
             if (uvOffsetIndex == -1) {
                 continue;
             }
+
             float rotationRad = seat.rotation * (M_PI / 180.0f);
             instances.emplace_back(seat.x, seat.y, uvOffsetIndex, rotationRad);
         }
@@ -1284,27 +1296,18 @@ void SeatCanvasCoreRenderer::handleSeatSelectionAtLocation(const tgfx::Point &lo
         return;
     }
 
-    for (auto &seatInfo : iter->second) {
+    for (const auto &seatInfo : iter->second) {
         auto rect = tgfx::Rect::MakeXYWH(seatInfo.x, seatInfo.y, _seatSize, _seatSize);
         if (!rect.contains(originalLocation.x, originalLocation.y)) {
             continue;
         }
 
-        if (seatInfo.selected) {
-            seatInfo.selected = false;
-            _delegate->didDeselectSeat(_coreID, zoneInfo->zoneId, seatInfo.seatId);
+        auto changed = _delegate->didTapSeat(_coreID, zoneInfo->zoneId, seatInfo.seatId);
+        if (changed) {
+            _customSeatPass->clearSeats();
             invalidateContent();
-        } else {
-            auto canSelected = _delegate->shouldSelectSeat(_coreID, zoneInfo->zoneId, seatInfo.seatId);
-            if (!canSelected) {
-                return;
-            }
-            seatInfo.selected = true;
-            _delegate->didSelectSeat(_coreID, zoneInfo->zoneId, seatInfo.seatId);
-            invalidateContent();
+            showMinimapWithoutAnimation();
         }
-        _customSeatPass->clearSeats();
-        showMinimapWithoutAnimation();
         return;
     }
 }
@@ -1808,38 +1811,21 @@ void SeatCanvasCoreRenderer::setSeatData(const std::string &zoneId, const std::v
         return;
     }
 
-    _seatDataMap[zoneId] = seats;
+    std::vector<kk::SeatData> validSeats = {};
+    validSeats.reserve(seats.size());
+    for (const auto &seat : seats) {
+        if (!seat.isValid()) {
+            continue;
+        }
+        validSeats.push_back(seat);
+    }
+
+    _seatDataMap[zoneId] = std::move(validSeats);
     _customSeatPass->clearSeats();
     invalidateContent();
 }
 
-void SeatCanvasCoreRenderer::updateSeatStatus(const std::string &zoneId, const std::string &seatId, uint32_t status) {
-    if (zoneId.empty() || seatId.empty()) {
-        return;
-    }
-
-    auto iter = _seatDataMap.find(zoneId);
-    if (iter == _seatDataMap.end()) {
-        return;
-    }
-
-    for (auto &seatInfo : iter->second) {
-        if (seatInfo.seatId == seatId) {
-            seatInfo.status = status;
-            _customSeatPass->clearSeats();
-            invalidateContent();
-            return;
-        }
-    }
-}
-
 void SeatCanvasCoreRenderer::clearSeatData() {
-    std::unordered_set<std::string> allzoneIds;
-    allzoneIds.reserve(_seatDataMap.size());
-    for (const auto &[zoneId, _] : _seatDataMap) {
-        allzoneIds.insert(zoneId);
-    }
-
     _seatDataMap.clear();
 
     _customSeatPass->clearSeats();

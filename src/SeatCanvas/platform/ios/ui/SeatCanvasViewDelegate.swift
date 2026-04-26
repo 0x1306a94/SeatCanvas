@@ -10,27 +10,22 @@ import Foundation
 /// 座位选中事件回调
 @MainActor
 @objc(KKSeatCanvasViewDelegate)
-public protocol SeatCanvasViewDelegate {
-    /// 是否可以选中座位
+public protocol SeatCanvasViewDelegate: AnyObject {
+    /// 根据区域和座位ID返回样式ID。
     /// - Parameters:
     ///   - view: SeatCanvasView 实例
     ///   - zoneId: 区域ID
-    ///   - seatId: 座位ID
-    func seatCanvasView(_ view: SeatCanvasView, shouldSelectSeat zoneId: String, seatId: String) -> Bool
+    ///   - seatId: 座位ID（由业务保证全局唯一）
+    /// - Returns: 样式ID。返回 nil 或空字符串表示该座位不渲染。
+    func seatCanvasView(_ view: SeatCanvasView, styleIdForSeat zoneId: String, seatId: String) -> String?
 
-    /// 选中某个座位
+    /// 点击某个座位，业务层处理状态变更。
     /// - Parameters:
     ///   - view: SeatCanvasView 实例
     ///   - zoneId: 区域ID
     ///   - seatId: 座位ID
-    func seatCanvasView(_ view: SeatCanvasView, didSelectSeat zoneId: String, seatId: String)
-
-    /// 取消选中某个座位
-    /// - Parameters:
-    ///   - view: SeatCanvasView 实例
-    ///   - zoneId: 区域ID
-    ///   - seatId: 座位ID
-    func seatCanvasView(_ view: SeatCanvasView, didDeselectSeat zoneId: String, seatId: String)
+    /// - Returns: 是否发生了状态变化。true 则触发重绘。
+    func seatCanvasView(_ view: SeatCanvasView, didTapSeat zoneId: String, seatId: String) -> Bool
 
     /// 点击某个区域
     /// - Parameters:

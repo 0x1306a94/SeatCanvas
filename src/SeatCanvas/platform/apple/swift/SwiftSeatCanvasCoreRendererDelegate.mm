@@ -26,16 +26,19 @@ void SwiftSeatCanvasCoreRendererDelegate::didTapZone(uint32_t coreID, const std:
     ::switf_bridge_didTapZone(coreID, zoneId.c_str());
 }
 
-bool SwiftSeatCanvasCoreRendererDelegate::shouldSelectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId) {
-    return ::switf_bridge_shouldSelectSeat(coreID, zoneId.c_str(), seatId.c_str());
+bool SwiftSeatCanvasCoreRendererDelegate::styleIdForSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId, std::string &outStyleId) {
+    constexpr size_t kMaxStyleIdLength = 1024;
+    char buffer[kMaxStyleIdLength] = {0};
+    auto found = ::switf_bridge_styleIdForSeat(coreID, zoneId.c_str(), seatId.c_str(), buffer, kMaxStyleIdLength);
+    if (!found || buffer[0] == '\0') {
+        return false;
+    }
+    outStyleId = buffer;
+    return true;
 }
 
-void SwiftSeatCanvasCoreRendererDelegate::didSelectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId) {
-    ::switf_bridge_didSelectSeat(coreID, zoneId.c_str(), seatId.c_str());
-}
-
-void SwiftSeatCanvasCoreRendererDelegate::didDeselectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId) {
-    ::switf_bridge_didDeselectSeat(coreID, zoneId.c_str(), seatId.c_str());
+bool SwiftSeatCanvasCoreRendererDelegate::didTapSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId) {
+    return ::switf_bridge_didTapSeat(coreID, zoneId.c_str(), seatId.c_str());
 }
 
 };  // namespace kk::bridge

@@ -16,6 +16,21 @@ private func bridgeString(_ value: UnsafePointer<CChar>?) -> String {
     return String(cString: value)
 }
 
+private func writeCString(_ string: String, to buffer: UnsafeMutablePointer<CChar>?, maxLength: Int) -> Bool {
+    guard let buffer, maxLength > 0 else {
+        return false
+    }
+    let utf8 = Array(string.utf8)
+    if utf8.count + 1 > maxLength {
+        return false
+    }
+    for (index, byte) in utf8.enumerated() {
+        buffer[index] = CChar(bitPattern: byte)
+    }
+    buffer[utf8.count] = 0
+    return true
+}
+
 /// 点击区域回调，由 C++ 层调用(仅内部调用)
 /// - Parameters:
 ///   - coreID: 座位渲染器实例ID
@@ -35,13 +50,39 @@ func switf_bridge_didTapZone(_ coreID: UInt32, _ zoneId: UnsafePointer<CChar>?) 
     }
 }
 
-/// 选中座位回调，由 C++ 层调用(仅内部调用)
+@c(switf_bridge_styleIdForSeat)
+func switf_bridge_styleIdForSeat(_ coreID: UInt32, _ zoneId: UnsafePointer<CChar>?, _ seatId: UnsafePointer<CChar>?, _ outStyleId: UnsafeMutablePointer<CChar>?, _ outStyleIdLen: Int) -> Bool {
+    let zoneIdString = bridgeString(zoneId)
+    let seatIdString = bridgeString(seatId)
+    let styleId = MainActor.assumeIsolated { () -> String? in
+        guard let delegate = SeatCanvasRendererDelegateRegistry.shared.delegate(for: coreID) else {
+            #if DEBUG
+                print("[SwiftBridge] 警告: 未找到 coreID \(coreID) 对应的 SeatCanvasRendererDelegate")
+            #endif
+            return nil
+        }
+
+        guard let styleId = delegate.seatCanvasRendererStyleIdForSeat(zoneId: zoneIdString, seatId: seatIdString), !styleId.isEmpty else {
+            return nil
+        }
+
+        return styleId
+    }
+
+    guard let styleId else {
+        return false
+    }
+    return writeCString(styleId, to: outStyleId, maxLength: outStyleIdLen)
+}
+
+/// 点击座位回调，由 C++ 层调用(仅内部调用)
 /// - Parameters:
 ///   - coreID: 座位渲染器实例ID
 ///   - zoneId: 区域ID
 ///   - seatId: 座位ID
-@c(switf_bridge_shouldSelectSeat)
-func switf_bridge_shouldSelectSeat(_ coreID: UInt32, _ zoneId: UnsafePointer<CChar>?, _ seatId: UnsafePointer<CChar>?) -> Bool {
+/// - Returns: 业务层状态是否发生变化
+@c(switf_bridge_didTapSeat)
+func switf_bridge_didTapSeat(_ coreID: UInt32, _ zoneId: UnsafePointer<CChar>?, _ seatId: UnsafePointer<CChar>?) -> Bool {
     let zoneIdString = bridgeString(zoneId)
     let seatIdString = bridgeString(seatId)
     return MainActor.assumeIsolated {
@@ -52,48 +93,6 @@ func switf_bridge_shouldSelectSeat(_ coreID: UInt32, _ zoneId: UnsafePointer<CCh
             return false
         }
 
-        return delegate.seatCanvasRendererShouldSelectSeat(zoneId: zoneIdString, seatId: seatIdString)
-    }
-}
-
-/// 选中座位回调，由 C++ 层调用(仅内部调用)
-/// - Parameters:
-///   - coreID: 座位渲染器实例ID
-///   - zoneId: 区域ID
-///   - seatId: 座位ID
-@c(switf_bridge_didSelectSeat)
-func switf_bridge_didSelectSeat(_ coreID: UInt32, _ zoneId: UnsafePointer<CChar>?, _ seatId: UnsafePointer<CChar>?) {
-    let zoneIdString = bridgeString(zoneId)
-    let seatIdString = bridgeString(seatId)
-    return MainActor.assumeIsolated {
-        guard let delegate = SeatCanvasRendererDelegateRegistry.shared.delegate(for: coreID) else {
-            #if DEBUG
-                print("[SwiftBridge] 警告: 未找到 coreID \(coreID) 对应的 SeatCanvasRendererDelegate")
-            #endif
-            return
-        }
-
-        delegate.seatCanvasRendererDidSelectSeat(zoneId: zoneIdString, seatId: seatIdString)
-    }
-}
-
-/// 是否可以选中座位，由 C++ 层调用(仅内部调用)
-/// - Parameters:
-///   - coreID: 座位渲染器实例ID
-///   - zoneId: 区域ID
-///   - seatId: 座位ID
-@c(switf_bridge_didDeselectSeat)
-func switf_bridge_didDeselectSeat(_ coreID: UInt32, _ zoneId: UnsafePointer<CChar>?, _ seatId: UnsafePointer<CChar>?) {
-    let zoneIdString = bridgeString(zoneId)
-    let seatIdString = bridgeString(seatId)
-    return MainActor.assumeIsolated {
-        guard let delegate = SeatCanvasRendererDelegateRegistry.shared.delegate(for: coreID) else {
-            #if DEBUG
-                print("[SwiftBridge] 警告: 未找到 coreID \(coreID) 对应的 SeatCanvasRendererDelegate")
-            #endif
-            return
-        }
-
-        delegate.seatCanvasRendererDidDeselectSeat(zoneId: zoneIdString, seatId: seatIdString)
+        return delegate.seatCanvasRendererDidTapSeat(zoneId: zoneIdString, seatId: seatIdString)
     }
 }

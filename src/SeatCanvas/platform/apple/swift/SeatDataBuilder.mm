@@ -16,11 +16,11 @@ CPPObject *_Nonnull CreateSeatDataBuilder() {
     return cppObj;
 }
 
-void SeatDataBuilderPut(CPPObject *_Nonnull cppObject, const std::string &seatId, uint32_t status, bool selected, CGPoint position, float rotationDegrees) {
+void SeatDataBuilderPut(CPPObject *_Nonnull cppObject, const std::string &seatId, CGPoint position, float rotationDegrees) {
     if (cppObject == nullptr || cppObject->realValue == nullptr || seatId.empty()) {
         return;
     }
     auto seats = static_cast<std::vector<kk::SeatData> *>(cppObject->realValue);
-    seats->push_back({seatId, status, selected, static_cast<float>(position.x), static_cast<float>(position.y), rotationDegrees});
+    seats->push_back({seatId, static_cast<float>(position.x), static_cast<float>(position.y), rotationDegrees});
 }
 };  // namespace kk::bridge

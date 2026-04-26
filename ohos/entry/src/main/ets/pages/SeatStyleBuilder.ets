@@ -3,16 +3,19 @@ import { resourceManager } from '@kit.LocalizationKit'
 import { util } from '@kit.ArkTS';
 
 export class SeatStyleBuilder {
+  private static sampleStyleId(status: number, selected: boolean): string {
+    return `status_${status}_selected_${selected ? 1 : 0}`;
+  }
+
   static BuildCircleSeatStyleConfig(): string | null {
     let builder = new SeatStyleConfigBuilder();
-    builder.addCircleStyle(0, false, '#FFFF0000', '#B2000000', '#FFFFFFFF');
-    builder.addCircleStyle(0, true, '#FFFF0000', '#B2000000', '#FFFFFFFF');
-    builder.addCircleStyle(1, false, '#FFAAAAAA', '#B2000000', '#FFFFFFFF');
-    builder.addCircleStyle(1, true, '#FFAAAAAA', '#B2000000', '#FFFFFFFF');
-    builder.addCircleStyle(2, false, '#FF999999', '#B2000000', '#FFFFFFFF');
-    builder.addCircleStyle(2, true, '#FF999999', '#B2000000', '#FFFFFFFF');
-    builder.addCircleStyle(3, false, '#FF666666', '#B2000000', '#FFFFFFFF');
-    builder.addCircleStyle(3, true, '#FF666666', '#B2000000', '#FFFFFFFF');
+    const overlay = '#B2000000';
+    const checkmark = '#FFFFFFFF';
+    const fills: string[] = ['#FFFF0000', '#FFAAAAAA', '#FF999999', '#FF666666'];
+    for (let s = 0; s <= 3; s++) {
+      builder.addCircleStyle(SeatStyleBuilder.sampleStyleId(s, false), fills[s]);
+      builder.addCircleStyle(SeatStyleBuilder.sampleStyleId(s, true), fills[s], overlay, checkmark);
+    }
     return builder.toJSONString();
   }
 
@@ -33,17 +36,13 @@ export class SeatStyleBuilder {
 
     let builder = new SeatStyleConfigBuilder();
 
-    builder.addSVGStyle(0, false, available);
-    builder.addSVGStyle(0, true, selected);
+    builder.addSVGStyle(SeatStyleBuilder.sampleStyleId(0, false), available);
+    builder.addSVGStyle(SeatStyleBuilder.sampleStyleId(0, true), selected);
 
-    builder.addSVGStyle(1, false, disabled);
-    builder.addSVGStyle(1, true, disabled);
-
-    builder.addSVGStyle(2, false, disabled);
-    builder.addSVGStyle(2, true, disabled);
-
-    builder.addSVGStyle(3, false, disabled);
-    builder.addSVGStyle(3, true, disabled);
+    for (let s = 1; s <= 3; s++) {
+      builder.addSVGStyle(SeatStyleBuilder.sampleStyleId(s, false), disabled);
+      builder.addSVGStyle(SeatStyleBuilder.sampleStyleId(s, true), disabled);
+    }
 
     return builder.toJSONString();
   }

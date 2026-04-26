@@ -28,7 +28,6 @@
 #include "core/gesture/GestureState.hpp"
 #include "core/renderer/SeatCanvasCoreRendererDelegate.hpp"
 #include "core/style/SeatStyleConfig.hpp"
-#include "core/style/SeatStyleKey.hpp"
 
 namespace tgfx {
 class Recording;
@@ -77,7 +76,7 @@ class SeatCanvasCoreRenderer {
     explicit SeatCanvasCoreRenderer(
         std::unique_ptr<PlatformView> platformView,
         std::unique_ptr<kk::gesture::ElasticZoomPanController> zoomPanController,
-        const std::unordered_map<kk::SeatStyleKey, std::shared_ptr<SeatStyleConfig>> &styleKeyToConfig = {});
+        const std::unordered_map<std::string, std::shared_ptr<SeatStyleConfig>> &styleIdToConfig = {});
 
     ~SeatCanvasCoreRenderer();
 
@@ -124,9 +123,9 @@ class SeatCanvasCoreRenderer {
     /**
      * 设置样式键到配置的映射
      * 动态更新座位样式配置，会同步更新到 SeatStyleAtlasManager
-     * @param styleKeyToConfig 样式键到配置的映射
+     * @param styleIdToConfig 样式ID到配置的映射
      */
-    void setStyleKeyToConfig(const std::unordered_map<kk::SeatStyleKey, std::shared_ptr<SeatStyleConfig>> &styleKeyToConfig);
+    void setStyleIdToConfig(const std::unordered_map<std::string, std::shared_ptr<SeatStyleConfig>> &styleIdToConfig);
 
     /**
      * 从 JSON 数据设置样式键到配置的映射
@@ -228,14 +227,8 @@ class SeatCanvasCoreRenderer {
 
     /// 设置某个区域的座位数据
     /// @param zoneId 区域ID
-    /// @param seats 座位数据列表，每个座位包含 seatId, status, x, y
+    /// @param seats 座位几何数据列表，每个座位包含 seatId, x, y, rotation
     void setSeatData(const std::string &zoneId, const std::vector<kk::SeatData> &seats);
-
-    /// 更新座位状态
-    /// @param zoneId 区域ID
-    /// @param seatId 座位ID
-    /// @param status 新的座位状态
-    void updateSeatStatus(const std::string &zoneId, const std::string &seatId, uint32_t status);
 
     /// 清除所有区域和座位数据
     void clearSeatData();

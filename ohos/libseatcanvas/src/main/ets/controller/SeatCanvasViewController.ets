@@ -41,21 +41,15 @@ export class SeatCanvasViewController {
   setDelegate(delegate: SeatCanvasRendererDelegate | null) {
     if (delegate) {
       this.delegate = new WeakRef(delegate);
-      // 设置 native 回调
-      if (delegate.shouldSelectSeat) {
-        this.jView.setShouldSelectSeatCallback(this.onShouldSelectSeat);
+      if (delegate.styleIdForSeat) {
+        this.jView.setStyleIdForSeatCallback(this.onStyleIdForSeat);
       } else {
-        this.jView.setShouldSelectSeatCallback(null);
+        this.jView.setStyleIdForSeatCallback(null);
       }
-      if (delegate.didSelectSeat) {
-        this.jView.setDidSelectSeatCallback(this.onDidSelectSeat);
+      if (delegate.didTapSeat) {
+        this.jView.setDidTapSeatCallback(this.onDidTapSeat);
       } else {
-        this.jView.setDidSelectSeatCallback(null);
-      }
-      if (delegate.didDeselectSeat) {
-        this.jView.setDidDeselectSeatCallback(this.onDidDeselectSeat);
-      } else {
-        this.jView.setDidDeselectSeatCallback(null);
+        this.jView.setDidTapSeatCallback(null);
       }
       if (delegate.didTapZone) {
         this.jView.setDidTapZoneCallback(this.onDidTapZone);
@@ -64,10 +58,8 @@ export class SeatCanvasViewController {
       }
     } else {
       this.delegate = null;
-      // 清除 native 回调
-      this.jView.setShouldSelectSeatCallback(null);
-      this.jView.setDidSelectSeatCallback(null);
-      this.jView.setDidDeselectSeatCallback(null);
+      this.jView.setStyleIdForSeatCallback(null);
+      this.jView.setDidTapSeatCallback(null);
       this.jView.setDidTapZoneCallback(null);
     }
   }
@@ -230,25 +222,29 @@ export class SeatCanvasViewController {
     this.jView.updateSeats(zoneId, seats);
   }
 
-  readonly onShouldSelectSeat = (zoneId: string, seatId: string): boolean => {
-    const delegate = this.delegate?.deref();
-    if (delegate && delegate.shouldSelectSeat) {
-      return delegate.shouldSelectSeat(zoneId, seatId);
-    }
-    return false
+  /**
+   * 清除全部座位数据
+   */
+  clearSeatData() {
+    this.jView.clearSeatData();
   }
-  readonly onDidSelectSeat = (zoneId: string, seatId: string) => {
+
+  readonly onStyleIdForSeat = (zoneId: string, seatId: string): string | null => {
     const delegate = this.delegate?.deref();
-    if (delegate && delegate.didSelectSeat) {
-      delegate.didSelectSeat(zoneId, seatId);
+    if (delegate && delegate.styleIdForSeat) {
+      return delegate.styleIdForSeat(zoneId, seatId);
     }
+    return null;
   }
-  readonly onDidDeselectSeat = (zoneId: string, seatId: string) => {
+
+  readonly onDidTapSeat = (zoneId: string, seatId: string): boolean => {
     const delegate = this.delegate?.deref();
-    if (delegate && delegate.didDeselectSeat) {
-      delegate.didDeselectSeat(zoneId, seatId);
+    if (delegate && delegate.didTapSeat) {
+      return delegate.didTapSeat(zoneId, seatId);
     }
+    return false;
   }
+
   readonly onDidTapZone = (zoneId: string) => {
     const delegate = this.delegate?.deref();
     if (delegate && delegate.didTapZone) {

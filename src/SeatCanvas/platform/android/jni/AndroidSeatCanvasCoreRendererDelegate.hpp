@@ -16,10 +16,9 @@ class AndroidSeatCanvasCoreRendererDelegate : public SeatCanvasCoreRendererDeleg
   public:
     explicit AndroidSeatCanvasCoreRendererDelegate(jobject seatCanvasView);
     virtual ~AndroidSeatCanvasCoreRendererDelegate();
-    virtual void didTapZone(uint32_t coreID, const std::string &zoneId);
-    virtual bool shouldSelectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId);
-    virtual void didSelectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId);
-    virtual void didDeselectSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId);
+    virtual void didTapZone(uint32_t coreID, const std::string &zoneId) override;
+    virtual bool styleIdForSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId, std::string &outStyleId) override;
+    virtual bool didTapSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId) override;
 
   private:
     kk::jni::Global<jobject> _seatCanvasView;
