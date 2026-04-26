@@ -14,7 +14,7 @@
 #include <tgfx/core/Buffer.h>
 #include <tgfx/core/ImageCodec.h>
 #include <tgfx/core/Surface.h>
-#include <tgfx/gpu/opengl/GLDevice.h>
+#include <tgfx/gpu/metal/MetalDevice.h>
 #include <tgfx/layers/DisplayList.h>
 #include <tgfx/layers/Layer.h>
 
@@ -23,7 +23,7 @@ CGImageRef LayerPrerenderImage::Render(const std::shared_ptr<tgfx::Layer> &layer
     if (!layer || targetWidth == 0) {
         return nullptr;
     }
-    auto device = tgfx::GLDevice::Make();
+    auto device = tgfx::MetalDevice::Make();
     if (!device) {
         return nullptr;
     }
@@ -106,7 +106,7 @@ std::shared_ptr<tgfx::Image> LayerPrerenderImage::RenderImage(const std::shared_
     if (!layer || targetWidth == 0) {
         return nullptr;
     }
-    auto device = tgfx::GLDevice::Make();
+    auto device = tgfx::MetalDevice::Make();
     if (!device) {
         return nullptr;
     }

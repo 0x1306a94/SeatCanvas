@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import MetalKit
 internal import CxxStdlib
 internal import SeatCanvas_Private
 
@@ -13,10 +14,16 @@ internal import SeatCanvas_Private
 final class SeatCanvasCoreRenderer {
     private(set) nonisolated(unsafe) var cppObject: UnsafeMutablePointer<kk.bridge.CPPObject>?
     private(set) nonisolated(unsafe) var coreID: UInt32 = 0
-    init(eaglLayer: CAEAGLLayer?) {
-        let cppObject = kk.bridge.CreateSeatCanvasCoreRenderer(eaglLayer)
+    init(metalView: MTKView?) {
+        let cppObject = kk.bridge.CreateSeatCanvasCoreRenderer(metalView)
         coreID = kk.bridge.SeatCanvasCoreRendererGetCoreID(cppObject)
         self.cppObject = cppObject
+    }
+
+    /// Temporary warmup entry for shader compiler initialization.
+    /// TODO: Remove this API after warmup is integrated into renderer startup flow.
+    nonisolated static func prewarmShaderCompiler() {
+        kk.bridge.SeatCanvasCoreRendererPrewarmShaderCompiler()
     }
 
     var backgroundColor: UIColor? {
@@ -83,11 +90,11 @@ final class SeatCanvasCoreRenderer {
 }
 
 extension SeatCanvasCoreRenderer {
-    func replacePlatformView(eaglLayer: CAEAGLLayer?) -> Bool {
+    func replacePlatformView(metalView: MTKView?) -> Bool {
         guard let cppObject else {
             return false
         }
-        return kk.bridge.SeatCanvasCoreRendererReplacePlatformView(cppObject, eaglLayer)
+        return kk.bridge.SeatCanvasCoreRendererReplacePlatformView(cppObject, metalView)
     }
 
     func loadBaseMap(_ data: Data?, format: BaseMapFormat, parseConfigJSON: Data?) {

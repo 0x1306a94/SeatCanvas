@@ -7,12 +7,11 @@
 
 #import "core/renderer/PlatformView.hpp"
 
-#import <QuartzCore/CAEAGLLayer.h>
-
+@class MTKView;
 namespace kk::renderer {
 class IOSPlatformView : public PlatformView {
   public:
-    explicit IOSPlatformView(CAEAGLLayer *eagLayer);
+    explicit IOSPlatformView(MTKView *metalView);
     virtual ~IOSPlatformView();
 
     virtual std::shared_ptr<tgfx::Window> getWindow() override;
@@ -24,7 +23,7 @@ class IOSPlatformView : public PlatformView {
   private:
     std::shared_ptr<tgfx::Window> _window{nullptr};
     std::shared_ptr<tgfx::Surface> _surface{nullptr};
-    CAEAGLLayer *_eagLayer;
+    MTKView *_metalView;
 };
 
 };  // namespace kk::renderer

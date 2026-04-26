@@ -12,7 +12,7 @@
 
 #import <CoreGraphics/CGGeometry.h>
 #import <Foundation/Foundation.h>
-#import <QuartzCore/CAEAGLLayer.h>
+#import <MetalKit/MTKView.h>
 #import <UIKit/UIColor.h>
 #import <UIKit/UIImage.h>
 #import <string>
@@ -26,10 +26,14 @@ struct ZoomLevel {
     CGFloat venue = {1.0f};
 };
 
+/// Temporary warmup entry for shader compiler initialization.
+/// TODO: Remove this API after warmup is integrated into renderer startup flow.
+void SeatCanvasCoreRendererPrewarmShaderCompiler(void);
+
 /// 创建C++渲染器
-/// - Parameter eagLayer: 负责渲染输出的 OpenGL ES 目标
+/// - Parameter view: 负责渲染输出的 MTKView 目标
 /// - Returns: C++渲染器实例
-CPPObject *_Nonnull CreateSeatCanvasCoreRenderer(CAEAGLLayer *_Nullable eaglLayer);
+CPPObject *_Nonnull CreateSeatCanvasCoreRenderer(MTKView *_Nullable view);
 /// 获取C++渲染器ID
 /// - Parameter cppObject: C++渲染器实例
 /// - Returns: 渲染器ID
@@ -38,8 +42,8 @@ uint32_t SeatCanvasCoreRendererGetCoreID(CPPObject *_Nonnull cppObject);
 /// 替换C++渲染器平台视图
 /// - Parameters:
 ///   - cppObject: C++渲染器实例
-///   - eagLayer: 负责渲染输出的 OpenGL ES 目标
-bool SeatCanvasCoreRendererReplacePlatformView(CPPObject *_Nonnull cppObject, CAEAGLLayer *_Nullable eagLayer);
+///   - eagLayer: 负责渲染输出的 MTKView 目标
+bool SeatCanvasCoreRendererReplacePlatformView(CPPObject *_Nonnull cppObject, MTKView *_Nullable view);
 
 /// 解析底图（统一接口，支持多种格式）
 /// - Parameters:
@@ -63,7 +67,7 @@ void *_Nullable SeatCanvasCoreRendererParseBaseMapFromSVG(const void *_Nullable 
 ///   - cppObject: C++渲染器实例
 ///   - loadResult: 由 SeatCanvasLoadBaseMapFromSVG 返回的指针，执行完此函数后，loadResult 将不在可用，上层请勿继续保留使用
 /// - Returns: 是否成功
-bool SeatCanvasCoreRendererLoadBaseMap(CPPObject *_Nonnull cppObject, void **_Nullable loadResult);
+bool SeatCanvasCoreRendererLoadBaseMap(CPPObject *_Nonnull cppObject, void *_Nullable *_Nullable loadResult);
 
 /// 设置座位区域颜色表
 /// - Parameters:

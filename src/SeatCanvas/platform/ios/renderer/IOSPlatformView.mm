@@ -8,15 +8,17 @@
 #import "IOSPlatformView.h"
 
 #import <tgfx/core/Surface.h>
-#import <tgfx/gpu/opengl/eagl/EAGLWindow.h>
+#import <tgfx/gpu/metal/MetalWindow.h>
 #import <tgfx/platform/Print.h>
+
+#import <MetalKit/MTKView.h>
 
 #import <cmath>
 
 namespace kk::renderer {
 
-IOSPlatformView::IOSPlatformView(CAEAGLLayer *eagLayer)
-    : _eagLayer(eagLayer) {
+IOSPlatformView::IOSPlatformView(MTKView *metalView)
+    : _metalView(metalView) {
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
 }
 
@@ -26,7 +28,7 @@ IOSPlatformView::~IOSPlatformView() {
 
 std::shared_ptr<tgfx::Window> IOSPlatformView::getWindow() {
     if (_window == nullptr) {
-        _window = tgfx::EAGLWindow::MakeFrom(_eagLayer);
+        _window = tgfx::MetalWindow::MakeFrom(_metalView);
     }
     return _window;
 }
@@ -48,13 +50,15 @@ void IOSPlatformView::invalidSize() {
 }
 
 tgfx::ISize IOSPlatformView::getSize() {
-    auto width = static_cast<int>(roundf(static_cast<float>(_eagLayer.bounds.size.width * _eagLayer.contentsScale)));
-    auto height = static_cast<int>(roundf(static_cast<float>(_eagLayer.bounds.size.height * _eagLayer.contentsScale)));
+    CAMetalLayer *metalLayer = (CAMetalLayer *)_metalView.layer;
+    auto width = static_cast<int>(roundf(static_cast<float>(metalLayer.bounds.size.width * metalLayer.contentsScale)));
+    auto height = static_cast<int>(roundf(static_cast<float>(metalLayer.bounds.size.height * metalLayer.contentsScale)));
     return tgfx::ISize{width, height};
 }
 
 float IOSPlatformView::getDensity() {
-    float contentsScale = static_cast<float>(_eagLayer.contentsScale);
+    CAMetalLayer *metalLayer = (CAMetalLayer *)_metalView.layer;
+    float contentsScale = static_cast<float>(metalLayer.contentsScale);
     return contentsScale;
 }
 

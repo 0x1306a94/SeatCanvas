@@ -31,6 +31,16 @@
 #import <tgfx/platform/Print.h>
 #import <tgfx/svg/SVGDOM.h>
 
+#include <mutex>
+
+#include <tgfx/core/Canvas.h>
+#include <tgfx/core/Paint.h>
+#include <tgfx/core/Rect.h>
+#include <tgfx/core/Surface.h>
+#include <tgfx/gpu/metal/MetalDevice.h>
+
+#include "core/DeviceLockGuard.hpp"
+
 namespace kk::bridge {
 struct LoadBaseMapResult {
     std::shared_ptr<tgfx::Layer> textLayer;
@@ -71,8 +81,43 @@ void SeatCanvasInitSystemProperties(CGFloat density, CGFloat fontScale) {
     properties.updateFontScale(static_cast<float>(fontScale));
 }
 
-CPPObject *_Nonnull CreateSeatCanvasCoreRenderer(CAEAGLLayer *_Nonnull eagLayer) {
-    auto platformView = std::make_unique<kk::renderer::IOSPlatformView>(eagLayer);
+void SeatCanvasCoreRendererPrewarmShaderCompiler(void) {
+    static std::once_flag onceFlag = {};
+    std::call_once(onceFlag, [] {
+        // TODO: Remove this temporary warmup path after shader compiler init is moved to renderer startup.
+        static std::shared_ptr<tgfx::MetalDevice> warmupDevice = nullptr;
+        static std::shared_ptr<tgfx::Surface> warmupSurface = nullptr;
+
+        warmupDevice = tgfx::MetalDevice::Make();
+        if (warmupDevice == nullptr) {
+            return;
+        }
+
+        kk::DeviceLockGuard deviceLockGuard(warmupDevice.get());
+        auto *context = deviceLockGuard.context();
+        if (context == nullptr) {
+            return;
+        }
+
+        warmupSurface = tgfx::Surface::Make(context, 8, 8, tgfx::ColorType::RGBA_8888);
+        if (warmupSurface == nullptr) {
+            return;
+        }
+
+        auto *canvas = warmupSurface->getCanvas();
+        if (canvas == nullptr) {
+            return;
+        }
+
+        tgfx::Paint paint = {};
+        paint.setColor(tgfx::Color::White());
+        canvas->drawRect(tgfx::Rect::MakeWH(4.0f, 4.0f), paint);
+        context->flushAndSubmit(true);
+    });
+}
+
+CPPObject *_Nonnull CreateSeatCanvasCoreRenderer(MTKView *_Nullable view) {
+    auto platformView = std::make_unique<kk::renderer::IOSPlatformView>(view);
     auto zoomPanController = std::make_unique<kk::gesture::ElasticZoomPanController>();
     auto renderer = new kk::renderer::SeatCanvasCoreRenderer(std::move(platformView), std::move(zoomPanController));
 
@@ -88,13 +133,13 @@ uint32_t SeatCanvasCoreRendererGetCoreID(CPPObject *_Nonnull cppObject) {
     return renderer->coreID();
 }
 
-bool SeatCanvasCoreRendererReplacePlatformView(CPPObject *_Nonnull cppObject, CAEAGLLayer *_Nonnull eagLayer) {
+bool SeatCanvasCoreRendererReplacePlatformView(CPPObject *_Nonnull cppObject, MTKView *_Nullable view) {
     GetCPPObjectOrReturnValue(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer, false);
-    if (eagLayer == nullptr) {
+    if (view == nullptr) {
         renderer->replacePlatformView(nullptr);
         return true;
     }
-    auto platformView = std::make_unique<kk::renderer::IOSPlatformView>(eagLayer);
+    auto platformView = std::make_unique<kk::renderer::IOSPlatformView>(view);
     renderer->replacePlatformView(std::move(platformView));
     return true;
 }
@@ -143,7 +188,7 @@ void *_Nullable SeatCanvasCoreRendererParseBaseMapFromSVG(const void *_Nullable 
     return SeatCanvasCoreRendererParseBaseMap(bytes, len, kk::parser::BaseMapFormat::SVG, nullptr, 0, miniMapImage);
 }
 
-bool SeatCanvasCoreRendererLoadBaseMap(CPPObject *_Nonnull cppObject, void **_Nullable loadResult) {
+bool SeatCanvasCoreRendererLoadBaseMap(CPPObject *_Nonnull cppObject, void *_Nullable *_Nullable loadResult) {
     GetCPPObjectOrReturnValue(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer, false);
     if (loadResult == nullptr || *loadResult == nullptr) {
         renderer->setBaseMapConfig(nullptr, kk::SeatRenderMode::ZoomBased);

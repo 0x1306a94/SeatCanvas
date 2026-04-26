@@ -25,8 +25,8 @@ in vec2 inPosition;
 in vec2 inTextureCoord;
 
 in vec2 inPositionOffset;
-in int inTextureCoordIndex;
 in float inRotation;
+in int inTextureCoordIndex;
 
 layout(std140) uniform VertexUniformBlock {
     mat3 uMVP;
@@ -76,8 +76,8 @@ CustomSeatPass::CustomSeatPass() {
     position = {"inPosition", tgfx::VertexFormat::Float2};
     textureCoord = {"inTextureCoord", tgfx::VertexFormat::Float2};
     positionOffset = {"inPositionOffset", tgfx::VertexFormat::Float2};
-    textureCoordIndex = {"inTextureCoordIndex", tgfx::VertexFormat::Int};
     rotation = {"inRotation", tgfx::VertexFormat::Float};
+    textureCoordIndex = {"inTextureCoordIndex", tgfx::VertexFormat::Int};
 
     mvpUniform = {"uMVP", UniformFormat::Float3x3};
     seatHalfSizeUniform = {"uSeatHalfSize", UniformFormat::Float2};
