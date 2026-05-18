@@ -125,8 +125,7 @@ class SeatCanvasViewController: UIViewController {
             return nil
         }
 
-        let content = String(data: data, encoding: .utf8)
-        return content
+        return String(data: data, encoding: .utf8)
     }
 
     // MARK: - Mock Data Generation
@@ -157,8 +156,7 @@ class SeatCanvasViewController: UIViewController {
             return []
         }
         do {
-            let zones = try JSONDecoder().decode([MockZoneInfo].self, from: data)
-            return zones
+            return try JSONDecoder().decode([MockZoneInfo].self, from: data)
         } catch {
             print(error)
             return []
@@ -178,8 +176,7 @@ class SeatCanvasViewController: UIViewController {
             return [:]
         }
         do {
-            let seats = try JSONDecoder().decode([String: [MockSeatData]].self, from: data)
-            return seats
+            return try JSONDecoder().decode([String: [MockSeatData]].self, from: data)
         } catch {
             print(error)
             return [:]
@@ -223,5 +220,86 @@ extension SeatCanvasViewController: SeatCanvasViewDelegate {
     ///   - zoneId: 区域ID
     func seatCanvasView(_: SeatCanvasView, didTapZone zoneId: String) {
         print(#function, zoneId)
+    }
+
+    /// 即将开始拖动视图
+    /// - Parameters:
+    ///   - view: SeatCanvasView 实例
+    ///   - zoomScale: 当前缩放比例
+    ///   - contentOffset: 当前内容偏移，单位为 viewport 像素
+    ///   - visibleOriginalRect: 当前可见区域，使用底图原始坐标系
+    func seatCanvasViewWillBeginDragging(_: SeatCanvasView, zoomScale _: CGFloat, contentOffset _: CGPoint, visibleOriginalRect _: CGRect) {
+        print(#function)
+    }
+
+    /// 视图发生滚动
+    /// - Parameters:
+    ///   - view: SeatCanvasView 实例
+    ///   - zoomScale: 当前缩放比例
+    ///   - contentOffset: 当前内容偏移，单位为 viewport 像素
+    ///   - visibleOriginalRect: 当前可见区域，使用底图原始坐标系
+    func seatCanvasViewDidScroll(_: SeatCanvasView, zoomScale _: CGFloat, contentOffset _: CGPoint, visibleOriginalRect _: CGRect) {
+        print(#function)
+    }
+
+    /// 拖动手势结束
+    /// - Parameters:
+    ///   - view: SeatCanvasView 实例
+    ///   - zoomScale: 当前缩放比例
+    ///   - contentOffset: 当前内容偏移，单位为 viewport 像素
+    ///   - visibleOriginalRect: 当前可见区域，使用底图原始坐标系
+    ///   - decelerate: 是否会继续惯性滚动或回弹动画
+    func seatCanvasViewDidEndDragging(_: SeatCanvasView, zoomScale _: CGFloat, contentOffset _: CGPoint, visibleOriginalRect _: CGRect, decelerate: Bool) {
+        print(#function, decelerate)
+    }
+
+    /// 惯性滚动或回弹动画结束
+    /// - Parameters:
+    ///   - view: SeatCanvasView 实例
+    ///   - zoomScale: 当前缩放比例
+    ///   - contentOffset: 当前内容偏移，单位为 viewport 像素
+    ///   - visibleOriginalRect: 当前可见区域，使用底图原始坐标系
+    func seatCanvasViewDidEndDecelerating(_: SeatCanvasView, zoomScale _: CGFloat, contentOffset _: CGPoint, visibleOriginalRect _: CGRect) {
+        print(#function)
+    }
+
+    /// 即将开始缩放视图
+    /// - Parameters:
+    ///   - view: SeatCanvasView 实例
+    ///   - zoomScale: 当前缩放比例
+    ///   - contentOffset: 当前内容偏移，单位为 viewport 像素
+    ///   - visibleOriginalRect: 当前可见区域，使用底图原始坐标系
+    func seatCanvasViewWillBeginZooming(_: SeatCanvasView, zoomScale _: CGFloat, contentOffset _: CGPoint, visibleOriginalRect _: CGRect) {
+        print(#function)
+    }
+
+    /// 视图发生缩放
+    /// - Parameters:
+    ///   - view: SeatCanvasView 实例
+    ///   - zoomScale: 当前缩放比例
+    ///   - contentOffset: 当前内容偏移，单位为 viewport 像素
+    ///   - visibleOriginalRect: 当前可见区域，使用底图原始坐标系
+    func seatCanvasViewDidZoom(_: SeatCanvasView, zoomScale _: CGFloat, contentOffset _: CGPoint, visibleOriginalRect _: CGRect) {
+        print(#function)
+    }
+
+    /// 缩放手势结束
+    /// - Parameters:
+    ///   - view: SeatCanvasView 实例
+    ///   - zoomScale: 当前缩放比例
+    ///   - contentOffset: 当前内容偏移，单位为 viewport 像素
+    ///   - visibleOriginalRect: 当前可见区域，使用底图原始坐标系
+    func seatCanvasViewDidEndZooming(_: SeatCanvasView, zoomScale _: CGFloat, contentOffset _: CGPoint, visibleOriginalRect _: CGRect) {
+        print(#function)
+    }
+
+    /// 程序触发的滚动或缩放动画结束
+    /// - Parameters:
+    ///   - view: SeatCanvasView 实例
+    ///   - zoomScale: 当前缩放比例
+    ///   - contentOffset: 当前内容偏移，单位为 viewport 像素
+    ///   - visibleOriginalRect: 当前可见区域，使用底图原始坐标系
+    func seatCanvasViewDidEndScrollingAnimation(_: SeatCanvasView, zoomScale _: CGFloat, contentOffset _: CGPoint, visibleOriginalRect _: CGRect) {
+        print(#function)
     }
 }

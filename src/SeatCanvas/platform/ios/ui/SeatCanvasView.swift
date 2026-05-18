@@ -362,4 +362,36 @@ extension SeatCanvasView: SeatCanvasRendererDelegate {
     func seatCanvasRendererDidTapSeat(zoneId: String, seatId: String) -> Bool {
         delegate?.seatCanvasView(self, didTapSeat: zoneId, seatId: seatId) ?? false
     }
+
+    func seatCanvasRendererWillBeginDragging(zoomScale: CGFloat, contentOffset: CGPoint, visibleOriginalRect: CGRect) {
+        delegate?.seatCanvasViewWillBeginDragging?(self, zoomScale: zoomScale, contentOffset: contentOffset, visibleOriginalRect: visibleOriginalRect)
+    }
+
+    func seatCanvasRendererDidScroll(zoomScale: CGFloat, contentOffset: CGPoint, visibleOriginalRect: CGRect) {
+        delegate?.seatCanvasViewDidScroll?(self, zoomScale: zoomScale, contentOffset: contentOffset, visibleOriginalRect: visibleOriginalRect)
+    }
+
+    func seatCanvasRendererDidEndDragging(zoomScale: CGFloat, contentOffset: CGPoint, visibleOriginalRect: CGRect, decelerate: Bool) {
+        delegate?.seatCanvasViewDidEndDragging?(self, zoomScale: zoomScale, contentOffset: contentOffset, visibleOriginalRect: visibleOriginalRect, decelerate: decelerate)
+    }
+
+    func seatCanvasRendererDidEndDecelerating(zoomScale: CGFloat, contentOffset: CGPoint, visibleOriginalRect: CGRect) {
+        delegate?.seatCanvasViewDidEndDecelerating?(self, zoomScale: zoomScale, contentOffset: contentOffset, visibleOriginalRect: visibleOriginalRect)
+    }
+
+    func seatCanvasRendererWillBeginZooming(zoomScale: CGFloat, contentOffset: CGPoint, visibleOriginalRect: CGRect) {
+        delegate?.seatCanvasViewWillBeginZooming?(self, zoomScale: zoomScale, contentOffset: contentOffset, visibleOriginalRect: visibleOriginalRect)
+    }
+
+    func seatCanvasRendererDidZoom(zoomScale: CGFloat, contentOffset: CGPoint, visibleOriginalRect: CGRect) {
+        delegate?.seatCanvasViewDidZoom?(self, zoomScale: zoomScale, contentOffset: contentOffset, visibleOriginalRect: visibleOriginalRect)
+    }
+
+    func seatCanvasRendererDidEndZooming(zoomScale: CGFloat, contentOffset: CGPoint, visibleOriginalRect: CGRect) {
+        delegate?.seatCanvasViewDidEndZooming?(self, zoomScale: zoomScale, contentOffset: contentOffset, visibleOriginalRect: visibleOriginalRect)
+    }
+
+    func seatCanvasRendererDidEndScrollingAnimation(zoomScale: CGFloat, contentOffset: CGPoint, visibleOriginalRect: CGRect) {
+        delegate?.seatCanvasViewDidEndScrollingAnimation?(self, zoomScale: zoomScale, contentOffset: contentOffset, visibleOriginalRect: visibleOriginalRect)
+    }
 }

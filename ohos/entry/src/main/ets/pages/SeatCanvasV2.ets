@@ -5,7 +5,8 @@ import {
   SeatCanvasRendererDelegate,
   SeatData,
   SeatZoneColor,
-  SVGBaseMapParseConfig
+  SVGBaseMapParseConfig,
+  SeatCanvasViewport
 } from 'libseatcanvas';
 import { SeatStyleBuilder } from './SeatStyleBuilder';
 import { resourceManager } from '@kit.LocalizationKit';
@@ -50,6 +51,30 @@ export struct SeatCanvasV2 {
       },
       didTapZone: (zoneId: string) => {
         console.log(`tgfx didTapZone: ${zoneId}`)
+      },
+      willBeginDragging: (viewport: SeatCanvasViewport) => {
+        console.log(`tgfx willBeginDragging: ${JSON.stringify(viewport)}`)
+      },
+      didScroll: (viewport: SeatCanvasViewport) => {
+        console.log(`tgfx didScroll: ${JSON.stringify(viewport)}`)
+      },
+      didEndDragging: (viewport: SeatCanvasViewport, decelerate: boolean) => {
+        console.log(`tgfx didEndDragging: ${JSON.stringify(viewport)} decelerate: ${decelerate}`)
+      },
+      didEndDecelerating: (viewport: SeatCanvasViewport) => {
+        console.log(`tgfx didEndDecelerating: ${JSON.stringify(viewport)}`)
+      },
+      willBeginZooming: (viewport: SeatCanvasViewport) => {
+        console.log(`tgfx willBeginZooming: ${JSON.stringify(viewport)}`)
+      },
+      didZoom: (viewport: SeatCanvasViewport) => {
+        console.log(`tgfx didZoom: ${JSON.stringify(viewport)}`)
+      },
+      didEndZooming: (viewport: SeatCanvasViewport) => {
+        console.log(`tgfx didEndZooming: ${JSON.stringify(viewport)}`)
+      },
+      didEndScrollingAnimation: (viewport: SeatCanvasViewport) => {
+        console.log(`tgfx didEndScrollingAnimation: ${JSON.stringify(viewport)}`)
       },
     };
 

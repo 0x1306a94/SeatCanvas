@@ -15,9 +15,17 @@ class SwiftSeatCanvasCoreRendererDelegate : public kk::renderer::SeatCanvasCoreR
   public:
     explicit SwiftSeatCanvasCoreRendererDelegate();
     virtual ~SwiftSeatCanvasCoreRendererDelegate();
-    virtual void didTapZone(uint32_t coreID, const std::string &zoneId);
-    virtual bool styleIdForSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId, std::string &outStyleId);
-    virtual bool didTapSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId);
+    virtual void didTapZone(uint32_t coreID, const std::string &zoneId) override;
+    virtual bool styleIdForSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId, std::string &outStyleId) override;
+    virtual bool didTapSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId) override;
+    virtual void viewportWillBeginDragging(uint32_t coreID, const kk::renderer::SeatCanvasViewportEvent &event) override;
+    virtual void viewportDidScroll(uint32_t coreID, const kk::renderer::SeatCanvasViewportEvent &event) override;
+    virtual void viewportDidEndDragging(uint32_t coreID, const kk::renderer::SeatCanvasViewportEvent &event, bool willDecelerate) override;
+    virtual void viewportDidEndDecelerating(uint32_t coreID, const kk::renderer::SeatCanvasViewportEvent &event) override;
+    virtual void viewportWillBeginZooming(uint32_t coreID, const kk::renderer::SeatCanvasViewportEvent &event) override;
+    virtual void viewportDidZoom(uint32_t coreID, const kk::renderer::SeatCanvasViewportEvent &event) override;
+    virtual void viewportDidEndZooming(uint32_t coreID, const kk::renderer::SeatCanvasViewportEvent &event) override;
+    virtual void viewportDidEndScrollingAnimation(uint32_t coreID, const kk::renderer::SeatCanvasViewportEvent &event) override;
 };
 
 };  // namespace kk::bridge

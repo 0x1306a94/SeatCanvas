@@ -257,7 +257,11 @@ class SeatCanvasCoreRenderer {
     void updateMaxMinZoomScalesForCurrentBounds();
 
     /// 内部方法，更新ZoomPanController状态并通知App
-    void updateZoomPanControllerState();
+    void updateZoomPanControllerState(bool notifyViewport = true);
+    SeatCanvasViewportEvent makeViewportEvent() const;
+    void notifyViewportDidEndDeceleratingIfNeeded();
+    void notifyViewportDidEndScrollingAnimation();
+    void beginViewportScrollingAnimation();
 
     bool scheduleAnimator();
     void showMinimapWithoutAnimation();
@@ -327,6 +331,8 @@ class SeatCanvasCoreRenderer {
     kk::ZoomLevelConfig _zoomLevelConfig = {};
     float _seatRenderZoomThreshold = {0.0f};
     uint32_t _minimapAnimationId = {0};
+    bool _panAnimationActive = {false};
+    bool _scrollingAnimationActive = {false};
 
     std::unordered_map<std::string, tgfx::Color> _zoneColorMap = {};
     std::unordered_map<std::string, std::vector<kk::SeatData>> _seatDataMap = {};

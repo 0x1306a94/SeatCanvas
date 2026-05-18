@@ -351,6 +351,206 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         return delegate?.didTapSeat(zoneId, seatId) ?: false
     }
 
+    private fun makeViewport(
+        zoomScale: Float,
+        contentOffsetX: Float,
+        contentOffsetY: Float,
+        visibleOriginalRectX: Float,
+        visibleOriginalRectY: Float,
+        visibleOriginalRectWidth: Float,
+        visibleOriginalRectHeight: Float
+    ): SeatCanvasViewport {
+        return SeatCanvasViewport(
+            zoomScale,
+            contentOffsetX,
+            contentOffsetY,
+            Rect(
+                visibleOriginalRectX,
+                visibleOriginalRectY,
+                visibleOriginalRectWidth,
+                visibleOriginalRectHeight
+            )
+        )
+    }
+
+    private fun nativeOnViewportWillBeginDragging(
+        zoomScale: Float,
+        contentOffsetX: Float,
+        contentOffsetY: Float,
+        visibleOriginalRectX: Float,
+        visibleOriginalRectY: Float,
+        visibleOriginalRectWidth: Float,
+        visibleOriginalRectHeight: Float
+    ) {
+        delegate?.willBeginDragging(
+            makeViewport(
+                zoomScale,
+                contentOffsetX,
+                contentOffsetY,
+                visibleOriginalRectX,
+                visibleOriginalRectY,
+                visibleOriginalRectWidth,
+                visibleOriginalRectHeight
+            )
+        )
+    }
+
+    private fun nativeOnViewportDidScroll(
+        zoomScale: Float,
+        contentOffsetX: Float,
+        contentOffsetY: Float,
+        visibleOriginalRectX: Float,
+        visibleOriginalRectY: Float,
+        visibleOriginalRectWidth: Float,
+        visibleOriginalRectHeight: Float
+    ) {
+        delegate?.didScroll(
+            makeViewport(
+                zoomScale,
+                contentOffsetX,
+                contentOffsetY,
+                visibleOriginalRectX,
+                visibleOriginalRectY,
+                visibleOriginalRectWidth,
+                visibleOriginalRectHeight
+            )
+        )
+    }
+
+    private fun nativeOnViewportDidEndDragging(
+        zoomScale: Float,
+        contentOffsetX: Float,
+        contentOffsetY: Float,
+        visibleOriginalRectX: Float,
+        visibleOriginalRectY: Float,
+        visibleOriginalRectWidth: Float,
+        visibleOriginalRectHeight: Float,
+        decelerate: Boolean
+    ) {
+        delegate?.didEndDragging(
+            makeViewport(
+                zoomScale,
+                contentOffsetX,
+                contentOffsetY,
+                visibleOriginalRectX,
+                visibleOriginalRectY,
+                visibleOriginalRectWidth,
+                visibleOriginalRectHeight
+            ),
+            decelerate
+        )
+    }
+
+    private fun nativeOnViewportDidEndDecelerating(
+        zoomScale: Float,
+        contentOffsetX: Float,
+        contentOffsetY: Float,
+        visibleOriginalRectX: Float,
+        visibleOriginalRectY: Float,
+        visibleOriginalRectWidth: Float,
+        visibleOriginalRectHeight: Float
+    ) {
+        delegate?.didEndDecelerating(
+            makeViewport(
+                zoomScale,
+                contentOffsetX,
+                contentOffsetY,
+                visibleOriginalRectX,
+                visibleOriginalRectY,
+                visibleOriginalRectWidth,
+                visibleOriginalRectHeight
+            )
+        )
+    }
+
+    private fun nativeOnViewportWillBeginZooming(
+        zoomScale: Float,
+        contentOffsetX: Float,
+        contentOffsetY: Float,
+        visibleOriginalRectX: Float,
+        visibleOriginalRectY: Float,
+        visibleOriginalRectWidth: Float,
+        visibleOriginalRectHeight: Float
+    ) {
+        delegate?.willBeginZooming(
+            makeViewport(
+                zoomScale,
+                contentOffsetX,
+                contentOffsetY,
+                visibleOriginalRectX,
+                visibleOriginalRectY,
+                visibleOriginalRectWidth,
+                visibleOriginalRectHeight
+            )
+        )
+    }
+
+    private fun nativeOnViewportDidZoom(
+        zoomScale: Float,
+        contentOffsetX: Float,
+        contentOffsetY: Float,
+        visibleOriginalRectX: Float,
+        visibleOriginalRectY: Float,
+        visibleOriginalRectWidth: Float,
+        visibleOriginalRectHeight: Float
+    ) {
+        delegate?.didZoom(
+            makeViewport(
+                zoomScale,
+                contentOffsetX,
+                contentOffsetY,
+                visibleOriginalRectX,
+                visibleOriginalRectY,
+                visibleOriginalRectWidth,
+                visibleOriginalRectHeight
+            )
+        )
+    }
+
+    private fun nativeOnViewportDidEndZooming(
+        zoomScale: Float,
+        contentOffsetX: Float,
+        contentOffsetY: Float,
+        visibleOriginalRectX: Float,
+        visibleOriginalRectY: Float,
+        visibleOriginalRectWidth: Float,
+        visibleOriginalRectHeight: Float
+    ) {
+        delegate?.didEndZooming(
+            makeViewport(
+                zoomScale,
+                contentOffsetX,
+                contentOffsetY,
+                visibleOriginalRectX,
+                visibleOriginalRectY,
+                visibleOriginalRectWidth,
+                visibleOriginalRectHeight
+            )
+        )
+    }
+
+    private fun nativeOnViewportDidEndScrollingAnimation(
+        zoomScale: Float,
+        contentOffsetX: Float,
+        contentOffsetY: Float,
+        visibleOriginalRectX: Float,
+        visibleOriginalRectY: Float,
+        visibleOriginalRectWidth: Float,
+        visibleOriginalRectHeight: Float
+    ) {
+        delegate?.didEndScrollingAnimation(
+            makeViewport(
+                zoomScale,
+                contentOffsetX,
+                contentOffsetY,
+                visibleOriginalRectX,
+                visibleOriginalRectY,
+                visibleOriginalRectWidth,
+                visibleOriginalRectHeight
+            )
+        )
+    }
+
     private external fun nativeLoadBaseMapFromFormat(data: ByteArray?, formatName: String, parseConfigJSON: ByteArray?): Long
     private external fun nativeLoadBaseMap(ptr: Long): Boolean
     private external fun nativeSetCanvasColor(color: Int)

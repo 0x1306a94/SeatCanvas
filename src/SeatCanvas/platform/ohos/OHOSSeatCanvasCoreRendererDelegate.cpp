@@ -23,63 +23,80 @@ OHOSSeatCanvasCoreRendererDelegate::~OHOSSeatCanvasCoreRendererDelegate() {
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
     napi_env env = kk::js::NapiEnvHolder::getEnv();
     if (env != nullptr) {
-        if (_styleIdForSeat != nullptr) {
-            napi_delete_reference(env, _styleIdForSeat);
-            _styleIdForSeat = nullptr;
-        }
-        if (_didTapSeat != nullptr) {
-            napi_delete_reference(env, _didTapSeat);
-            _didTapSeat = nullptr;
-        }
-        if (_didTapZone != nullptr) {
-            napi_delete_reference(env, _didTapZone);
-            _didTapZone = nullptr;
-        }
+        clearCallback(env, _styleIdForSeat);
+        clearCallback(env, _didTapSeat);
+        clearCallback(env, _didTapZone);
+        clearCallback(env, _viewportWillBeginDragging);
+        clearCallback(env, _viewportDidScroll);
+        clearCallback(env, _viewportDidEndDragging);
+        clearCallback(env, _viewportDidEndDecelerating);
+        clearCallback(env, _viewportWillBeginZooming);
+        clearCallback(env, _viewportDidZoom);
+        clearCallback(env, _viewportDidEndZooming);
+        clearCallback(env, _viewportDidEndScrollingAnimation);
     }
 }
 
 void OHOSSeatCanvasCoreRendererDelegate::setDidTapZoneCallback(napi_env env, napi_value callback) {
-    if (env == nullptr) {
-        return;
-    }
-
-    if (_didTapZone != nullptr) {
-        napi_delete_reference(env, _didTapZone);
-        _didTapZone = nullptr;
-    }
-
-    if (callback != nullptr) {
-        napi_create_reference(env, callback, 1, &_didTapZone);
-    }
+    setCallback(env, callback, _didTapZone);
 }
 
 void OHOSSeatCanvasCoreRendererDelegate::setStyleIdForSeatCallback(napi_env env, napi_value callback) {
-    if (env == nullptr) {
-        return;
-    }
-
-    if (_styleIdForSeat != nullptr) {
-        napi_delete_reference(env, _styleIdForSeat);
-        _styleIdForSeat = nullptr;
-    }
-
-    if (callback != nullptr) {
-        napi_create_reference(env, callback, 1, &_styleIdForSeat);
-    }
+    setCallback(env, callback, _styleIdForSeat);
 }
 
 void OHOSSeatCanvasCoreRendererDelegate::setDidTapSeatCallback(napi_env env, napi_value callback) {
+    setCallback(env, callback, _didTapSeat);
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::setViewportWillBeginDraggingCallback(napi_env env, napi_value callback) {
+    setCallback(env, callback, _viewportWillBeginDragging);
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::setViewportDidScrollCallback(napi_env env, napi_value callback) {
+    setCallback(env, callback, _viewportDidScroll);
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::setViewportDidEndDraggingCallback(napi_env env, napi_value callback) {
+    setCallback(env, callback, _viewportDidEndDragging);
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::setViewportDidEndDeceleratingCallback(napi_env env, napi_value callback) {
+    setCallback(env, callback, _viewportDidEndDecelerating);
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::setViewportWillBeginZoomingCallback(napi_env env, napi_value callback) {
+    setCallback(env, callback, _viewportWillBeginZooming);
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::setViewportDidZoomCallback(napi_env env, napi_value callback) {
+    setCallback(env, callback, _viewportDidZoom);
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::setViewportDidEndZoomingCallback(napi_env env, napi_value callback) {
+    setCallback(env, callback, _viewportDidEndZooming);
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::setViewportDidEndScrollingAnimationCallback(napi_env env, napi_value callback) {
+    setCallback(env, callback, _viewportDidEndScrollingAnimation);
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::setCallback(napi_env env, napi_value callback, napi_ref &ref) {
     if (env == nullptr) {
         return;
     }
 
-    if (_didTapSeat != nullptr) {
-        napi_delete_reference(env, _didTapSeat);
-        _didTapSeat = nullptr;
-    }
+    clearCallback(env, ref);
 
     if (callback != nullptr) {
-        napi_create_reference(env, callback, 1, &_didTapSeat);
+        napi_create_reference(env, callback, 1, &ref);
+    }
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::clearCallback(napi_env env, napi_ref &ref) {
+    if (env != nullptr && ref != nullptr) {
+        napi_delete_reference(env, ref);
+        ref = nullptr;
     }
 }
 
@@ -188,6 +205,129 @@ bool OHOSSeatCanvasCoreRendererDelegate::didTapSeat(uint32_t coreID, const std::
     bool boolResult = false;
     napi_get_value_bool(env, result, &boolResult);
     return boolResult;
+}
+
+napi_value OHOSSeatCanvasCoreRendererDelegate::makeViewportValue(napi_env env, const kk::renderer::SeatCanvasViewportEvent &event) {
+    napi_value viewport = nullptr;
+    napi_create_object(env, &viewport);
+
+    napi_value zoomScaleValue = nullptr;
+    napi_create_double(env, event.zoomScale, &zoomScaleValue);
+    napi_set_named_property(env, viewport, "zoomScale", zoomScaleValue);
+
+    napi_value contentOffsetXValue = nullptr;
+    napi_create_double(env, event.contentOffset.x, &contentOffsetXValue);
+    napi_set_named_property(env, viewport, "contentOffsetX", contentOffsetXValue);
+
+    napi_value contentOffsetYValue = nullptr;
+    napi_create_double(env, event.contentOffset.y, &contentOffsetYValue);
+    napi_set_named_property(env, viewport, "contentOffsetY", contentOffsetYValue);
+
+    napi_value visibleOriginalRect = nullptr;
+    napi_create_object(env, &visibleOriginalRect);
+
+    napi_value rectX = nullptr;
+    napi_create_double(env, event.visibleOriginalRect.x(), &rectX);
+    napi_set_named_property(env, visibleOriginalRect, "x", rectX);
+
+    napi_value rectY = nullptr;
+    napi_create_double(env, event.visibleOriginalRect.y(), &rectY);
+    napi_set_named_property(env, visibleOriginalRect, "y", rectY);
+
+    napi_value rectWidth = nullptr;
+    napi_create_double(env, event.visibleOriginalRect.width(), &rectWidth);
+    napi_set_named_property(env, visibleOriginalRect, "width", rectWidth);
+
+    napi_value rectHeight = nullptr;
+    napi_create_double(env, event.visibleOriginalRect.height(), &rectHeight);
+    napi_set_named_property(env, visibleOriginalRect, "height", rectHeight);
+
+    napi_set_named_property(env, viewport, "visibleOriginalRect", visibleOriginalRect);
+
+    return viewport;
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::callViewportCallback(napi_ref ref, const kk::renderer::SeatCanvasViewportEvent &event) {
+    if (ref == nullptr) {
+        return;
+    }
+
+    napi_env env = kk::js::NapiEnvHolder::getEnv();
+    if (env == nullptr) {
+        return;
+    }
+
+    napi_value callback = nullptr;
+    napi_get_reference_value(env, ref, &callback);
+    if (callback == nullptr) {
+        return;
+    }
+
+    napi_value viewport = makeViewportValue(env, event);
+    napi_value argv[1] = {viewport};
+    napi_status status = napi_call_function(env, nullptr, callback, 1, argv, nullptr);
+    if (status != napi_ok) {
+        tgfx::PrintError("OHOSSeatCanvasCoreRendererDelegate::callViewportCallback failed: %d", static_cast<int>(status));
+    }
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::callViewportCallback(napi_ref ref, const kk::renderer::SeatCanvasViewportEvent &event, bool willDecelerate) {
+    if (ref == nullptr) {
+        return;
+    }
+
+    napi_env env = kk::js::NapiEnvHolder::getEnv();
+    if (env == nullptr) {
+        return;
+    }
+
+    napi_value callback = nullptr;
+    napi_get_reference_value(env, ref, &callback);
+    if (callback == nullptr) {
+        return;
+    }
+
+    napi_value viewport = makeViewportValue(env, event);
+    napi_value willDecelerateValue = nullptr;
+    napi_get_boolean(env, willDecelerate, &willDecelerateValue);
+    napi_value argv[2] = {viewport, willDecelerateValue};
+    napi_status status = napi_call_function(env, nullptr, callback, 2, argv, nullptr);
+    if (status != napi_ok) {
+        tgfx::PrintError("OHOSSeatCanvasCoreRendererDelegate::callViewportCallback(didEndDragging) failed: %d",
+                         static_cast<int>(status));
+    }
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::viewportWillBeginDragging(uint32_t, const kk::renderer::SeatCanvasViewportEvent &event) {
+    callViewportCallback(_viewportWillBeginDragging, event);
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::viewportDidScroll(uint32_t, const kk::renderer::SeatCanvasViewportEvent &event) {
+    callViewportCallback(_viewportDidScroll, event);
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::viewportDidEndDragging(uint32_t, const kk::renderer::SeatCanvasViewportEvent &event, bool willDecelerate) {
+    callViewportCallback(_viewportDidEndDragging, event, willDecelerate);
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::viewportDidEndDecelerating(uint32_t, const kk::renderer::SeatCanvasViewportEvent &event) {
+    callViewportCallback(_viewportDidEndDecelerating, event);
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::viewportWillBeginZooming(uint32_t, const kk::renderer::SeatCanvasViewportEvent &event) {
+    callViewportCallback(_viewportWillBeginZooming, event);
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::viewportDidZoom(uint32_t, const kk::renderer::SeatCanvasViewportEvent &event) {
+    callViewportCallback(_viewportDidZoom, event);
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::viewportDidEndZooming(uint32_t, const kk::renderer::SeatCanvasViewportEvent &event) {
+    callViewportCallback(_viewportDidEndZooming, event);
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::viewportDidEndScrollingAnimation(uint32_t, const kk::renderer::SeatCanvasViewportEvent &event) {
+    callViewportCallback(_viewportDidEndScrollingAnimation, event);
 }
 
 };  // namespace kk::js
