@@ -319,7 +319,7 @@ class SeatCanvasCoreRenderer {
     tgfx::Color _backgroundColor = {tgfx::Color::White()};
     BaseMapColorState _baseMapColorState = {BaseMapColorState::Original};
     bool _autoChangeBaseMapColorState = {true};
-    bool _disableAutoDrawSeat;
+    bool _disableAutoDrawSeat = {false};
     bool _firstFrameSubmitted = {false};
     bool _invalidate = {true};
     float _maxWidth = {1000.f};

@@ -1,0 +1,48 @@
+//
+//  BaseMapLoadResult.hpp
+//  SeatCanvas
+//
+//  Created by king on 2026/5/18.
+//
+
+#ifndef BaseMapLoadResult_hpp
+#define BaseMapLoadResult_hpp
+
+#include <memory>
+
+#include <tgfx/core/Size.h>
+
+#include "core/parser/BaseMapParseResult.hpp"
+
+namespace tgfx {
+class Layer;
+};
+
+namespace kk {
+class BaseMapConfig;
+};
+
+namespace kk::layer {
+class BaseMapRootLayer;
+};
+
+namespace kk::renderer {
+class BaseMapMeshBuilder;
+};
+
+namespace kk::parser {
+
+struct BaseMapLoadResult {
+    std::shared_ptr<tgfx::Layer> textLayer = {nullptr};
+    tgfx::Size baseMapSize = {};
+    std::shared_ptr<kk::layer::BaseMapRootLayer> miniLayer = {nullptr};
+    std::shared_ptr<kk::renderer::BaseMapMeshBuilder> meshBuilder = {nullptr};
+
+    explicit BaseMapLoadResult(std::unique_ptr<BaseMapParseResult> parseResult);
+
+    std::shared_ptr<kk::BaseMapConfig> makeBaseMapConfig() const;
+};
+
+}  // namespace kk::parser
+
+#endif /* BaseMapLoadResult_hpp */
