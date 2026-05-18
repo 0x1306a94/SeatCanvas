@@ -27,10 +27,12 @@
 #include "core/gesture/ElasticZoomPanController.hpp"
 #include "core/layers/BaseMapRootLayer.hpp"
 #include "core/parser/BaseMapFormat.hpp"
+#include "core/parser/BaseMapLoadResult.hpp"
 #include "core/parser/BaseMapParserFactory.hpp"
 #include "core/renderer/SeatCanvasCoreRenderer.hpp"
 #include "core/svg/ConvertSVGLayer.hpp"
 #include "core/svg/SVGMeshParser.hpp"
+#include "core/utils/ColorIntConverter.hpp"
 #include "core/utils/SystemProperties.hpp"
 #include "core/utils/TimeProfiler.hpp"
 #include "platform/android/NativePlatform.hpp"
@@ -56,23 +58,6 @@ namespace kk::jni {
 static kk::jni::Global<jclass> SeatCanvasViewClass;
 static jfieldID SeatCanvasView_NativePtr;
 
-struct LoadBaseMapResult {
-    std::shared_ptr<tgfx::Layer> textLayer;
-    tgfx::Size baseMapSize;
-    std::shared_ptr<kk::layer::BaseMapRootLayer> miniLayer;
-    std::shared_ptr<kk::renderer::BaseMapMeshBuilder> meshBuilder;
-
-    // 从统一解析结果构造
-    explicit LoadBaseMapResult(std::unique_ptr<kk::parser::BaseMapParseResult> parseResult) {
-        if (parseResult) {
-            textLayer = std::move(parseResult->textLayer);
-            baseMapSize = parseResult->size;
-            miniLayer = std::move(parseResult->miniLayer);
-            meshBuilder = std::move(parseResult->meshBuilder);
-        }
-    }
-};
-
 static kk::renderer::SeatCanvasCoreRenderer *GetSeatCanvasCoreRenderer(JNIEnv *env, jobject thiz) {
     jlong ptr = env->GetLongField(thiz, SeatCanvasView_NativePtr);
     if (ptr == 0) {
@@ -92,21 +77,6 @@ static void DeleteSeatCanvasCoreRenderer(JNIEnv *env, jobject thiz) {
     env->SetLongField(thiz, SeatCanvasView_NativePtr, 0L);
 }
 
-static tgfx::Color ColorFromARGBInt(uint32_t argb) {
-    auto a = static_cast<uint8_t>((argb >> 24) & 0xFF);
-    auto r = static_cast<uint8_t>((argb >> 16) & 0xFF);
-    auto g = static_cast<uint8_t>((argb >> 8) & 0xFF);
-    auto b = static_cast<uint8_t>(argb & 0xFF);
-    return tgfx::Color::FromRGBA(r, g, b, a);
-}
-
-static int32_t ColorToARGBInt(const tgfx::Color &color) {
-    auto a = static_cast<uint8_t>(color.alpha * 255);
-    auto r = static_cast<uint8_t>(color.red * 255);
-    auto g = static_cast<uint8_t>(color.green * 255);
-    auto b = static_cast<uint8_t>(color.blue * 255);
-    return static_cast<int32_t>((a << 24) | (r << 16) | (g << 8) | b);
-}
 }  // namespace kk::jni
 
 extern "C" {
@@ -158,7 +128,7 @@ Java_com_libseatcanvas_SeatCanvasView_nativeLoadBaseMapFromFormat(JNIEnv *env, j
         return 0;
     }
 
-    auto outResult = new kk::jni::LoadBaseMapResult(std::move(result));
+    auto outResult = new kk::parser::BaseMapLoadResult(std::move(result));
     return reinterpret_cast<jlong>(outResult);
 }
 
@@ -170,9 +140,8 @@ Java_com_libseatcanvas_SeatCanvasView_nativeLoadBaseMap(JNIEnv *env, jobject thi
         return false;
     }
 
-    auto map = reinterpret_cast<kk::jni::LoadBaseMapResult *>(dataPtr);
-    auto baseMapConfig = std::make_shared<kk::BaseMapConfig>(map->meshBuilder, map->textLayer,
-                                                             map->miniLayer, map->baseMapSize);
+    auto map = reinterpret_cast<kk::parser::BaseMapLoadResult *>(dataPtr);
+    auto baseMapConfig = map->makeBaseMapConfig();
     renderer->setBaseMapConfig(std::move(baseMapConfig));
     delete map;
 
@@ -183,13 +152,13 @@ JNIEXPORT void JNICALL
 Java_com_libseatcanvas_SeatCanvasView_nativeSetCanvasColor(JNIEnv *env, jobject thiz, jint color) {
     GetCPPObjectOrReturn(env, thiz, renderer);
     auto argb = static_cast<uint32_t>(color);
-    renderer->setBackgroundColor(kk::jni::ColorFromARGBInt(argb));
+    renderer->setBackgroundColor(kk::utils::ColorFromARGBInt(argb));
 }
 
 JNIEXPORT jint JNICALL
 Java_com_libseatcanvas_SeatCanvasView_nativeGetCanvasColor(JNIEnv *env, jobject thiz) {
     GetCPPObjectOrReturnValue(env, thiz, renderer, 0xFFFFFFFF);
-    return static_cast<jint>(kk::jni::ColorToARGBInt(renderer->getBackgroundColor()));
+    return static_cast<jint>(kk::utils::ColorToARGBInt(renderer->getBackgroundColor()));
 }
 
 JNIEXPORT void JNICALL

@@ -14,6 +14,7 @@
 #import "core/gesture/ElasticZoomPanController.hpp"
 #import "core/layers/BaseMapRootLayer.hpp"
 #import "core/parser/BaseMapFormat.hpp"
+#import "core/parser/BaseMapLoadResult.hpp"
 #import "core/parser/BaseMapParserFactory.hpp"
 #import "core/renderer/SeatCanvasCoreRenderer.hpp"
 #import "core/renderer/SeatCanvasCoreRendererState.hpp"
@@ -42,23 +43,6 @@
 #include "core/DeviceLockGuard.hpp"
 
 namespace kk::bridge {
-struct LoadBaseMapResult {
-    std::shared_ptr<tgfx::Layer> textLayer;
-    tgfx::Size baseMapSize;
-    std::shared_ptr<kk::layer::BaseMapRootLayer> miniLayer;
-    std::shared_ptr<kk::renderer::BaseMapMeshBuilder> meshBuilder;
-
-    // 从统一解析结果构造
-    explicit LoadBaseMapResult(std::unique_ptr<kk::parser::BaseMapParseResult> parseResult) {
-        if (parseResult) {
-            textLayer = std::move(parseResult->textLayer);
-            baseMapSize = parseResult->size;
-            miniLayer = std::move(parseResult->miniLayer);
-            meshBuilder = std::move(parseResult->meshBuilder);
-        }
-    }
-};
-
 void SeatCanvasReleaseCPPObject(CPPObject *_Nonnull obj) {
     if (obj == nullptr) {
         return;
@@ -169,7 +153,7 @@ void *_Nullable SeatCanvasCoreRendererParseBaseMap(const void *_Nullable __sized
         return nullptr;
     }
 
-    LoadBaseMapResult *outResult = new LoadBaseMapResult(std::move(result));
+    auto outResult = new kk::parser::BaseMapLoadResult(std::move(result));
     //    if (miniMapImage != nullptr && minLayer) {
     //        PROFILE_STAGE_START(group, genMiniMapImage, "Gen MiniMap Image")
     //        auto result = kk::renderer::LayerPrerenderImage::Render(baseMapLayer, baseMapSize, 6000);
@@ -195,28 +179,13 @@ bool SeatCanvasCoreRendererLoadBaseMap(CPPObject *_Nonnull cppObject, void *_Nul
         return true;
     }
 
-    // 支持 LoadBaseMapResult 和 LoadBaseMapResult（向后兼容）
-    LoadBaseMapResult *map = nullptr;
-    LoadBaseMapResult *svgMap = nullptr;
-
-    // 尝试转换为 LoadBaseMapResult
-    map = static_cast<LoadBaseMapResult *>(*loadResult);
-    if (map == nullptr) {
-        // 尝试转换为旧的 LoadBaseMapResult（向后兼容）
-        svgMap = static_cast<LoadBaseMapResult *>(*loadResult);
-        if (svgMap != nullptr) {
-            // 转换为新的结构
-            map = new LoadBaseMapResult(*svgMap);
-            delete svgMap;
-        }
-    }
-
+    auto map = static_cast<kk::parser::BaseMapLoadResult *>(*loadResult);
     if (map == nullptr) {
         *loadResult = nullptr;
         return false;
     }
 
-    auto baseMapConfig = std::make_shared<kk::BaseMapConfig>(map->meshBuilder, map->textLayer, map->miniLayer, map->baseMapSize);
+    auto baseMapConfig = map->makeBaseMapConfig();
     renderer->setBaseMapConfig(std::move(baseMapConfig));
 
     delete map;

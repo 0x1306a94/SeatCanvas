@@ -19,11 +19,13 @@
 #include "core/gesture/GestureState.hpp"
 #include "core/layers/BaseMapRootLayer.hpp"
 #include "core/parser/BaseMapFormat.hpp"
+#include "core/parser/BaseMapLoadResult.hpp"
 #include "core/parser/BaseMapParserFactory.hpp"
 #include "core/renderer/SeatCanvasCoreRenderer.hpp"
 #include "core/renderer/SeatCanvasCoreRendererState.hpp"
 #include "core/svg/ConvertSVGLayer.hpp"
 #include "core/svg/SVGMeshParser.hpp"
+#include "core/utils/ColorIntConverter.hpp"
 #include "core/utils/SystemProperties.hpp"
 #include "core/utils/TimeProfiler.hpp"
 
@@ -40,39 +42,6 @@ namespace kk::js {
 
 static std::unordered_map<std::string, std::shared_ptr<JRendererCore>> ViewMap = {};
 
-static tgfx::Color ColorFromARGBInt(uint32_t argb) {
-    auto a = static_cast<uint8_t>((argb >> 24) & 0xFF);
-    auto r = static_cast<uint8_t>((argb >> 16) & 0xFF);
-    auto g = static_cast<uint8_t>((argb >> 8) & 0xFF);
-    auto b = static_cast<uint8_t>(argb & 0xFF);
-    return tgfx::Color::FromRGBA(r, g, b, a);
-}
-
-static int32_t ColorToARGBInt(const tgfx::Color &color) {
-    auto a = static_cast<uint8_t>(color.alpha * 255);
-    auto r = static_cast<uint8_t>(color.red * 255);
-    auto g = static_cast<uint8_t>(color.green * 255);
-    auto b = static_cast<uint8_t>(color.blue * 255);
-    return static_cast<int32_t>((a << 24) | (r << 16) | (g << 8) | b);
-}
-
-struct LoadBaseMapResult {
-    std::shared_ptr<tgfx::Layer> textLayer;
-    tgfx::Size baseMapSize;
-    std::shared_ptr<kk::layer::BaseMapRootLayer> miniLayer;
-    std::shared_ptr<kk::renderer::BaseMapMeshBuilder> meshBuilder;
-
-    // 从统一解析结果构造
-    explicit LoadBaseMapResult(std::unique_ptr<kk::parser::BaseMapParseResult> parseResult) {
-        if (parseResult) {
-            textLayer = std::move(parseResult->textLayer);
-            baseMapSize = parseResult->size;
-            miniLayer = std::move(parseResult->miniLayer);
-            meshBuilder = std::move(parseResult->meshBuilder);
-        }
-    }
-};
-
 struct LoadBaseMapTaskData {
     napi_async_work asyncWork{nullptr};
     napi_deferred deferred{nullptr};
@@ -81,7 +50,7 @@ struct LoadBaseMapTaskData {
     std::string filename{""};
     kk::parser::BaseMapFormat format{kk::parser::BaseMapFormat::Unknown};
     std::string parseConfigJSON{""};
-    LoadBaseMapResult *result{nullptr};
+    kk::parser::BaseMapLoadResult *result{nullptr};
 };
 
 static void LoadBaseMapTaskExecute(napi_env env, void *userdata) {
@@ -108,7 +77,7 @@ static void LoadBaseMapTaskExecute(napi_env env, void *userdata) {
         return;
     }
 
-    auto taskResult = new LoadBaseMapResult(std::move(result));
+    auto taskResult = new kk::parser::BaseMapLoadResult(std::move(result));
     taskData->result = taskResult;
 }
 
@@ -216,13 +185,13 @@ static napi_value LoadBaseMap(napi_env env, napi_callback_info info) {
     napi_get_value_int64(env, args[0], &nativePtr);
 
     auto renderer = view->internalRenderer();
-    auto map = reinterpret_cast<LoadBaseMapResult *>(nativePtr);
+    auto map = reinterpret_cast<kk::parser::BaseMapLoadResult *>(nativePtr);
     if (map == nullptr) {
         renderer->setBaseMapConfig(nullptr);
         return nullptr;
     }
 
-    auto baseMapConfig = std::make_shared<kk::BaseMapConfig>(map->meshBuilder, map->textLayer, map->miniLayer, map->baseMapSize);
+    auto baseMapConfig = map->makeBaseMapConfig();
     renderer->setBaseMapConfig(std::move(baseMapConfig));
 
     delete map;
@@ -310,7 +279,7 @@ static napi_value SetCanvasColor(napi_env env, napi_callback_info info) {
     }
     int32_t colorInt = 0;
     napi_get_value_int32(env, args[0], &colorInt);
-    view->setBackgroundColor(ColorFromARGBInt(static_cast<uint32_t>(colorInt)));
+    view->setBackgroundColor(kk::utils::ColorFromARGBInt(static_cast<uint32_t>(colorInt)));
     return nullptr;
 }
 
@@ -334,7 +303,7 @@ static napi_value GetCanvasColor(napi_env env, napi_callback_info info) {
         return def;
     }
     napi_value result = nullptr;
-    napi_create_int32(env, ColorToARGBInt(renderer->getBackgroundColor()), &result);
+    napi_create_int32(env, kk::utils::ColorToARGBInt(renderer->getBackgroundColor()), &result);
     return result;
 }
 
