@@ -73,8 +73,7 @@ bool AndroidSeatCanvasCoreRendererDelegate::styleIdForSeat(uint32_t coreID, cons
         return false;
     }
 
-    jmethodID methodID =
-        env->GetMethodID(clazz, "nativeOnStyleIdForSeat", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
+    jmethodID methodID = env->GetMethodID(clazz, "nativeOnStyleIdForSeat", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
     if (methodID == nullptr) {
         env->ExceptionClear();
         env->DeleteLocalRef(clazz);
@@ -136,6 +135,111 @@ bool AndroidSeatCanvasCoreRendererDelegate::didTapSeat(uint32_t coreID, const st
     env->DeleteLocalRef(jSeatId);
 
     return result == JNI_TRUE;
+}
+
+void AndroidSeatCanvasCoreRendererDelegate::viewportWillBeginDragging(uint32_t, const SeatCanvasViewportEvent &event) {
+    callViewportMethod("nativeOnViewportWillBeginDragging", event);
+}
+
+void AndroidSeatCanvasCoreRendererDelegate::viewportDidScroll(uint32_t, const SeatCanvasViewportEvent &event) {
+    callViewportMethod("nativeOnViewportDidScroll", event);
+}
+
+void AndroidSeatCanvasCoreRendererDelegate::viewportDidEndDragging(uint32_t, const SeatCanvasViewportEvent &event, bool willDecelerate) {
+    callViewportMethod("nativeOnViewportDidEndDragging", event, willDecelerate);
+}
+
+void AndroidSeatCanvasCoreRendererDelegate::viewportDidEndDecelerating(uint32_t, const SeatCanvasViewportEvent &event) {
+    callViewportMethod("nativeOnViewportDidEndDecelerating", event);
+}
+
+void AndroidSeatCanvasCoreRendererDelegate::viewportWillBeginZooming(uint32_t, const SeatCanvasViewportEvent &event) {
+    callViewportMethod("nativeOnViewportWillBeginZooming", event);
+}
+
+void AndroidSeatCanvasCoreRendererDelegate::viewportDidZoom(uint32_t, const SeatCanvasViewportEvent &event) {
+    callViewportMethod("nativeOnViewportDidZoom", event);
+}
+
+void AndroidSeatCanvasCoreRendererDelegate::viewportDidEndZooming(uint32_t, const SeatCanvasViewportEvent &event) {
+    callViewportMethod("nativeOnViewportDidEndZooming", event);
+}
+
+void AndroidSeatCanvasCoreRendererDelegate::viewportDidEndScrollingAnimation(uint32_t, const SeatCanvasViewportEvent &event) {
+    callViewportMethod("nativeOnViewportDidEndScrollingAnimation", event);
+}
+
+void AndroidSeatCanvasCoreRendererDelegate::callViewportMethod(const char *methodName, const SeatCanvasViewportEvent &event) {
+    kk::jni::JNIEnvironment environment;
+    auto env = environment.current();
+    if (env == nullptr || _seatCanvasView.isEmpty()) {
+        return;
+    }
+
+    jclass clazz = env->GetObjectClass(_seatCanvasView.get());
+    if (clazz == nullptr) {
+        env->ExceptionClear();
+        return;
+    }
+
+    jmethodID methodID = env->GetMethodID(clazz, methodName, "(FFFFFFF)V");
+    if (methodID == nullptr) {
+        env->ExceptionClear();
+        env->DeleteLocalRef(clazz);
+        return;
+    }
+
+    env->CallVoidMethod(_seatCanvasView.get(), methodID,
+                        static_cast<jfloat>(event.zoomScale),
+                        static_cast<jfloat>(event.contentOffset.x),
+                        static_cast<jfloat>(event.contentOffset.y),
+                        static_cast<jfloat>(event.visibleOriginalRect.x()),
+                        static_cast<jfloat>(event.visibleOriginalRect.y()),
+                        static_cast<jfloat>(event.visibleOriginalRect.width()),
+                        static_cast<jfloat>(event.visibleOriginalRect.height()));
+
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+    }
+
+    env->DeleteLocalRef(clazz);
+}
+
+void AndroidSeatCanvasCoreRendererDelegate::callViewportMethod(const char *methodName, const SeatCanvasViewportEvent &event, bool willDecelerate) {
+    kk::jni::JNIEnvironment environment;
+    auto env = environment.current();
+    if (env == nullptr || _seatCanvasView.isEmpty()) {
+        return;
+    }
+
+    jclass clazz = env->GetObjectClass(_seatCanvasView.get());
+    if (clazz == nullptr) {
+        env->ExceptionClear();
+        return;
+    }
+
+    jmethodID methodID = env->GetMethodID(clazz, methodName, "(FFFFFFFZ)V");
+    if (methodID == nullptr) {
+        env->ExceptionClear();
+        env->DeleteLocalRef(clazz);
+        return;
+    }
+
+    env->CallVoidMethod(_seatCanvasView.get(), methodID,
+                        static_cast<jfloat>(event.zoomScale),
+                        static_cast<jfloat>(event.contentOffset.x),
+                        static_cast<jfloat>(event.contentOffset.y),
+                        static_cast<jfloat>(event.visibleOriginalRect.x()),
+                        static_cast<jfloat>(event.visibleOriginalRect.y()),
+                        static_cast<jfloat>(event.visibleOriginalRect.width()),
+                        static_cast<jfloat>(event.visibleOriginalRect.height()),
+                        static_cast<jboolean>(willDecelerate));
+
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+    }
+
+    env->DeleteLocalRef(clazz);
 }
 
 };  // namespace kk::renderer

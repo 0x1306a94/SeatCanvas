@@ -5,7 +5,6 @@
 | Platform | Command | Notes |
 |----------|---------|-------|
 | iOS Device | `./ios/gen_ios && cd ios && xcodebuild -workspace ios/SeatCanvas.xcworkspace -scheme SeatCanvasSample -configuration Release -sdk iphoneos -arch arm64 CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO` | Requires Xcode |
-| iOS Simulator | `./ios/gen_simulator` | Faster for testing |
 | iOS (custom flags) | `./ios/gen_ios -DENABLE_TIME_PROFILER=ON` | Custom CMake flags |
 | Android (all arch) | `cd android/SeatCanvasSample && ./gradlew assembleRelease` | All architectures |
 | Android (arm64) | `cd android/SeatCanvasSample && ./gradlew assembleRelease -Parm64-only` | Faster builds |

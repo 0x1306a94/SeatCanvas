@@ -662,6 +662,65 @@ static napi_value SetDidTapZoneCallback(napi_env env, napi_callback_info info) {
     return nullptr;
 }
 
+static napi_value SetDelegateCallback(napi_env env, napi_callback_info info,
+                                      void (OHOSSeatCanvasCoreRendererDelegate::*setter)(napi_env, napi_value)) {
+    kk::js::NapiEnvHolder::setEnv(env);
+    napi_value jsView = nullptr;
+    size_t argc = 1;
+    napi_value args[1] = {0};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr) {
+        return nullptr;
+    }
+
+    auto delegate = view->getDelegate();
+    if (delegate == nullptr) {
+        return nullptr;
+    }
+
+    napi_value callback = nullptr;
+    if (argc > 0 && args[0] != nullptr) {
+        callback = args[0];
+    }
+
+    (delegate.get()->*setter)(env, callback);
+    return nullptr;
+}
+
+static napi_value SetViewportWillBeginDraggingCallback(napi_env env, napi_callback_info info) {
+    return SetDelegateCallback(env, info, &OHOSSeatCanvasCoreRendererDelegate::setViewportWillBeginDraggingCallback);
+}
+
+static napi_value SetViewportDidScrollCallback(napi_env env, napi_callback_info info) {
+    return SetDelegateCallback(env, info, &OHOSSeatCanvasCoreRendererDelegate::setViewportDidScrollCallback);
+}
+
+static napi_value SetViewportDidEndDraggingCallback(napi_env env, napi_callback_info info) {
+    return SetDelegateCallback(env, info, &OHOSSeatCanvasCoreRendererDelegate::setViewportDidEndDraggingCallback);
+}
+
+static napi_value SetViewportDidEndDeceleratingCallback(napi_env env, napi_callback_info info) {
+    return SetDelegateCallback(env, info, &OHOSSeatCanvasCoreRendererDelegate::setViewportDidEndDeceleratingCallback);
+}
+
+static napi_value SetViewportWillBeginZoomingCallback(napi_env env, napi_callback_info info) {
+    return SetDelegateCallback(env, info, &OHOSSeatCanvasCoreRendererDelegate::setViewportWillBeginZoomingCallback);
+}
+
+static napi_value SetViewportDidZoomCallback(napi_env env, napi_callback_info info) {
+    return SetDelegateCallback(env, info, &OHOSSeatCanvasCoreRendererDelegate::setViewportDidZoomCallback);
+}
+
+static napi_value SetViewportDidEndZoomingCallback(napi_env env, napi_callback_info info) {
+    return SetDelegateCallback(env, info, &OHOSSeatCanvasCoreRendererDelegate::setViewportDidEndZoomingCallback);
+}
+
+static napi_value SetViewportDidEndScrollingAnimationCallback(napi_env env, napi_callback_info info) {
+    return SetDelegateCallback(env, info, &OHOSSeatCanvasCoreRendererDelegate::setViewportDidEndScrollingAnimationCallback);
+}
+
 static napi_value ZoomToRect(napi_env env, napi_callback_info info) {
     kk::js::NapiEnvHolder::setEnv(env);
 
@@ -867,6 +926,14 @@ bool JRendererCore::Init(napi_env env, napi_value exports) {
         JS_DEFAULT_METHOD_ENTRY(setStyleIdForSeatCallback, SetStyleIdForSeatCallback),
         JS_DEFAULT_METHOD_ENTRY(setDidTapSeatCallback, SetDidTapSeatCallback),
         JS_DEFAULT_METHOD_ENTRY(setDidTapZoneCallback, SetDidTapZoneCallback),
+        JS_DEFAULT_METHOD_ENTRY(setViewportWillBeginDraggingCallback, SetViewportWillBeginDraggingCallback),
+        JS_DEFAULT_METHOD_ENTRY(setViewportDidScrollCallback, SetViewportDidScrollCallback),
+        JS_DEFAULT_METHOD_ENTRY(setViewportDidEndDraggingCallback, SetViewportDidEndDraggingCallback),
+        JS_DEFAULT_METHOD_ENTRY(setViewportDidEndDeceleratingCallback, SetViewportDidEndDeceleratingCallback),
+        JS_DEFAULT_METHOD_ENTRY(setViewportWillBeginZoomingCallback, SetViewportWillBeginZoomingCallback),
+        JS_DEFAULT_METHOD_ENTRY(setViewportDidZoomCallback, SetViewportDidZoomCallback),
+        JS_DEFAULT_METHOD_ENTRY(setViewportDidEndZoomingCallback, SetViewportDidEndZoomingCallback),
+        JS_DEFAULT_METHOD_ENTRY(setViewportDidEndScrollingAnimationCallback, SetViewportDidEndScrollingAnimationCallback),
         JS_DEFAULT_METHOD_ENTRY(updateSeatZoneAlternateColors, UpdateSeatZoneAlternateColors),
         JS_DEFAULT_METHOD_ENTRY(updateSeats, UpdateSeats),
         JS_DEFAULT_METHOD_ENTRY(clearSeatData, ClearSeatData),

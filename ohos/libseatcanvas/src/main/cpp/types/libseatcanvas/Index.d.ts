@@ -52,6 +52,13 @@ export declare namespace seatcanvas {
     venue: number;
   }
 
+  export interface SeatCanvasViewport {
+    zoomScale: number;
+    contentOffsetX: number;
+    contentOffsetY: number;
+    visibleOriginalRect: Rect;
+  }
+
   export class JRendererCore {
     static InitSystemProperties(density: number, fontScale: number): void;
 
@@ -182,6 +189,22 @@ export declare namespace seatcanvas {
     setDidTapSeatCallback(callback: ((zoneId: string, seatId: string) => boolean) | null);
 
     setDidTapZoneCallback(callback: ((zoneId: string) => void) | null);
+
+    setViewportWillBeginDraggingCallback(callback: ((viewport: SeatCanvasViewport) => void) | null);
+
+    setViewportDidScrollCallback(callback: ((viewport: SeatCanvasViewport) => void) | null);
+
+    setViewportDidEndDraggingCallback(callback: ((viewport: SeatCanvasViewport, decelerate: boolean) => void) | null);
+
+    setViewportDidEndDeceleratingCallback(callback: ((viewport: SeatCanvasViewport) => void) | null);
+
+    setViewportWillBeginZoomingCallback(callback: ((viewport: SeatCanvasViewport) => void) | null);
+
+    setViewportDidZoomCallback(callback: ((viewport: SeatCanvasViewport) => void) | null);
+
+    setViewportDidEndZoomingCallback(callback: ((viewport: SeatCanvasViewport) => void) | null);
+
+    setViewportDidEndScrollingAnimationCallback(callback: ((viewport: SeatCanvasViewport) => void) | null);
 
     updateSeatZoneAlternateColors(colors: SeatZoneColor[]);
 

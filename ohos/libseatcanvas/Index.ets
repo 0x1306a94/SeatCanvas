@@ -2,7 +2,7 @@ export { SeatCanvasInit } from './src/main/ets/utils/SeatCanvasInit';
 
 export { BaseMapFormat } from './src/main/ets/utils/BaseMapFormat';
 
-export { SeatCanvasRendererDelegate } from './src/main/ets/controller/SeatCanvasRendererDelegate';
+export { SeatCanvasRendererDelegate, SeatCanvasViewport } from './src/main/ets/controller/SeatCanvasRendererDelegate';
 
 export { BaseMapParseConfig, SVGBaseMapParseConfig } from './src/main/ets/controller/BaseMapParseConfig';
 

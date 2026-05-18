@@ -8,6 +8,7 @@
 #include "SeatCanvasCoreRenderer.hpp"
 
 #include <algorithm>
+#include <cfloat>
 #include <cmath>
 #include <mutex>
 #include <random>
@@ -310,6 +311,9 @@ void SeatCanvasCoreRenderer::handlePan(kk::gesture::GestureState state, const tg
     switch (state) {
         case kk::gesture::GestureState::BEGAN: {
             showMinimapWithoutAnimation();
+            if (_delegate) {
+                _delegate->viewportWillBeginDragging(_coreID, makeViewportEvent());
+            }
             break;
         }
         case kk::gesture::GestureState::CHANGED: {
@@ -328,12 +332,23 @@ void SeatCanvasCoreRenderer::handlePan(kk::gesture::GestureState state, const tg
 
     _zoomPanController->handlePan(state, translation, timestampMs);
 
-    // 在 ENDED/CANCELLED 状态时，如果即将开始动画，延迟状态更新
+    // 手势 ENDED/CANCELLED 且仍有惯性/回弹待播放：先把控制器中的缩放与偏移同步进 _state，
+    // 再派发 didEndDragging(decelerate:true)，保证 makeViewportEvent 与松手瞬间一致；本帧不派发 didScroll/didZoom。
     if ((state == kk::gesture::GestureState::ENDED || state == kk::gesture::GestureState::CANCELLED) && _zoomPanController->hasPendingAnimation()) {
+        _panAnimationActive = true;
+        updateZoomPanControllerState(false);
+        if (_delegate) {
+            _delegate->viewportDidEndDragging(_coreID, makeViewportEvent(), true);
+        }
         return;
     }
 
     updateZoomPanControllerState();
+    if (state == kk::gesture::GestureState::ENDED || state == kk::gesture::GestureState::CANCELLED) {
+        if (_delegate) {
+            _delegate->viewportDidEndDragging(_coreID, makeViewportEvent(), false);
+        }
+    }
 }
 
 void SeatCanvasCoreRenderer::handlePinch(kk::gesture::GestureState state, float scale, const tgfx::Point &center) {
@@ -341,6 +356,9 @@ void SeatCanvasCoreRenderer::handlePinch(kk::gesture::GestureState state, float 
     switch (state) {
         case kk::gesture::GestureState::BEGAN: {
             showMinimapWithoutAnimation();
+            if (_delegate) {
+                _delegate->viewportWillBeginZooming(_coreID, makeViewportEvent());
+            }
             break;
         }
         case kk::gesture::GestureState::CHANGED: {
@@ -359,6 +377,11 @@ void SeatCanvasCoreRenderer::handlePinch(kk::gesture::GestureState state, float 
 
     _zoomPanController->handlePinch(state, scale, center);
     updateZoomPanControllerState();
+    if (state == kk::gesture::GestureState::ENDED || state == kk::gesture::GestureState::CANCELLED) {
+        if (_delegate) {
+            _delegate->viewportDidEndZooming(_coreID, makeViewportEvent());
+        }
+    }
 }
 
 void SeatCanvasCoreRenderer::setBaseMapConfig(std::shared_ptr<kk::BaseMapConfig> baseMapConfig) {
@@ -397,6 +420,7 @@ void SeatCanvasCoreRenderer::start() {
                 PROFILE_STAGE_START(group, gestureAnimator, "Handle Gesture Animator");
                 if (_zoomPanController->handleDisplayLinkFire()) {
                     updateZoomPanControllerState();
+                    notifyViewportDidEndDeceleratingIfNeeded();
                 }
                 PROFILE_STAGE_END(group, gestureAnimator);
             }
@@ -429,6 +453,8 @@ void SeatCanvasCoreRenderer::stop() {
         _animator->cancelAll();
     }
     _minimapAnimationId = 0;
+    _panAnimationActive = false;
+    _scrollingAnimationActive = false;
     if (_displayLink) {
         _displayLink->stop();
     }
@@ -757,7 +783,7 @@ void SeatCanvasCoreRenderer::zoomToRect(const tgfx::Rect &rect, bool animated, f
     tgfx::Point targetOffset{targetOffsetX, targetOffsetY};
     _zoomPanController->setContentOffset(targetOffset);
 
-    updateZoomPanControllerState();
+    updateZoomPanControllerState(false);
 
     // 获取最终的有效偏移量（可能被 clamp 了）
     tgfx::Point finalOffset = _zoomPanController->getContentOffset();
@@ -773,7 +799,7 @@ void SeatCanvasCoreRenderer::zoomToRect(const tgfx::Rect &rect, bool animated, f
     // 恢复当前状态，准备动画
     _zoomPanController->setZoomScale(currentZoomScale);
     _zoomPanController->setContentOffset(currentOffset);
-    updateZoomPanControllerState();
+    updateZoomPanControllerState(false);
 
     // 使用 Animator 进行平滑动画
     kk::animation::AnimationOptions options{};
@@ -810,9 +836,11 @@ void SeatCanvasCoreRenderer::zoomToRect(const tgfx::Rect &rect, bool animated, f
             _zoomPanController->setZoomScale(targetZoomScale);
             _zoomPanController->setContentOffset(finalOffset);
             updateZoomPanControllerState();
+            notifyViewportDidEndScrollingAnimation();
         }
     };
 
+    beginViewportScrollingAnimation();
     _animator->play(options, currentMediaTime, std::move(update), std::move(completion));
 }
 
@@ -954,13 +982,64 @@ void SeatCanvasCoreRenderer::updateMaxMinZoomScalesForCurrentBounds() {
     updateZoomPanControllerState();
 }
 
-void SeatCanvasCoreRenderer::updateZoomPanControllerState() {
+void SeatCanvasCoreRenderer::updateZoomPanControllerState(bool notifyViewport) {
+    auto previousZoom = _state->getZoomScale();
+    auto previousOffset = _state->getContentOffset();
     auto currentZoom = _zoomPanController->getZoomScale();
     auto currentOffset = _zoomPanController->getContentOffset();
     auto changed = _state->updateZoomAndOffset(currentZoom, currentOffset);
     if (changed) {
         invalidateContent();
     }
+    if (!changed || !notifyViewport || !_delegate) {
+        return;
+    }
+
+    auto event = makeViewportEvent();
+    bool offsetChanged = std::abs(previousOffset.x - currentOffset.x) > FLT_EPSILON || std::abs(previousOffset.y - currentOffset.y) > FLT_EPSILON;
+    bool zoomChanged = std::abs(previousZoom - currentZoom) > FLT_EPSILON;
+    if (offsetChanged) {
+        _delegate->viewportDidScroll(_coreID, event);
+    }
+    if (zoomChanged) {
+        _delegate->viewportDidZoom(_coreID, event);
+    }
+}
+
+SeatCanvasViewportEvent SeatCanvasCoreRenderer::makeViewportEvent() const {
+    SeatCanvasViewportEvent event = {};
+    if (_state) {
+        event.zoomScale = _state->getZoomScale();
+        event.contentOffset = _state->getContentOffset();
+        event.visibleOriginalRect = _state->getVisibleOriginalRect();
+    }
+    return event;
+}
+
+void SeatCanvasCoreRenderer::notifyViewportDidEndDeceleratingIfNeeded() {
+    if (!_panAnimationActive || _zoomPanController->hasPendingAnimation()) {
+        return;
+    }
+
+    _panAnimationActive = false;
+    if (_delegate) {
+        _delegate->viewportDidEndDecelerating(_coreID, makeViewportEvent());
+    }
+}
+
+void SeatCanvasCoreRenderer::notifyViewportDidEndScrollingAnimation() {
+    if (!_scrollingAnimationActive) {
+        return;
+    }
+
+    _scrollingAnimationActive = false;
+    if (_delegate) {
+        _delegate->viewportDidEndScrollingAnimation(_coreID, makeViewportEvent());
+    }
+}
+
+void SeatCanvasCoreRenderer::beginViewportScrollingAnimation() {
+    _scrollingAnimationActive = true;
 }
 
 bool SeatCanvasCoreRenderer::shouldAutoDrawSeat() const {
@@ -1241,9 +1320,11 @@ void SeatCanvasCoreRenderer::handleZoomBack() {
             _zoomPanController->setZoomScale(targetZoom);
             _zoomPanController->setContentOffset(targetOffset);
             updateZoomPanControllerState();
+            notifyViewportDidEndScrollingAnimation();
         }
     };
 
+    beginViewportScrollingAnimation();
     _animator->play(options, startTime, std::move(update), std::move(completion));
 }
 
@@ -1597,9 +1678,11 @@ void SeatCanvasCoreRenderer::scrollViewWithZone(const std::shared_ptr<ZoneMeshIn
             _zoomPanController->setZoomScale(targetZoomScale);
             _zoomPanController->setContentOffset(finalOffset);
             updateZoomPanControllerState();
+            notifyViewportDidEndScrollingAnimation();
         }
     };
 
+    beginViewportScrollingAnimation();
     _animator->play(options, startTime, std::move(update), std::move(completion));
 }
 
@@ -1715,9 +1798,11 @@ void SeatCanvasCoreRenderer::zoomToPoint(const tgfx::Point &location, float scal
         _disableAutoDrawSeat = false;
         if (finished && _zoomPanController) {
             updateZoomPanControllerState();
+            notifyViewportDidEndScrollingAnimation();
         }
     };
 
+    beginViewportScrollingAnimation();
     _animator->play(options, startTime, std::move(update), std::move(completion));
 }
 

@@ -24,7 +24,6 @@
 4. **No Backward Compatibility**: When refactoring, review and clean up redundant code without backward compatibility hacks
 5. **Variable Init**: ALL variables must be initialized at declaration (even `= {}`), smart pointers initialized with `nullptr`
 6. **Function Order**: Implementation order in .cpp files should match header declaration order whenever possible
-7. **Language**: Code and comments in English
 
 ## Project Overview
 

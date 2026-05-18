@@ -16,6 +16,7 @@ import com.libseatcanvas.SeatCanvasRendererDelegate
 import com.libseatcanvas.SeatData
 import com.libseatcanvas.SeatZoneColor
 import com.libseatcanvas.SVGBaseMapParseConfig
+import com.libseatcanvas.SeatCanvasViewport
 import com.libseatcanvas.style.SeatStyleConfigBuilder
 import com.seatcanvas.sample.databinding.FragmentSecondBinding
 
@@ -49,11 +50,17 @@ class SecondFragment : Fragment() {
         setupStyleSwitches()
 
         binding.seatCanvasView.setDelegate(object : SeatCanvasRendererDelegate {
+            /**
+             * 根据区域与座位返回样式 ID；返回 null 表示不绘制该座位。
+             */
             override fun styleIdForSeat(zoneId: String, seatId: String): String? {
                 val status = seatStatusMap[seatId] ?: return null
                 return styleId(status, selectedSeatIds.contains(seatId))
             }
 
+            /**
+             * 点击座位；若业务状态发生变化且需要刷新视图，返回 true。
+             */
             override fun didTapSeat(zoneId: String, seatId: String): Boolean {
                 if (selectedSeatIds.contains(seatId)) {
                     selectedSeatIds.remove(seatId)
@@ -64,8 +71,76 @@ class SecondFragment : Fragment() {
                 return true
             }
 
+            /**
+             * 点击区域（非座位区域）。
+             */
             override fun didTapZone(zoneId: String) {
                 Log.d("SecondFragment", "didTapZone: zoneId=$zoneId")
+            }
+
+            /**
+             * 即将开始拖动视图。
+             * @param viewport 当前视图状态。
+             */
+            override fun willBeginDragging(viewport: SeatCanvasViewport) {
+                Log.d("SecondFragment", "willBeginDragging: viewport=$viewport")
+            }
+
+            /**
+             * 视图发生滚动。
+             * @param viewport 当前视图状态。
+             */
+            override fun didScroll(viewport: SeatCanvasViewport) {
+                Log.d("SecondFragment", "didScroll: viewport=$viewport")
+            }
+
+            /**
+             * 拖动手势结束。
+             * @param viewport 当前视图状态。
+             * @param decelerate 是否会继续惯性滚动或回弹动画。
+             */
+            override fun didEndDragging(viewport: SeatCanvasViewport, decelerate: Boolean) {
+                Log.d("SecondFragment", "didEndDragging: viewport=$viewport decelerate=$decelerate")
+            }
+
+            /**
+             * 惯性滚动或回弹动画结束。
+             * @param viewport 当前视图状态。
+             */
+            override fun didEndDecelerating(viewport: SeatCanvasViewport) {
+                Log.d("SecondFragment", "didEndDecelerating: viewport=$viewport")
+            }
+
+            /**
+             * 即将开始缩放视图。
+             * @param viewport 当前视图状态。
+             */
+            override fun willBeginZooming(viewport: SeatCanvasViewport) {
+                Log.d("SecondFragment", "willBeginZooming: viewport=$viewport")
+            }
+
+            /**
+             * 视图发生缩放。
+             * @param viewport 当前视图状态。
+             */
+            override fun didZoom(viewport: SeatCanvasViewport) {
+                Log.d("SecondFragment", "didZoom: viewport=$viewport")
+            }
+
+            /**
+             * 缩放手势结束。
+             * @param viewport 当前视图状态。
+             */
+            override fun didEndZooming(viewport: SeatCanvasViewport) {
+                Log.d("SecondFragment", "didEndZooming: viewport=$viewport")
+            }
+
+            /**
+             * 程序触发的滚动或缩放动画结束。
+             * @param viewport 当前视图状态。
+             */
+            override fun didEndScrollingAnimation(viewport: SeatCanvasViewport) {
+                Log.d("SecondFragment", "didEndScrollingAnimation: viewport=$viewport")
             }
         })
 

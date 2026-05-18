@@ -41,4 +41,36 @@ bool SwiftSeatCanvasCoreRendererDelegate::didTapSeat(uint32_t coreID, const std:
     return ::switf_bridge_didTapSeat(coreID, zoneId.c_str(), seatId.c_str());
 }
 
+void SwiftSeatCanvasCoreRendererDelegate::viewportWillBeginDragging(uint32_t coreID, const kk::renderer::SeatCanvasViewportEvent &event) {
+    ::switf_bridge_viewportWillBeginDragging(coreID, event.zoomScale, event.contentOffset.x, event.contentOffset.y, event.visibleOriginalRect.x(), event.visibleOriginalRect.y(), event.visibleOriginalRect.width(), event.visibleOriginalRect.height());
+}
+
+void SwiftSeatCanvasCoreRendererDelegate::viewportDidScroll(uint32_t coreID, const kk::renderer::SeatCanvasViewportEvent &event) {
+    ::switf_bridge_viewportDidScroll(coreID, event.zoomScale, event.contentOffset.x, event.contentOffset.y, event.visibleOriginalRect.x(), event.visibleOriginalRect.y(), event.visibleOriginalRect.width(), event.visibleOriginalRect.height());
+}
+
+void SwiftSeatCanvasCoreRendererDelegate::viewportDidEndDragging(uint32_t coreID, const kk::renderer::SeatCanvasViewportEvent &event, bool willDecelerate) {
+    ::switf_bridge_viewportDidEndDragging(coreID, event.zoomScale, event.contentOffset.x, event.contentOffset.y, event.visibleOriginalRect.x(), event.visibleOriginalRect.y(), event.visibleOriginalRect.width(), event.visibleOriginalRect.height(), willDecelerate);
+}
+
+void SwiftSeatCanvasCoreRendererDelegate::viewportDidEndDecelerating(uint32_t coreID, const kk::renderer::SeatCanvasViewportEvent &event) {
+    ::switf_bridge_viewportDidEndDecelerating(coreID, event.zoomScale, event.contentOffset.x, event.contentOffset.y, event.visibleOriginalRect.x(), event.visibleOriginalRect.y(), event.visibleOriginalRect.width(), event.visibleOriginalRect.height());
+}
+
+void SwiftSeatCanvasCoreRendererDelegate::viewportWillBeginZooming(uint32_t coreID, const kk::renderer::SeatCanvasViewportEvent &event) {
+    ::switf_bridge_viewportWillBeginZooming(coreID, event.zoomScale, event.contentOffset.x, event.contentOffset.y, event.visibleOriginalRect.x(), event.visibleOriginalRect.y(), event.visibleOriginalRect.width(), event.visibleOriginalRect.height());
+}
+
+void SwiftSeatCanvasCoreRendererDelegate::viewportDidZoom(uint32_t coreID, const kk::renderer::SeatCanvasViewportEvent &event) {
+    ::switf_bridge_viewportDidZoom(coreID, event.zoomScale, event.contentOffset.x, event.contentOffset.y, event.visibleOriginalRect.x(), event.visibleOriginalRect.y(), event.visibleOriginalRect.width(), event.visibleOriginalRect.height());
+}
+
+void SwiftSeatCanvasCoreRendererDelegate::viewportDidEndZooming(uint32_t coreID, const kk::renderer::SeatCanvasViewportEvent &event) {
+    ::switf_bridge_viewportDidEndZooming(coreID, event.zoomScale, event.contentOffset.x, event.contentOffset.y, event.visibleOriginalRect.x(), event.visibleOriginalRect.y(), event.visibleOriginalRect.width(), event.visibleOriginalRect.height());
+}
+
+void SwiftSeatCanvasCoreRendererDelegate::viewportDidEndScrollingAnimation(uint32_t coreID, const kk::renderer::SeatCanvasViewportEvent &event) {
+    ::switf_bridge_viewportDidEndScrollingAnimation(coreID, event.zoomScale, event.contentOffset.x, event.contentOffset.y, event.visibleOriginalRect.x(), event.visibleOriginalRect.y(), event.visibleOriginalRect.width(), event.visibleOriginalRect.height());
+}
+
 };  // namespace kk::bridge

@@ -3,7 +3,7 @@ import { resourceManager } from '@kit.LocalizationKit';
 import { display } from '@kit.ArkUI';
 import { SeatCanvasInit } from '../utils/SeatCanvasInit';
 import { BaseMapFormat } from '../utils/BaseMapFormat';
-import { SeatCanvasRendererDelegate } from './SeatCanvasRendererDelegate';
+import { SeatCanvasRendererDelegate, SeatCanvasViewport } from './SeatCanvasRendererDelegate';
 import { BaseMapParseConfig } from './BaseMapParseConfig';
 import { SeatData } from './SeatData';
 import { SeatZoneColor } from './SeatZoneColor';
@@ -56,11 +56,27 @@ export class SeatCanvasViewController {
       } else {
         this.jView.setDidTapZoneCallback(null);
       }
+      this.jView.setViewportWillBeginDraggingCallback(delegate.willBeginDragging ? this.onViewportWillBeginDragging : null);
+      this.jView.setViewportDidScrollCallback(delegate.didScroll ? this.onViewportDidScroll : null);
+      this.jView.setViewportDidEndDraggingCallback(delegate.didEndDragging ? this.onViewportDidEndDragging : null);
+      this.jView.setViewportDidEndDeceleratingCallback(delegate.didEndDecelerating ? this.onViewportDidEndDecelerating : null);
+      this.jView.setViewportWillBeginZoomingCallback(delegate.willBeginZooming ? this.onViewportWillBeginZooming : null);
+      this.jView.setViewportDidZoomCallback(delegate.didZoom ? this.onViewportDidZoom : null);
+      this.jView.setViewportDidEndZoomingCallback(delegate.didEndZooming ? this.onViewportDidEndZooming : null);
+      this.jView.setViewportDidEndScrollingAnimationCallback(delegate.didEndScrollingAnimation ? this.onViewportDidEndScrollingAnimation : null);
     } else {
       this.delegate = null;
       this.jView.setStyleIdForSeatCallback(null);
       this.jView.setDidTapSeatCallback(null);
       this.jView.setDidTapZoneCallback(null);
+      this.jView.setViewportWillBeginDraggingCallback(null);
+      this.jView.setViewportDidScrollCallback(null);
+      this.jView.setViewportDidEndDraggingCallback(null);
+      this.jView.setViewportDidEndDeceleratingCallback(null);
+      this.jView.setViewportWillBeginZoomingCallback(null);
+      this.jView.setViewportDidZoomCallback(null);
+      this.jView.setViewportDidEndZoomingCallback(null);
+      this.jView.setViewportDidEndScrollingAnimationCallback(null);
     }
   }
 
@@ -249,6 +265,62 @@ export class SeatCanvasViewController {
     const delegate = this.delegate?.deref();
     if (delegate && delegate.didTapZone) {
       delegate.didTapZone(zoneId);
+    }
+  }
+
+  readonly onViewportWillBeginDragging = (viewport: SeatCanvasViewport) => {
+    const delegate = this.delegate?.deref();
+    if (delegate && delegate.willBeginDragging) {
+      delegate.willBeginDragging(viewport);
+    }
+  }
+
+  readonly onViewportDidScroll = (viewport: SeatCanvasViewport) => {
+    const delegate = this.delegate?.deref();
+    if (delegate && delegate.didScroll) {
+      delegate.didScroll(viewport);
+    }
+  }
+
+  readonly onViewportDidEndDragging = (viewport: SeatCanvasViewport, willDecelerate: boolean) => {
+    const delegate = this.delegate?.deref();
+    if (delegate && delegate.didEndDragging) {
+      delegate.didEndDragging(viewport, willDecelerate);
+    }
+  }
+
+  readonly onViewportDidEndDecelerating = (viewport: SeatCanvasViewport) => {
+    const delegate = this.delegate?.deref();
+    if (delegate && delegate.didEndDecelerating) {
+      delegate.didEndDecelerating(viewport);
+    }
+  }
+
+  readonly onViewportWillBeginZooming = (viewport: SeatCanvasViewport) => {
+    const delegate = this.delegate?.deref();
+    if (delegate && delegate.willBeginZooming) {
+      delegate.willBeginZooming(viewport);
+    }
+  }
+
+  readonly onViewportDidZoom = (viewport: SeatCanvasViewport) => {
+    const delegate = this.delegate?.deref();
+    if (delegate && delegate.didZoom) {
+      delegate.didZoom(viewport);
+    }
+  }
+
+  readonly onViewportDidEndZooming = (viewport: SeatCanvasViewport) => {
+    const delegate = this.delegate?.deref();
+    if (delegate && delegate.didEndZooming) {
+      delegate.didEndZooming(viewport);
+    }
+  }
+
+  readonly onViewportDidEndScrollingAnimation = (viewport: SeatCanvasViewport) => {
+    const delegate = this.delegate?.deref();
+    if (delegate && delegate.didEndScrollingAnimation) {
+      delegate.didEndScrollingAnimation(viewport);
     }
   }
 }
