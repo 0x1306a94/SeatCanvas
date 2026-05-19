@@ -810,6 +810,55 @@ static napi_value UpdateSeatZoneAlternateColors(napi_env env, napi_callback_info
     return nullptr;
 }
 
+static napi_value UpdateMiniMapZoneAlternateColors(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+
+    napi_value jsView = nullptr;
+    size_t argc = 1;
+    napi_value args[1] = {0};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr || argc == 0) {
+        return nullptr;
+    }
+
+    auto renderer = view->internalRenderer();
+    if (renderer == nullptr) {
+        return nullptr;
+    }
+
+    bool isArray = false;
+    napi_is_array(env, args[0], &isArray);
+    if (!isArray) {
+        return nullptr;
+    }
+
+    uint32_t length = 0;
+    napi_get_array_length(env, args[0], &length);
+
+    std::unordered_map<std::string, tgfx::Color> cppColors{};
+    cppColors.reserve(static_cast<size_t>(length));
+
+    for (uint32_t i = 0; i < length; ++i) {
+        napi_value element;
+        napi_get_element(env, args[0], i, &element);
+
+        auto zoneId = ReadString(env, element, "zoneId");
+        if (zoneId.empty()) {
+            continue;
+        }
+        auto color = ReadOptionalColorFromARGBHex(env, element, "alternateColor");
+        if (!color) {
+            continue;
+        }
+        cppColors.emplace(zoneId, color.value());
+    }
+
+    renderer->updateMiniMapZoneAlternateColors(cppColors);
+    return nullptr;
+}
+
 static napi_value UpdateSeats(napi_env env, napi_callback_info info) {
     kk::js::NapiEnvHolder::setEnv(env);
 
@@ -935,6 +984,7 @@ bool JRendererCore::Init(napi_env env, napi_value exports) {
         JS_DEFAULT_METHOD_ENTRY(setViewportDidEndZoomingCallback, SetViewportDidEndZoomingCallback),
         JS_DEFAULT_METHOD_ENTRY(setViewportDidEndScrollingAnimationCallback, SetViewportDidEndScrollingAnimationCallback),
         JS_DEFAULT_METHOD_ENTRY(updateSeatZoneAlternateColors, UpdateSeatZoneAlternateColors),
+        JS_DEFAULT_METHOD_ENTRY(updateMiniMapZoneAlternateColors, UpdateMiniMapZoneAlternateColors),
         JS_DEFAULT_METHOD_ENTRY(updateSeats, UpdateSeats),
         JS_DEFAULT_METHOD_ENTRY(clearSeatData, ClearSeatData),
     };

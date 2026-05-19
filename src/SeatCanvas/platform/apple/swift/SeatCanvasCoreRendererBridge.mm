@@ -196,6 +196,10 @@ bool SeatCanvasCoreRendererLoadBaseMap(CPPObject *_Nonnull cppObject, void *_Nul
 
 void SeatCanvasCoreRendererSetSeatZoneAlternateColors(CPPObject *_Nonnull cppObject, NSDictionary<NSString *, UIColor *> *_Nullable colors) {
     GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
+    if (colors == nil) {
+        renderer->updateSeatZoneAlternateColors({});
+        return;
+    }
     std::unordered_map<std::string, tgfx::Color> cppColors{};
     cppColors.reserve(colors.count);
     for (NSString *zoneId in colors.keyEnumerator) {
@@ -207,6 +211,25 @@ void SeatCanvasCoreRendererSetSeatZoneAlternateColors(CPPObject *_Nonnull cppObj
     }
 
     renderer->updateSeatZoneAlternateColors(cppColors);
+}
+
+void SeatCanvasCoreRendererSetMiniMapZoneAlternateColors(CPPObject *_Nonnull cppObject, NSDictionary<NSString *, UIColor *> *_Nullable colors) {
+    GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
+    if (colors == nil) {
+        renderer->updateMiniMapZoneAlternateColors({});
+        return;
+    }
+    std::unordered_map<std::string, tgfx::Color> cppColors{};
+    cppColors.reserve(colors.count);
+    for (NSString *zoneId in colors.keyEnumerator) {
+        UIColor *color = colors[zoneId];
+        if (!color) {
+            continue;
+        }
+        cppColors.emplace(std::string(zoneId.UTF8String), UIColorToTGFX(color));
+    }
+
+    renderer->updateMiniMapZoneAlternateColors(cppColors);
 }
 
 void SeatCanvasCoreRendererSetSeatDatas(CPPObject *_Nonnull cppObject, const std::string &zoneId, CPPObject *_Nullable seatBuilder) {

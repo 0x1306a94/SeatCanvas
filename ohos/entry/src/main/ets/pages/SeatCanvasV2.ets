@@ -103,6 +103,7 @@ export struct SeatCanvasV2 {
     }
     const colors = this.loadZoneColors();
     this.controller.updateSeatZoneAlternateColors(colors);
+    this.controller.updateMiniMapZoneAlternateColors(colors);
 
     this.seatStatusMap.clear();
     this.selectedSeatIds.clear();

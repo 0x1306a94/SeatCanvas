@@ -157,6 +157,7 @@ class SecondFragment : Fragment() {
 
         val colors = loadZoneColors(baseMapInfo)
         binding.seatCanvasView.updateSeatZoneAlternateColors(colors)
+        binding.seatCanvasView.updateMiniMapZoneAlternateColors(colors)
 
         val seatDatas = loadSeatDatas(baseMapInfo)
         for ((zoneId, seats) in seatDatas) {

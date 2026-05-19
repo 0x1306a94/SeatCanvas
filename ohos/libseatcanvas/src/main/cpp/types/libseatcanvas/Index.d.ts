@@ -207,6 +207,8 @@ export declare namespace seatcanvas {
     setViewportDidEndScrollingAnimationCallback(callback: ((viewport: SeatCanvasViewport) => void) | null);
 
     updateSeatZoneAlternateColors(colors: SeatZoneColor[]);
+    
+    updateMiniMapZoneAlternateColors(colors: SeatZoneColor[]);
 
     updateSeats(zoneId: string, seats: SeatData[]);
 

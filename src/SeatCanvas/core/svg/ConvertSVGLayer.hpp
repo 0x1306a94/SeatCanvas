@@ -9,6 +9,8 @@
 #define ConvertSVGLayer_hpp
 
 #include <memory>
+#include <unordered_map>
+#include <vector>
 
 #include <tgfx/core/Size.h>
 #include <tgfx/svg/SVGLengthContext.h>
@@ -37,6 +39,7 @@ namespace kk::svg {
 
 struct ConvertSVGLayerOptions {
     bool supportText{false};
+    std::vector<std::string> zoneIdAttributeNames = {};
     static const ConvertSVGLayerOptions &Default() {
         static const ConvertSVGLayerOptions options{};
         return options;
@@ -55,15 +58,15 @@ struct ConvertSVGLayerResult {
 /// 将 SVGDOM 转为 Layer 树（用于 minimap）
 /// @param dom SVG DOM
 /// @param options 转换选项
-std::unique_ptr<ConvertSVGLayerResult> convertSVGDomToLayer(std::shared_ptr<tgfx::SVGDOM> dom, const ConvertSVGLayerOptions &options = ConvertSVGLayerOptions::Default());
+std::unique_ptr<ConvertSVGLayerResult> convertSVGDomToLayer(std::shared_ptr<tgfx::SVGDOM> dom, std::unordered_map<std::string, std::shared_ptr<tgfx::Layer>> *layerMap = nullptr, const ConvertSVGLayerOptions &options = ConvertSVGLayerOptions::Default());
 
 /// 将 SVGDOM 中的 Text 节点转为 Layer 树
 /// @param dom SVG DOM
 std::shared_ptr<tgfx::Layer> convertSVGDomTextNodeToLayer(std::shared_ptr<tgfx::SVGDOM> dom);
 
 // 内部函数
-std::shared_ptr<tgfx::Layer> convertSVGNodeToLayer(tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext, const ConvertSVGLayerOptions &options);
-std::shared_ptr<tgfx::Layer> convertGroup(const ConvertSVGLayerOptions &options, tgfx::SVGGroup *node, const tgfx::SVGLengthContext &lengthContext);
+std::shared_ptr<tgfx::Layer> convertSVGNodeToLayer(tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext, const ConvertSVGLayerOptions &options, std::unordered_map<std::string, std::shared_ptr<tgfx::Layer>> *layerMap = nullptr);
+std::shared_ptr<tgfx::Layer> convertGroup(const ConvertSVGLayerOptions &options, tgfx::SVGGroup *node, const tgfx::SVGLengthContext &lengthContext, std::unordered_map<std::string, std::shared_ptr<tgfx::Layer>> *layerMap = nullptr);
 std::shared_ptr<kk::layer::SeatZoneLayer> convertLine(tgfx::SVGLine *node, const tgfx::SVGLengthContext &lengthContext);
 std::shared_ptr<kk::layer::SeatZoneLayer> convertCircle(tgfx::SVGCircle *node, const tgfx::SVGLengthContext &lengthContext);
 std::shared_ptr<kk::layer::SeatZoneLayer> convertEllipse(tgfx::SVGEllipse *node, const tgfx::SVGLengthContext &lengthContext);

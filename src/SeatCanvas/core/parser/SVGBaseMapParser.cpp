@@ -44,8 +44,11 @@ std::unique_ptr<BaseMapParseResult> SVGBaseMapParser::parse(std::shared_ptr<tgfx
     // 解析 Text Layer
     auto textLayer = kk::svg::convertSVGDomTextNodeToLayer(dom);
 
+    auto options = svg::ConvertSVGLayerOptions::Default();
+    options.zoneIdAttributeNames = parseConfig.zoneIdAttributeNames;
+    std::unordered_map<std::string, std::shared_ptr<tgfx::Layer>> layerMap;
     // Minimap 需要完整的 Layer 树
-    auto minimapResult = kk::svg::convertSVGDomToLayer(dom);
+    auto minimapResult = kk::svg::convertSVGDomToLayer(dom, &layerMap, options);
     if (!minimapResult) {
         return nullptr;
     }
@@ -56,6 +59,7 @@ std::unique_ptr<BaseMapParseResult> SVGBaseMapParser::parse(std::shared_ptr<tgfx
     result->meshBuilder = std::move(meshResult->meshBuilder);
     result->textLayer = std::move(textLayer);
     result->miniLayer = std::move(minimapResult->layer);
+    result->miniLayerMap = std::move(layerMap);
 
     return result;
 }

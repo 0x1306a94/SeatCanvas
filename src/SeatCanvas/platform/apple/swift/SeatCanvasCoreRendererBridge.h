@@ -34,6 +34,7 @@ void SeatCanvasCoreRendererPrewarmShaderCompiler(void);
 /// - Parameter view: 负责渲染输出的 MTKView 目标
 /// - Returns: C++渲染器实例
 CPPObject *_Nonnull CreateSeatCanvasCoreRenderer(MTKView *_Nullable view);
+
 /// 获取C++渲染器ID
 /// - Parameter cppObject: C++渲染器实例
 /// - Returns: 渲染器ID
@@ -74,6 +75,12 @@ bool SeatCanvasCoreRendererLoadBaseMap(CPPObject *_Nonnull cppObject, void *_Nul
 ///   - cppObject: C++渲染器实例
 ///   - colors: 颜色表
 void SeatCanvasCoreRendererSetSeatZoneAlternateColors(CPPObject *_Nonnull cppObject, NSDictionary<NSString *, UIColor *> *_Nullable colors);
+
+/// 设置座位小地图区域颜色表
+/// - Parameters:
+///   - cppObject: C++渲染器实例
+///   - colors: 颜色表
+void SeatCanvasCoreRendererSetMiniMapZoneAlternateColors(CPPObject *_Nonnull cppObject, NSDictionary<NSString *, UIColor *> *_Nullable colors);
 
 /// 设置渲染器座位数据
 /// - Parameters:

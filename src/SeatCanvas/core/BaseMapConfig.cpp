@@ -14,10 +14,12 @@ namespace kk {
 BaseMapConfig::BaseMapConfig(std::shared_ptr<kk::renderer::BaseMapMeshBuilder> meshBuilder,
                              std::shared_ptr<tgfx::Layer> textLayer,
                              std::shared_ptr<kk::layer::BaseMapRootLayer> minimapLayer,
+                             std::unordered_map<std::string, std::shared_ptr<tgfx::Layer>> miniLayerMap,
                              const tgfx::Size &baseMapSize)
     : _meshBuilder(std::move(meshBuilder))
     , _textLayer(std::move(textLayer))
     , _minimapLayer(std::move(minimapLayer))
+    , _miniLayerMap(std::move(miniLayerMap))
     , _baseMapSize(baseMapSize) {
 }
 
@@ -27,6 +29,10 @@ std::shared_ptr<tgfx::Layer> BaseMapConfig::textLayer() const {
 
 std::shared_ptr<kk::layer::BaseMapRootLayer> BaseMapConfig::minimapLayer() const {
     return _minimapLayer;
+}
+
+const std::unordered_map<std::string, std::shared_ptr<tgfx::Layer>> &BaseMapConfig::miniLayerMap() const {
+    return _miniLayerMap;
 }
 
 const tgfx::Size &BaseMapConfig::baseMapSize() const {

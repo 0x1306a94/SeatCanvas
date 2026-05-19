@@ -9,7 +9,6 @@
 #define SwiftBridge_h
 
 #import <CoreGraphics/CGGeometry.h>
-#import <QuartzCore/CAEAGLLayer.h>
 #import <UIKit/UIColor.h>
 #import <UIKit/UIImage.h>
 #import <string>
