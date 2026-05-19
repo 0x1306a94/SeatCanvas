@@ -326,6 +326,9 @@ controller.clearSeatData();
 
 Web platform support is under development and will be implemented via WebAssembly.
 
+[![SeatCanvas Demo](https://img.youtube.com/vi/3RaeqIqPPs8/0.jpg)](https://www.youtube.com/watch?v=3RaeqIqPPs8)
+
+
 ## License
 
 See the [LICENSE](LICENSE) file for details.
