@@ -1,6 +1,6 @@
 export interface MockSeatData {
   seatId: string;
-  status: number;
+  pricecode: string;
   x: number;
   y: number;
   rotation?: number;

@@ -44,6 +44,11 @@ extension Bundle {
         return URL(fileURLWithPath: path)
     }
 
+    func priceDataURL(scope: ResourceScope, name: String) -> URL {
+        let path = "\(bundlePath)/\(scope.rawValue)/zonedata/\(name.replacingOccurrences(of: ".svg", with: "_pricecode.json"))"
+        return URL(fileURLWithPath: path)
+    }
+
     func seatDataURL(scope: ResourceScope, name: String) -> URL {
         let path = "\(bundlePath)/\(scope.rawValue)/seatdata/\(name.replacingOccurrences(of: ".svg", with: ".json"))"
         return URL(fileURLWithPath: path)

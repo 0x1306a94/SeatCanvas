@@ -44,6 +44,11 @@ object ResourceExtensions {
         return "SeatCanvasSampleAssets/${scope.value}/zonedata/$jsonName"
     }
 
+    fun priceDataPath(context: Context, scope: ResourceScope, name: String): String {
+        val jsonName = name.replace(".svg", "_pricecode.json")
+        return "SeatCanvasSampleAssets/${scope.value}/zonedata/$jsonName"
+    }
+
     fun seatDataPath(context: Context, scope: ResourceScope, name: String): String {
         val jsonName = name.replace(".svg", ".json")
         return "SeatCanvasSampleAssets/${scope.value}/seatdata/$jsonName"

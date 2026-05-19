@@ -19,6 +19,24 @@ object ColorExtensions {
         return String.format("#%02X%02X%02X%02X", a, r, g, b)
     }
 
+    fun rgbHexFromArgb(argbHex: String): String? {
+        var hexString = argbHex.trim()
+        if (hexString.startsWith("#")) {
+            hexString = hexString.substring(1)
+        }
+        if (hexString.length != 8) {
+            return null
+        }
+        return try {
+            val r = hexString.substring(2, 4)
+            val g = hexString.substring(4, 6)
+            val b = hexString.substring(6, 8)
+            "#${r}${g}${b}".uppercase()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     fun colorFromArgbHex(argbHex: String): Int? {
         var hexString = argbHex.trim()
         if (hexString.startsWith("#")) {
