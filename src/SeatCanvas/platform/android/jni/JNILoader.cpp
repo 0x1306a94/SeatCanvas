@@ -205,6 +205,35 @@ Java_com_libseatcanvas_SeatCanvasView_nativeUpdateSeatZoneAlternateColors(JNIEnv
 }
 
 JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeUpdateMiniMapZoneAlternateColors(JNIEnv *env, jobject thiz,
+                                                                             jobjectArray jcolors) {
+    GetCPPObjectOrReturn(env, thiz, renderer);
+    if (jcolors == nullptr) {
+        renderer->updateMiniMapZoneAlternateColors({});
+        return;
+    }
+
+    jsize length = env->GetArrayLength(jcolors);
+    std::unordered_map<std::string, tgfx::Color> cppColors{};
+    cppColors.reserve(length);
+
+    for (jsize i = 0; i < length; ++i) {
+        jobject element = env->GetObjectArrayElement(jcolors, i);
+        if (element == nullptr) {
+            continue;
+        }
+        auto zoneId = kk::jni::JSeatZoneColor::ReadZoneIdFromJava(env, element);
+        auto color = kk::jni::JSeatZoneColor::ReadAlternateColorFromJava(env, element);
+        env->DeleteLocalRef(element);
+        if (zoneId && color) {
+            cppColors.emplace(zoneId.value(), color.value());
+        }
+    }
+
+    renderer->updateMiniMapZoneAlternateColors(cppColors);
+}
+
+JNIEXPORT void JNICALL
 Java_com_libseatcanvas_SeatCanvasView_nativeUpdateSeats(JNIEnv *env, jobject thiz,
                                                         jstring jzoneId, jobjectArray jseats) {
     GetCPPObjectOrReturn(env, thiz, renderer);

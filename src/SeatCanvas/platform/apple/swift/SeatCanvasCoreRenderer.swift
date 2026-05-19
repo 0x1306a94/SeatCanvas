@@ -238,6 +238,13 @@ extension SeatCanvasCoreRenderer {
         kk.bridge.SeatCanvasCoreRendererSetSeatZoneAlternateColors(cppObject, colors)
     }
 
+    func updateMiniMapZoneAlternateColors(colors: [String: UIColor]?) {
+        guard let cppObject else {
+            return
+        }
+        kk.bridge.SeatCanvasCoreRendererSetMiniMapZoneAlternateColors(cppObject, colors)
+    }
+
     func updateSeatDatas(zoneId: String, seats: [SeatData]) {
         guard let cppObject else {
             return

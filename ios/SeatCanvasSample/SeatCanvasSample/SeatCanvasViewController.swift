@@ -134,6 +134,7 @@ class SeatCanvasViewController: UIViewController {
         let zoneDatas = loadZoneDatas()
         let zoneColors = zoneDatas.reduce(into: [String: UIColor]()) { $0[$1.zoneId] = $1.alternateColor }
         seatCanvasView.updateSeatZoneAlternateColors(colors: zoneColors)
+        seatCanvasView.updateMiniMapZoneAlternateColors(colors: zoneColors)
 
         let seats = loadSeatDatas()
         for zoneSeat in seats {

@@ -9,6 +9,8 @@
 #define BaseMapParseResult_hpp
 
 #include <memory>
+#include <string>
+#include <unordered_map>
 
 #include <tgfx/core/Size.h>
 
@@ -30,16 +32,17 @@ namespace kk::parser {
 /// 所有格式的解析器都应返回此结构
 struct BaseMapParseResult {
     /// 底图原始尺寸
-    tgfx::Size size;
+    tgfx::Size size = {};
 
     /// 底图网格构建器（包含所有 mesh 数据、区域信息、Path）
-    std::shared_ptr<kk::renderer::BaseMapMeshBuilder> meshBuilder;
+    std::shared_ptr<kk::renderer::BaseMapMeshBuilder> meshBuilder = {nullptr};
 
     /// 文本图层（可选，某些格式可能没有）
-    std::shared_ptr<tgfx::Layer> textLayer;
+    std::shared_ptr<tgfx::Layer> textLayer = {nullptr};
 
     /// 小地图图层（可选，某些格式可能没有）
-    std::shared_ptr<kk::layer::BaseMapRootLayer> miniLayer;
+    std::shared_ptr<kk::layer::BaseMapRootLayer> miniLayer = {nullptr};
+    std::unordered_map<std::string, std::shared_ptr<tgfx::Layer>> miniLayerMap = {};
 
     BaseMapParseResult()
         : size(tgfx::Size::MakeEmpty())

@@ -230,6 +230,14 @@ export class SeatCanvasViewController {
   }
 
   /**
+   * 更新小地图区域颜色数据
+   * @param colors 区域颜色表
+   */
+  updateMiniMapZoneAlternateColors(colors: SeatZoneColor[]) {
+    this.jView.updateMiniMapZoneAlternateColors(colors);
+  }
+
+  /**
    * 更新指定区域下的座位数据
    * @param zoneId 区域 ID
    * @param seats 座位数据列表

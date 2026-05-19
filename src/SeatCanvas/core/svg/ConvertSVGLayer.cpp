@@ -155,7 +155,7 @@ static void collectTextRuns(tgfx::SVGTextContainer *container,
     }
 }
 
-static void applyShapeLayerStyle(tgfx::ShapeLayer *shape, tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext) {
+static void applyShapeLayerStyle(kk::layer::SeatZoneLayer *shape, tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext) {
     auto hasStroke = false;
     if (const auto &attribute = node->getStroke().get(); attribute && attribute->type() == tgfx::SVGPaint::Type::Color) {
         auto color = attribute->color().color();
@@ -171,9 +171,9 @@ static void applyShapeLayerStyle(tgfx::ShapeLayer *shape, tgfx::SVGNode *node, c
 
     if (const auto &attribute = node->getFill().get(); attribute && attribute->type() == tgfx::SVGPaint::Type::Color) {
         auto color = attribute->color().color();
-        shape->addFillStyle(tgfx::ShapeStyle::Make(color));
+        shape->setPrimitiveFillColor(color);
     } else if (!hasStroke) {
-        shape->addFillStyle(tgfx::ShapeStyle::Make(tgfx::Color::Black()));
+        shape->setPrimitiveFillColor(tgfx::Color::Black());
     }
 
     if (const auto &attribute = node->getStrokeDashArray().get(); attribute) {
@@ -302,7 +302,7 @@ static void applyTextLayerStyle(kk::layer::SeatTextLayer *textLayer, tgfx::SVGTe
 
 // ========== 公开函数实现 ==========
 
-std::unique_ptr<ConvertSVGLayerResult> convertSVGDomToLayer(std::shared_ptr<tgfx::SVGDOM> dom, const ConvertSVGLayerOptions &options) {
+std::unique_ptr<ConvertSVGLayerResult> convertSVGDomToLayer(std::shared_ptr<tgfx::SVGDOM> dom, std::unordered_map<std::string, std::shared_ptr<tgfx::Layer>> *layerMap, const ConvertSVGLayerOptions &options) {
     if (dom == nullptr) {
         return nullptr;
     }
@@ -337,7 +337,7 @@ std::unique_ptr<ConvertSVGLayerResult> convertSVGDomToLayer(std::shared_ptr<tgfx
 
     auto &childrens = rootNode->getChildren();
     for (const auto &child : childrens) {
-        auto layer = convertSVGNodeToLayer(child.get(), viewportLengthContext, options);
+        auto layer = convertSVGNodeToLayer(child.get(), viewportLengthContext, options, layerMap);
         if (layer) {
             container->addChild(layer);
         }
@@ -390,33 +390,70 @@ std::shared_ptr<tgfx::Layer> convertSVGDomTextNodeToLayer(std::shared_ptr<tgfx::
     return container;
 }
 
-std::shared_ptr<tgfx::Layer> convertSVGNodeToLayer(tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext, const ConvertSVGLayerOptions &options) {
+std::shared_ptr<tgfx::Layer> convertSVGNodeToLayer(tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext, const ConvertSVGLayerOptions &options, std::unordered_map<std::string, std::shared_ptr<tgfx::Layer>> *layerMap) {
     auto tag = node->tag();
+    std::shared_ptr<tgfx::Layer> layer = nullptr;
     switch (tag) {
-        case tgfx::SVGTag::G:
-            return convertGroup(options, static_cast<tgfx::SVGGroup *>(node), lengthContext);
-        case tgfx::SVGTag::Line:
-            return convertLine(static_cast<tgfx::SVGLine *>(node), lengthContext);
-        case tgfx::SVGTag::Circle:
-            return convertCircle(static_cast<tgfx::SVGCircle *>(node), lengthContext);
-        case tgfx::SVGTag::Ellipse:
-            return convertEllipse(static_cast<tgfx::SVGEllipse *>(node), lengthContext);
-        case tgfx::SVGTag::Rect:
-            return convertRect(static_cast<tgfx::SVGRect *>(node), lengthContext);
-        case tgfx::SVGTag::Path:
-            return convertPath(static_cast<tgfx::SVGPath *>(node), lengthContext);
+        case tgfx::SVGTag::G: {
+            layer = convertGroup(options, static_cast<tgfx::SVGGroup *>(node), lengthContext, layerMap);
+            break;
+        }
+        case tgfx::SVGTag::Line: {
+            layer = convertLine(static_cast<tgfx::SVGLine *>(node), lengthContext);
+            break;
+        }
+        case tgfx::SVGTag::Circle: {
+            layer = convertCircle(static_cast<tgfx::SVGCircle *>(node), lengthContext);
+            break;
+        }
+        case tgfx::SVGTag::Ellipse: {
+            layer = convertEllipse(static_cast<tgfx::SVGEllipse *>(node), lengthContext);
+            break;
+        }
+        case tgfx::SVGTag::Rect: {
+            layer = convertRect(static_cast<tgfx::SVGRect *>(node), lengthContext);
+            break;
+        }
+        case tgfx::SVGTag::Path: {
+            layer = convertPath(static_cast<tgfx::SVGPath *>(node), lengthContext);
+            break;
+        }
         case tgfx::SVGTag::Polygon:
-        case tgfx::SVGTag::Polyline:
-            return convertPoly(static_cast<tgfx::SVGPoly *>(node), lengthContext);
-        case tgfx::SVGTag::Text:
+        case tgfx::SVGTag::Polyline: {
+            layer = convertPoly(static_cast<tgfx::SVGPoly *>(node), lengthContext);
+            break;
+        }
+        case tgfx::SVGTag::Text: {
             if (!options.supportText) {
                 return nullptr;
             }
-            return convertText(static_cast<tgfx::SVGText *>(node), lengthContext);
-        default:
+            layer = convertText(static_cast<tgfx::SVGText *>(node), lengthContext);
             break;
+        }
+        default:
+            return nullptr;
     }
-    return nullptr;
+    if (layer && layerMap != nullptr) {
+        std::string zoneId;
+        const auto &customAttributes = node->getCustomAttributes();
+        for (const auto &item : customAttributes) {
+            if (item.value.empty()) {
+                continue;
+            }
+
+            auto it = std::find_if(options.zoneIdAttributeNames.begin(), options.zoneIdAttributeNames.end(), [&](const auto &key) {
+                return key == item.name;
+            });
+            if (it == options.zoneIdAttributeNames.end()) {
+                continue;
+            }
+            zoneId = item.value;
+        }
+        if (!zoneId.empty()) {
+            layerMap->insert_or_assign(zoneId, layer);
+        }
+    }
+    return layer;
 }
 
 static std::shared_ptr<tgfx::Layer> buildTextLayerTreeFromNode(tgfx::SVGNode *node,
@@ -455,14 +492,14 @@ static std::shared_ptr<tgfx::Layer> buildTextLayerTreeFromNode(tgfx::SVGNode *no
     return nullptr;
 }
 
-std::shared_ptr<tgfx::Layer> convertGroup(const ConvertSVGLayerOptions &options, tgfx::SVGGroup *node, const tgfx::SVGLengthContext &lengthContext) {
+std::shared_ptr<tgfx::Layer> convertGroup(const ConvertSVGLayerOptions &options, tgfx::SVGGroup *node, const tgfx::SVGLengthContext &lengthContext, std::unordered_map<std::string, std::shared_ptr<tgfx::Layer>> *layerMap) {
     if (!node->hasChildren()) {
         return nullptr;
     }
     auto groupLayer = tgfx::Layer::Make();
     groupLayer->setMatrix(node->getTransform());
     for (auto const &child : node->getChildren()) {
-        auto layer = convertSVGNodeToLayer(child.get(), lengthContext, options);
+        auto layer = convertSVGNodeToLayer(child.get(), lengthContext, options, layerMap);
         if (layer) {
             groupLayer->addChild(layer);
         }

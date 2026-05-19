@@ -218,6 +218,10 @@ class SeatCanvasCoreRenderer {
     /// @param colors 颜色表
     void updateSeatZoneAlternateColors(const std::unordered_map<std::string, tgfx::Color> &colors);
 
+    /// 更新小地图区域颜色
+    /// @param colors 颜色表
+    void updateMiniMapZoneAlternateColors(const std::unordered_map<std::string, tgfx::Color> &colors);
+
     /// 设置某个区域的座位数据
     /// @param zoneId 区域ID
     /// @param seats 座位几何数据列表，每个座位包含 seatId, x, y, rotation
@@ -292,6 +296,7 @@ class SeatCanvasCoreRenderer {
     void applyBaseMapColorState(kk::BaseMapColorState toState);
 
     void applySavedSeatZoneAlternateColors(std::shared_ptr<BaseMapMeshBuilder> meshBuilder);
+    void applySavedMiniMapZoneAlternateColors(std::shared_ptr<BaseMapMeshBuilder> meshBuilder);
 
     void drawFPS(tgfx::Canvas *canvas);
 
@@ -335,6 +340,7 @@ class SeatCanvasCoreRenderer {
     bool _scrollingAnimationActive = {false};
 
     std::unordered_map<std::string, tgfx::Color> _zoneColorMap = {};
+    std::unordered_map<std::string, tgfx::Color> _minimapZoneColorMap = {};
     std::unordered_map<std::string, std::vector<kk::SeatData>> _seatDataMap = {};
     float _seatSize = {36.0f};
 };

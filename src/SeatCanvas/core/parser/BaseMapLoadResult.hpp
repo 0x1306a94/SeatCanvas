@@ -9,6 +9,8 @@
 #define BaseMapLoadResult_hpp
 
 #include <memory>
+#include <string>
+#include <unordered_map>
 
 #include <tgfx/core/Size.h>
 
@@ -36,11 +38,12 @@ struct BaseMapLoadResult {
     std::shared_ptr<tgfx::Layer> textLayer = {nullptr};
     tgfx::Size baseMapSize = {};
     std::shared_ptr<kk::layer::BaseMapRootLayer> miniLayer = {nullptr};
+    std::unordered_map<std::string, std::shared_ptr<tgfx::Layer>> miniLayerMap = {};
     std::shared_ptr<kk::renderer::BaseMapMeshBuilder> meshBuilder = {nullptr};
 
     explicit BaseMapLoadResult(std::unique_ptr<BaseMapParseResult> parseResult);
 
-    std::shared_ptr<kk::BaseMapConfig> makeBaseMapConfig() const;
+    std::shared_ptr<kk::BaseMapConfig> makeBaseMapConfig();
 };
 
 }  // namespace kk::parser

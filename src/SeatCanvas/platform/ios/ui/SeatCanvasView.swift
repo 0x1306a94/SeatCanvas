@@ -98,6 +98,13 @@ public class SeatCanvasView: UIView {
         renderer?.updateSeatZoneAlternateColors(colors: colors)
     }
 
+    /// 更新小地图区域颜色
+    /// - Parameter colors: 颜色表 (key 区域ID， value 颜色)
+    @objc
+    public func updateMiniMapZoneAlternateColors(colors: [String: UIColor]?) {
+        renderer?.updateMiniMapZoneAlternateColors(colors: colors)
+    }
+
     /// 更新区域座位信息
     /// - Parameters:
     ///   - zoneId: 区域ID

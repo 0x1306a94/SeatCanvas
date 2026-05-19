@@ -868,6 +868,7 @@ void SeatCanvasCoreRenderer::updateUseBaseMapConfig(std::shared_ptr<kk::BaseMapC
 
         applyBaseMapColorState(kk::BaseMapColorState::Rainbow);
         applySavedSeatZoneAlternateColors(config->meshBuilder());
+        applySavedMiniMapZoneAlternateColors(config->meshBuilder());
         _customBaseMapPass->updateMeshBuilder(config->meshBuilder());
 
         _customSeatPass->clearSeats();
@@ -1865,12 +1866,63 @@ void SeatCanvasCoreRenderer::updateSeatZoneAlternateColors(const std::unordered_
     invalidateContent();
 }
 
+void SeatCanvasCoreRenderer::updateMiniMapZoneAlternateColors(const std::unordered_map<std::string, tgfx::Color> &colors) {
+    if (_minimapZoneColorMap != colors) {
+        _minimapZoneColorMap = colors;
+    }
+
+    auto config = _useBaseMapConfig.lock();
+    if (!config) {
+        return;
+    }
+
+    const auto &miniLayerMap = config->miniLayerMap();
+    if (miniLayerMap.empty()) {
+        return;
+    }
+
+    for (const auto &[zoneId, layer] : miniLayerMap) {
+        if (static_cast<kk::layer::CustomLayerType>(layer->type()) != kk::layer::CustomLayerType::Zone) {
+            continue;
+        }
+
+        auto zoneLayer = std::static_pointer_cast<kk::layer::SeatZoneLayer>(layer);
+        if (!zoneLayer) {
+            continue;
+        }
+
+        if (colors.empty()) {
+            zoneLayer->setAlternateFillColor(std::nullopt);
+            continue;
+        }
+
+        const auto iter = colors.find(zoneId);
+        if (iter == colors.end() || iter->second == tgfx::Color::Transparent()) {
+            zoneLayer->setAlternateFillColor(std::nullopt);
+        } else {
+            zoneLayer->setAlternateFillColor(iter->second);
+        }
+    }
+
+    if (_overlayLayer) {
+        _overlayLayer->invalidateAreaCacheImage();
+    }
+    invalidateContent();
+}
+
 void SeatCanvasCoreRenderer::applySavedSeatZoneAlternateColors(std::shared_ptr<BaseMapMeshBuilder> meshBuilder) {
     if (!meshBuilder) {
         return;
     }
 
     updateSeatZoneAlternateColors(_zoneColorMap);
+}
+
+void SeatCanvasCoreRenderer::applySavedMiniMapZoneAlternateColors(std::shared_ptr<BaseMapMeshBuilder> meshBuilder) {
+    if (!meshBuilder) {
+        return;
+    }
+    updateMiniMapZoneAlternateColors(_minimapZoneColorMap);
 }
 
 void SeatCanvasCoreRenderer::setSeatData(const std::string &zoneId, const std::vector<kk::SeatData> &seats) {
