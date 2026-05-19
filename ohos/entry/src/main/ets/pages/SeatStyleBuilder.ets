@@ -1,76 +1,80 @@
 import { SeatStyleConfigBuilder } from 'libseatcanvas'
 import { resourceManager } from '@kit.LocalizationKit'
 import { util } from '@kit.ArkTS';
+import { ColorExtensions } from './ColorExtensions';
+import { MockPriceData } from './MockPriceData';
 
 export class SeatStyleBuilder {
-  private static sampleStyleId(status: number, selected: boolean): string {
-    return `status_${status}_selected_${selected ? 1 : 0}`;
+  private static readonly SEAT_DISABLED_COLOR: string = '#FFDDDDDD';
+
+  private static styleId(pricecode: string, available: boolean, selected: boolean): string {
+    return `pricecode_${pricecode}_available_${available}_selected_${selected ? 1 : 0}`;
   }
 
-  static BuildCircleSeatStyleConfig(): string | null {
-    let builder = new SeatStyleConfigBuilder();
+  static buildCircleSeatStyleConfig(prices: MockPriceData[]): string | null {
+    if (prices.length === 0) {
+      return null;
+    }
+    const builder = new SeatStyleConfigBuilder();
+    const disabled = SeatStyleBuilder.SEAT_DISABLED_COLOR;
     const overlay = '#B2000000';
     const checkmark = '#FFFFFFFF';
-    const fills: string[] = ['#FFFF0000', '#FFAAAAAA', '#FF999999', '#FF666666'];
-    for (let s = 0; s <= 3; s++) {
-      builder.addCircleStyle(SeatStyleBuilder.sampleStyleId(s, false), fills[s]);
-      builder.addCircleStyle(SeatStyleBuilder.sampleStyleId(s, true), fills[s], overlay, checkmark);
+    for (const price of prices) {
+      builder.addCircleStyle(SeatStyleBuilder.styleId(price.code, false, false), disabled);
+      builder.addCircleStyle(SeatStyleBuilder.styleId(price.code, true, false), price.color);
+      builder.addCircleStyle(SeatStyleBuilder.styleId(price.code, true, true), price.color, overlay, checkmark);
     }
     return builder.toJSONString();
   }
 
-  /**
-   * 构建 SVG 座位样式配置
-   * @param manager 资源管理器，用于加载 SVG 文件
-   * @returns JSON 字符串，如果构建失败则返回 null
-   */
-  static BuildSVGSeatStyleConfig(manager: resourceManager.ResourceManager): string | null {
+  static buildSVGSeatStyleConfig(
+    manager: resourceManager.ResourceManager,
+    prices: MockPriceData[]
+  ): string | null {
+    if (prices.length === 0) {
+      return null;
+    }
 
-    let available = SeatStyleBuilder.loadSVGContent(manager, 'icon_seat_selectable.svg');
-    let selected = SeatStyleBuilder.loadSVGContent(manager, 'icon_seat_selected.svg');
-    let disabled = SeatStyleBuilder.loadSVGContent(manager, 'icon_seat_nonselectable.svg');
+    const available = SeatStyleBuilder.loadSVGContent(manager, 'icon_seat_selectable.svg');
+    const selected = SeatStyleBuilder.loadSVGContent(manager, 'icon_seat_selected.svg');
+    const disabled = SeatStyleBuilder.loadSVGContent(manager, 'icon_seat_nonselectable.svg');
 
     if (available == null || selected == null || disabled == null) {
       return null;
     }
 
-    let builder = new SeatStyleConfigBuilder();
-
-    builder.addSVGStyle(SeatStyleBuilder.sampleStyleId(0, false), available);
-    builder.addSVGStyle(SeatStyleBuilder.sampleStyleId(0, true), selected);
-
-    for (let s = 1; s <= 3; s++) {
-      builder.addSVGStyle(SeatStyleBuilder.sampleStyleId(s, false), disabled);
-      builder.addSVGStyle(SeatStyleBuilder.sampleStyleId(s, true), disabled);
+    const builder = new SeatStyleConfigBuilder();
+    for (const price of prices) {
+      builder.addSVGStyle(SeatStyleBuilder.styleId(price.code, false, false), disabled);
+      const rgbHex = ColorExtensions.rgbHexFromArgb(price.color);
+      if (rgbHex == null) {
+        continue;
+      }
+      const modifiedAvailable = available.replace(/#EB484A/gi, rgbHex);
+      const modifiedSelected = selected.replace(/#5BC64D/gi, rgbHex);
+      builder.addSVGStyle(SeatStyleBuilder.styleId(price.code, true, false), modifiedAvailable);
+      builder.addSVGStyle(SeatStyleBuilder.styleId(price.code, true, true), modifiedSelected);
     }
-
     return builder.toJSONString();
   }
 
-  /**
-   * 从资源文件加载 SVG 内容
-   * @param manager 资源管理器
-   * @param name SVG 文件名（不含扩展名）
-   * @returns SVG 内容字符串，如果加载失败则返回 null
-   */
   private static loadSVGContent(manager: resourceManager.ResourceManager, name: string): string | null {
     try {
-      let fileName = `SeatCanvasSampleAssets/default/seatstyle/${name}`;
-      let rawFileContent = manager.getRawFileContentSync(fileName);
+      const fileName = `SeatCanvasSampleAssets/default/seatstyle/${name}`;
+      const rawFileContent = manager.getRawFileContentSync(fileName);
       if (rawFileContent == null) {
         console.error(`Failed to load SVG file: ${fileName}`);
         return null;
       }
-      let textDecoderOptions: util.TextDecoderOptions = {
+      const textDecoderOptions: util.TextDecoderOptions = {
         fatal: false,
         ignoreBOM: true
-      }
-      let decodeToStringOptions: util.DecodeToStringOptions = {
+      };
+      const decodeToStringOptions: util.DecodeToStringOptions = {
         stream: false
-      }
-      let textDecoder = util.TextDecoder.create('utf-8', textDecoderOptions);
-      let retStr = textDecoder.decodeToString(rawFileContent, decodeToStringOptions);
-      return retStr;
+      };
+      const textDecoder = util.TextDecoder.create('utf-8', textDecoderOptions);
+      return textDecoder.decodeToString(rawFileContent, decodeToStringOptions);
     } catch (e) {
       console.error(`Error loading SVG file ${name}:`, e);
       return null;

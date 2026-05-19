@@ -41,6 +41,11 @@ export class ResourceExtensions {
     return `SeatCanvasSampleAssets/${scope}/zonedata/${jsonName}`;
   }
 
+  static priceDataPath(scope: ResourceScope, name: string): string {
+    const jsonName = name.replace('.svg', '_pricecode.json');
+    return `SeatCanvasSampleAssets/${scope}/zonedata/${jsonName}`;
+  }
+
   static seatDataPath(scope: ResourceScope, name: string): string {
     const jsonName = name.replace('.svg', '.json');
     return `SeatCanvasSampleAssets/${scope}/seatdata/${jsonName}`;

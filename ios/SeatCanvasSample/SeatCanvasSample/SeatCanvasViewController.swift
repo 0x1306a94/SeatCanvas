@@ -16,8 +16,19 @@ class SeatCanvasViewController: UIViewController {
 
     var seatCanvasView: SeatCanvasView!
 
-    private var seatStatusMap: [String: UInt32] = [:]
+    /// 价格: [priceCode: MockPriceData]
+    private var prices: [MockPriceData] = []
+    /// 座位: [seatId: MockSeatData]
+    private var seatsMap: [String: MockSeatData] = [:]
+    /// 座位区域: [zoneId: [MockSeatData]]
+    private var seatZoneMap: [String: [MockSeatData]] = [:]
+    /// 可售的座位: [zoneId: [seatId]]
+    private var availableSeats: [String: Set<String>] = [:]
+    /// 选中的座位ID
     private var selectedSeatIds: Set<String> = []
+    /// 定时刷新可售座位
+    private var availableSeatsTimer: Timer?
+    private let availableSeatsRefreshInterval: TimeInterval = 10.0
 
     var baseMap: BaseMapFileInfo?
     convenience init(baseMap: BaseMapFileInfo) {
@@ -44,10 +55,29 @@ class SeatCanvasViewController: UIViewController {
 
         ])
 
-        seatCanvasView.applySeatStyleJSONConfig(buildSVGSeatStyleConfig())
-
         loadBaseMap()
         loadMockData()
+        regenerateRandomAvailableSeats()
+        startAvailableSeatsTimer()
+
+        seatCanvasView.applySeatStyleJSONConfig(buildSVGSeatStyleConfig())
+    }
+
+    isolated deinit {
+        availableSeatsTimer?.invalidate()
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        availableSeatsTimer?.invalidate()
+        availableSeatsTimer = nil
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        if availableSeatsTimer == nil {
+            startAvailableSeatsTimer()
+        }
     }
 
     @IBAction func handleCircleSeatStyle(_: UISwitch) {
@@ -72,24 +102,19 @@ class SeatCanvasViewController: UIViewController {
 
     func buildCircleSeatStyleConfig() -> Data? {
         let builder = SeatStyleConfigBuilder()
-        let availabe = UIColor(named: "seat_available")!
-        let sold = UIColor(named: "seat_sold")!
-        let locked = UIColor(named: "seat_locked")!
         let disabled = UIColor(named: "seat_disableed")!
         let overlay = UIColor.black.withAlphaComponent(0.7)
         let checkmark = UIColor.white
 
-        builder.addCircleStyle(styleId: styleId(status: 0, selected: false), fill: availabe)
-        builder.addCircleStyle(styleId: styleId(status: 0, selected: true), fill: availabe, overlay: overlay, checkmark: checkmark)
+        guard !prices.isEmpty else {
+            return nil
+        }
 
-        builder.addCircleStyle(styleId: styleId(status: 1, selected: false), fill: sold)
-        builder.addCircleStyle(styleId: styleId(status: 1, selected: true), fill: sold, overlay: overlay, checkmark: checkmark)
-
-        builder.addCircleStyle(styleId: styleId(status: 2, selected: false), fill: locked)
-        builder.addCircleStyle(styleId: styleId(status: 2, selected: true), fill: locked, overlay: overlay, checkmark: checkmark)
-
-        builder.addCircleStyle(styleId: styleId(status: 3, selected: false), fill: disabled)
-        builder.addCircleStyle(styleId: styleId(status: 3, selected: true), fill: disabled, overlay: overlay, checkmark: checkmark)
+        for price in prices {
+            builder.addCircleStyle(styleId: styleId(pricecode: price.code, available: false, selected: false), fill: disabled)
+            builder.addCircleStyle(styleId: styleId(pricecode: price.code, available: true, selected: false), fill: price.color)
+            builder.addCircleStyle(styleId: styleId(pricecode: price.code, available: true, selected: true), fill: price.color, overlay: overlay, checkmark: checkmark)
+        }
 
         return builder.toJSONData()
     }
@@ -104,17 +129,21 @@ class SeatCanvasViewController: UIViewController {
             return nil
         }
 
-        builder.addSVGStyle(styleId: styleId(status: 0, selected: false), content: availabe)
-        builder.addSVGStyle(styleId: styleId(status: 0, selected: true), content: selected)
+        guard !prices.isEmpty else {
+            return nil
+        }
 
-        builder.addSVGStyle(styleId: styleId(status: 1, selected: false), content: disabled)
-        builder.addSVGStyle(styleId: styleId(status: 1, selected: true), content: disabled)
+        for price in prices {
+            builder.addSVGStyle(styleId: styleId(pricecode: price.code, available: false, selected: false), content: disabled)
+            let modifyAvailabe = availabe
+                .replacingOccurrences(of: "#EB484A", with: price.color.rgbHex)
 
-        builder.addSVGStyle(styleId: styleId(status: 2, selected: false), content: disabled)
-        builder.addSVGStyle(styleId: styleId(status: 2, selected: true), content: disabled)
+            let modifySelected = selected
+                .replacingOccurrences(of: "#5BC64D", with: price.color.rgbHex)
 
-        builder.addSVGStyle(styleId: styleId(status: 3, selected: false), content: disabled)
-        builder.addSVGStyle(styleId: styleId(status: 3, selected: true), content: disabled)
+            builder.addSVGStyle(styleId: styleId(pricecode: price.code, available: true, selected: false), content: modifyAvailabe)
+            builder.addSVGStyle(styleId: styleId(pricecode: price.code, available: true, selected: true), content: modifySelected)
+        }
 
         return builder.toJSONData()
     }
@@ -130,16 +159,39 @@ class SeatCanvasViewController: UIViewController {
 
     // MARK: - Mock Data Generation
 
+    func loadMockPrice() -> [MockPriceData] {
+        guard let baseMap else {
+            return []
+        }
+        let url = Bundle.Sample.priceDataURL(scope: baseMap.scope, name: baseMap.filename)
+        guard let data = try? Data(contentsOf: url) else {
+            return []
+        }
+        do {
+            return try JSONDecoder().decode([MockPriceData].self, from: data)
+        } catch {
+            print(error)
+            return []
+        }
+    }
+
     func loadMockData() {
-        let zoneDatas = loadZoneDatas()
-        let zoneColors = zoneDatas.reduce(into: [String: UIColor]()) { $0[$1.zoneId] = $1.alternateColor }
+        prices = loadMockPrice()
+        var zoneColors: [String: UIColor] = [:]
+        for price in prices {
+            for zoneId in price.zoneIds {
+                zoneColors[zoneId] = price.color
+            }
+        }
+
         seatCanvasView.updateSeatZoneAlternateColors(colors: zoneColors)
         seatCanvasView.updateMiniMapZoneAlternateColors(colors: zoneColors)
 
-        let seats = loadSeatDatas()
-        for zoneSeat in seats {
+        seatsMap.removeAll(keepingCapacity: true)
+        seatZoneMap = loadSeatDatas()
+        for zoneSeat in seatZoneMap {
             for seat in zoneSeat.value {
-                seatStatusMap[seat.seatId] = seat.status
+                seatsMap[seat.seatId] = seat
                 if seat.selected {
                     selectedSeatIds.insert(seat.seatId)
                 }
@@ -164,8 +216,8 @@ class SeatCanvasViewController: UIViewController {
         }
     }
 
-    private func styleId(status: UInt32, selected: Bool) -> String {
-        "status_\(status)_selected_\(selected ? 1 : 0)"
+    private func styleId(pricecode: String, available: Bool, selected: Bool) -> String {
+        "pricecode_\(pricecode)_available_\(available)_selected_\(selected ? 1 : 0)"
     }
 
     func loadSeatDatas() -> [String: [MockSeatData]] {
@@ -183,6 +235,49 @@ class SeatCanvasViewController: UIViewController {
             return [:]
         }
     }
+
+    private func seatAvailable(zoneId: String, seatId: String) -> Bool {
+        guard let seats = availableSeats[zoneId] else {
+            return false
+        }
+        return seats.contains(seatId)
+    }
+
+    private func startAvailableSeatsTimer() {
+        availableSeatsTimer?.invalidate()
+        availableSeatsTimer = Timer.scheduledTimer(
+            withTimeInterval: availableSeatsRefreshInterval,
+            repeats: true
+        ) { [weak self] _ in
+            self?.regenerateRandomAvailableSeats()
+        }
+    }
+
+    private func regenerateRandomAvailableSeats() {
+        availableSeats.removeAll(keepingCapacity: true)
+        for (zoneId, seats) in seatZoneMap {
+            guard !seats.isEmpty else {
+                continue
+            }
+            let ratio = Double.random(in: 0.2 ... 0.9)
+            let availableCount = max(1, Int(Double(seats.count) * ratio))
+            let availableIds = Set(seats.shuffled().prefix(availableCount).map(\.seatId))
+            availableSeats[zoneId] = availableIds
+        }
+        pruneSelectedSeatsForAvailability()
+    }
+
+    private func pruneSelectedSeatsForAvailability() {
+        selectedSeatIds = selectedSeatIds.filter { seatId in
+            for (zoneId, seats) in seatZoneMap {
+                guard seats.contains(where: { $0.seatId == seatId }) else {
+                    continue
+                }
+                return seatAvailable(zoneId: zoneId, seatId: seatId)
+            }
+            return false
+        }
+    }
 }
 
 extension SeatCanvasViewController: SeatCanvasViewDelegate {
@@ -192,11 +287,12 @@ extension SeatCanvasViewController: SeatCanvasViewDelegate {
     ///   - zoneId: 区域ID
     ///   - seatId: 座位ID（由业务保证全局唯一）
     /// - Returns: 样式ID。返回 nil 或空字符串表示该座位不渲染。
-    func seatCanvasView(_: SeatCanvasView, styleIdForSeat _: String, seatId: String) -> String? {
-        guard let status = seatStatusMap[seatId] else {
+    func seatCanvasView(_: SeatCanvasView, styleIdForSeat zoneId: String, seatId: String) -> String? {
+        guard let seta = seatsMap[seatId] else {
             return nil
         }
-        return styleId(status: status, selected: selectedSeatIds.contains(seatId))
+        let available = seatAvailable(zoneId: zoneId, seatId: seatId)
+        return styleId(pricecode: seta.pricecode, available: available, selected: selectedSeatIds.contains(seatId))
     }
 
     /// 点击某个座位，业务层处理状态变更。
@@ -206,13 +302,16 @@ extension SeatCanvasViewController: SeatCanvasViewDelegate {
     ///   - seatId: 座位ID
     /// - Returns: 是否发生了状态变化。true 则触发重绘。
     func seatCanvasView(_: SeatCanvasView, didTapSeat zoneId: String, seatId: String) -> Bool {
+        var changed = false
         if selectedSeatIds.contains(seatId) {
             selectedSeatIds.remove(seatId)
-        } else {
+            changed = true
+        } else if seatAvailable(zoneId: zoneId, seatId: seatId) {
             selectedSeatIds.insert(seatId)
+            changed = true
         }
         print(#function, zoneId, seatId)
-        return true
+        return changed
     }
 
     /// 点击某个区域

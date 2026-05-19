@@ -7,6 +7,6 @@
     <color name="seat_available">#FFFF0000</color>
     <color name="seat_sold">#FFAAAAAA</color>
     <color name="seat_locked">#FF999999</color>
-    <color name="seat_disabled">#FF666666</color>
+    <color name="seat_disabled">#FFDDDDDD</color>
     <color name="canvas_bg">#FFF8F8F8</color>
 </resources>
