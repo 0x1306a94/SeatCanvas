@@ -305,6 +305,17 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         }
 
     /**
+     * 当前缩放级别
+     */
+    val zoomScale: Float
+        get() {
+            if (nativeInitialized()) {
+                return nativeGetZoomScale()
+            }
+            return 1f
+        }
+
+    /**
      * 当前内容允许的最大缩放比例
      */
     val maximumZoomScale: Float
@@ -314,6 +325,28 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
             }
             return 1f
         }
+
+    /**
+     * 获取当前显示范围（原始坐标系）
+     */
+    fun visibleOriginalRect(): Rect {
+        if (!nativeInitialized()) {
+            return Rect(0f, 0f, 0f, 0f)
+        }
+        return nativeGetVisibleOriginalRect()
+    }
+
+    /**
+     * 查找与指定矩形相交的区域 ID 列表（原始坐标系）
+     * @param rect 查询矩形，通常配合 visibleOriginalRect() 使用
+     * @return 相交区域的 zoneId 列表
+     */
+    fun zoneIdsInOriginalRect(rect: Rect): List<String> {
+        if (!nativeInitialized()) {
+            return emptyList()
+        }
+        return nativeGetZoneIdsInOriginalRect(rect)?.toList() ?: emptyList()
+    }
 
     private fun zoomToRect(
         bounds: Rect,
@@ -586,6 +619,8 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
     private external fun nativeGetZoomScale(): Float
     private external fun nativeGetMinimumZoomScale(): Float
     private external fun nativeGetMaximumZoomScale(): Float
+    private external fun nativeGetVisibleOriginalRect(): Rect
+    private external fun nativeGetZoneIdsInOriginalRect(rect: Rect): Array<String>?
     private external fun nativeGetContentOffset(): FloatArray
     private external fun nativeStartDrawLoop()
     private external fun nativeStopDrawLoop()

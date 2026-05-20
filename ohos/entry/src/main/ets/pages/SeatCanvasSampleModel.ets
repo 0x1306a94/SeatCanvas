@@ -17,6 +17,7 @@ export class SeatCanvasSampleModel {
   availableSeats: Map<string, Set<string>> = new Map();
   selectedSeatIds: Set<string> = new Set();
   private availableSeatsTimer: number = -1;
+  private controller: WeakRef<SeatCanvasViewController> | null = null;
   private static readonly REFRESH_INTERVAL_MS: number = 10 * 1000;
   /** Controller 以 WeakRef 持有 delegate，此处强引用避免被回收 */
   readonly rendererDelegate: SeatCanvasRendererDelegate;
@@ -103,10 +104,14 @@ export class SeatCanvasSampleModel {
 
   private onDidEndDragging(viewport: SeatCanvasViewport, decelerate: boolean): void {
     console.log(`didEndDragging: ${JSON.stringify(viewport)} decelerate: ${decelerate}`);
+    if (!decelerate) {
+      this.scheduleRefreshForVisibleSeats();
+    }
   }
 
   private onDidEndDecelerating(viewport: SeatCanvasViewport): void {
     console.log(`didEndDecelerating: ${JSON.stringify(viewport)}`);
+    this.scheduleRefreshForVisibleSeats();
   }
 
   private onWillBeginZooming(viewport: SeatCanvasViewport): void {
@@ -119,10 +124,12 @@ export class SeatCanvasSampleModel {
 
   private onDidEndZooming(viewport: SeatCanvasViewport): void {
     console.log(`didEndZooming: ${JSON.stringify(viewport)}`);
+    this.scheduleRefreshForVisibleSeats();
   }
 
   private onDidEndScrollingAnimation(viewport: SeatCanvasViewport): void {
     console.log(`didEndScrollingAnimation: ${JSON.stringify(viewport)}`);
+    this.scheduleRefreshForVisibleSeats();
   }
 
   loadMockPrice(baseMap: BaseMapFileInfo | null, readRawFile: (path: string) => string | null): MockPriceData[] {
@@ -150,6 +157,7 @@ export class SeatCanvasSampleModel {
     if (!baseMap) {
       return;
     }
+    this.controller = new WeakRef(controller);
     this.prices = this.loadMockPrice(baseMap, readRawFile);
     const zoneColors: SeatZoneColor[] = [];
     for (const price of this.prices) {
@@ -254,5 +262,40 @@ export class SeatCanvasSampleModel {
       clearInterval(this.availableSeatsTimer);
       this.availableSeatsTimer = -1;
     }
+  }
+
+  detachSeatCanvasController(): void {
+    this.controller = null;
+  }
+
+  private scheduleRefreshForVisibleSeats(): void {
+    const controller = this.controller?.deref();
+    if (!controller) {
+      return;
+    }
+
+    /*
+     * 1. 判断当前是否是显示座位级别
+     * 这里只判断了缩放级别，实际业务场景可能还有其他条件
+     */
+    const zoomScale = controller.zoomScale;
+    const seatRenderZoomThreshold = controller.seatRenderZoomThreshold;
+    if (zoomScale < seatRenderZoomThreshold) {
+      return;
+    }
+
+    /*
+     * 2. 获取当前可视范围内的区域ID
+     * 2.1 刷新指定区域ID内的座位状态
+     *
+     * 根据实际业务场景调整
+     */
+    const visibleRect = controller.visibleOriginalRect();
+    const zoneIds = controller.zoneIdsInOriginalRect(visibleRect);
+    if (zoneIds.length === 0) {
+      return;
+    }
+
+    console.log(`scheduleRefreshForVisibleSeats: zoneIds=${JSON.stringify(zoneIds)}`);
   }
 }

@@ -158,10 +158,30 @@ public class SeatCanvasView: UIView {
         renderer?.minimumZoomScale ?? 1.0
     }
 
+    /// 当前缩放级别
+    @objc
+    public var zoomScale: CGFloat {
+        renderer?.zoomScale ?? 1.0
+    }
+
     /// 最大缩放级别
     @objc
     public var maximumZoomScale: CGFloat {
         renderer?.maximumZoomScale ?? 1.0
+    }
+
+    /// 获取当前显示范围（原始坐标系）
+    @objc
+    public func visibleOriginalRect() -> CGRect {
+        renderer?.visibleOriginalRect() ?? .zero
+    }
+
+    /// 查找与指定矩形相交的区域 ID 列表（原始坐标系）
+    /// - Parameter rect: 查询矩形，通常配合 visibleOriginalRect() 使用
+    /// - Returns: 相交区域的 zoneId 列表
+    @objc
+    public func zoneIds(inOriginalRect rect: CGRect) -> [String] {
+        renderer?.zoneIds(inOriginalRect: rect) ?? []
     }
 
     deinit {

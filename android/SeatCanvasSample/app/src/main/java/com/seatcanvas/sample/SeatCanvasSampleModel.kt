@@ -21,6 +21,7 @@ class SeatCanvasSampleModel {
 
     private val handler = Handler(Looper.getMainLooper())
     private var refreshRunnable: Runnable? = null
+    private var seatCanvasView: SeatCanvasView? = null
 
     val rendererDelegate: SeatCanvasRendererDelegate = object : SeatCanvasRendererDelegate {
         override fun styleIdForSeat(zoneId: String, seatId: String): String? {
@@ -56,10 +57,14 @@ class SeatCanvasSampleModel {
 
         override fun didEndDragging(viewport: SeatCanvasViewport, decelerate: Boolean) {
             Log.d(TAG, "didEndDragging: viewport=$viewport decelerate=$decelerate")
+            if (!decelerate) {
+                scheduleRefreshForVisibleSeats()
+            }
         }
 
         override fun didEndDecelerating(viewport: SeatCanvasViewport) {
             Log.d(TAG, "didEndDecelerating: viewport=$viewport")
+            scheduleRefreshForVisibleSeats()
         }
 
         override fun willBeginZooming(viewport: SeatCanvasViewport) {
@@ -72,10 +77,12 @@ class SeatCanvasSampleModel {
 
         override fun didEndZooming(viewport: SeatCanvasViewport) {
             Log.d(TAG, "didEndZooming: viewport=$viewport")
+            scheduleRefreshForVisibleSeats()
         }
 
         override fun didEndScrollingAnimation(viewport: SeatCanvasViewport) {
             Log.d(TAG, "didEndScrollingAnimation: viewport=$viewport")
+            scheduleRefreshForVisibleSeats()
         }
     }
 
@@ -97,6 +104,7 @@ class SeatCanvasSampleModel {
     }
 
     fun loadMockData(context: Context, baseMapInfo: BaseMapFileInfo, seatCanvasView: SeatCanvasView) {
+        this.seatCanvasView = seatCanvasView
         prices = loadMockPrice(context, baseMapInfo)
         val zoneColors = mutableListOf<SeatZoneColor>()
         for (price in prices) {
@@ -186,6 +194,38 @@ class SeatCanvasSampleModel {
     fun stopAvailableSeatsTimer() {
         refreshRunnable?.let { handler.removeCallbacks(it) }
         refreshRunnable = null
+    }
+
+    fun detachSeatCanvasView() {
+        seatCanvasView = null
+    }
+
+    private fun scheduleRefreshForVisibleSeats() {
+        val view = seatCanvasView ?: return
+
+        /*
+         * 1. 判断当前是否是显示座位级别
+         * 这里只判断了缩放级别，实际业务场景可能还有其他条件
+         */
+        val zoomScale = view.zoomScale
+        val seatRenderZoomThreshold = view.seatRenderZoomThreshold
+        if (zoomScale < seatRenderZoomThreshold) {
+            return
+        }
+
+        /*
+         * 2. 获取当前可视范围内的区域ID
+         * 2.1 刷新指定区域ID内的座位状态
+         *
+         * 根据实际业务场景调整
+         */
+        val visibleRect = view.visibleOriginalRect()
+        val zoneIds = view.zoneIdsInOriginalRect(visibleRect)
+        if (zoneIds.isEmpty()) {
+            return
+        }
+
+        Log.d(TAG, "scheduleRefreshForVisibleSeats: zoneIds=$zoneIds")
     }
 
     private fun readAssetFileToString(context: Context, fileName: String): String? {

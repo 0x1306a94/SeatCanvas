@@ -278,6 +278,32 @@ class SeatCanvasViewController: UIViewController {
             return false
         }
     }
+
+    private func scheduleRefreshForVisibleSeats() {
+        /*
+         * 1. 判断当前是否是显示座位级别
+         * 这里只判断了缩放级别，实际业务场景可能还有其他条件
+         */
+        let zoomScale = seatCanvasView.zoomScale
+        let seatRenderZoomThreshold = seatCanvasView.seatRenderZoomThreshold
+        guard zoomScale >= seatRenderZoomThreshold else {
+            return
+        }
+
+        /*
+         * 2. 获取当前可视范围内的区域ID
+         * 2.1 刷新指定区域ID内的座位状态
+         *
+         * 根据实际业务场景调整
+         */
+        let visibleRect = seatCanvasView.visibleOriginalRect()
+        let zoneIds = seatCanvasView.zoneIds(inOriginalRect: visibleRect)
+        guard !zoneIds.isEmpty else {
+            return
+        }
+
+        print(#function, zoneIds)
+    }
 }
 
 extension SeatCanvasViewController: SeatCanvasViewDelegate {
@@ -351,6 +377,9 @@ extension SeatCanvasViewController: SeatCanvasViewDelegate {
     ///   - decelerate: 是否会继续惯性滚动或回弹动画
     func seatCanvasViewDidEndDragging(_: SeatCanvasView, zoomScale _: CGFloat, contentOffset _: CGPoint, visibleOriginalRect _: CGRect, decelerate: Bool) {
         print(#function, decelerate)
+        if !decelerate {
+            scheduleRefreshForVisibleSeats()
+        }
     }
 
     /// 惯性滚动或回弹动画结束
@@ -361,6 +390,7 @@ extension SeatCanvasViewController: SeatCanvasViewDelegate {
     ///   - visibleOriginalRect: 当前可见区域，使用底图原始坐标系
     func seatCanvasViewDidEndDecelerating(_: SeatCanvasView, zoomScale _: CGFloat, contentOffset _: CGPoint, visibleOriginalRect _: CGRect) {
         print(#function)
+        scheduleRefreshForVisibleSeats()
     }
 
     /// 即将开始缩放视图
@@ -391,6 +421,7 @@ extension SeatCanvasViewController: SeatCanvasViewDelegate {
     ///   - visibleOriginalRect: 当前可见区域，使用底图原始坐标系
     func seatCanvasViewDidEndZooming(_: SeatCanvasView, zoomScale _: CGFloat, contentOffset _: CGPoint, visibleOriginalRect _: CGRect) {
         print(#function)
+        scheduleRefreshForVisibleSeats()
     }
 
     /// 程序触发的滚动或缩放动画结束
@@ -401,5 +432,6 @@ extension SeatCanvasViewController: SeatCanvasViewDelegate {
     ///   - visibleOriginalRect: 当前可见区域，使用底图原始坐标系
     func seatCanvasViewDidEndScrollingAnimation(_: SeatCanvasView, zoomScale _: CGFloat, contentOffset _: CGPoint, visibleOriginalRect _: CGRect) {
         print(#function)
+        scheduleRefreshForVisibleSeats()
     }
 }

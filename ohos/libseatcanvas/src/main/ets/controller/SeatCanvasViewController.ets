@@ -149,6 +149,28 @@ export class SeatCanvasViewController {
     return this.jView.getMaximumZoomScale();
   }
 
+  /**
+   * 当前缩放级别
+   */
+  get zoomScale(): number {
+    return this.jView.getZoomScale();
+  }
+
+  /**
+   * 获取当前显示范围（原始坐标系）
+   */
+  visibleOriginalRect(): seatcanvas.Rect {
+    return this.jView.getVisibleOriginalRect();
+  }
+
+  /**
+   * 查找与指定矩形相交的区域 ID 列表（原始坐标系）
+   * @param rect 查询矩形，通常配合 visibleOriginalRect() 使用
+   */
+  zoneIdsInOriginalRect(rect: seatcanvas.Rect): string[] {
+    return this.jView.getZoneIdsInOriginalRect(rect);
+  }
+
   get zoomLevel(): ZoomLevel {
     return this.jView.zoomLevel()
   }

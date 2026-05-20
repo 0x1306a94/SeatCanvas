@@ -65,6 +65,13 @@ final class SeatCanvasCoreRenderer {
         return kk.bridge.SeatCanvasCoreRendererMinimumZoomScale(cppObject)
     }
 
+    var zoomScale: CGFloat {
+        guard let cppObject else {
+            return 1.0
+        }
+        return kk.bridge.SeatCanvasCoreRendererZoomScale(cppObject)
+    }
+
     var maximumZoomScale: CGFloat {
         guard let cppObject else {
             return 1.0
@@ -264,5 +271,20 @@ extension SeatCanvasCoreRenderer {
             return
         }
         kk.bridge.SeatCanvasCoreRendererClearSeatData(cppObject)
+    }
+
+    func visibleOriginalRect() -> CGRect {
+        guard let cppObject else {
+            return .zero
+        }
+        return kk.bridge.SeatCanvasCoreRendererGetVisibleContentRect(cppObject)
+    }
+
+    func zoneIds(inOriginalRect rect: CGRect) -> [String] {
+        guard let cppObject else {
+            return []
+        }
+        let zoneIds = kk.bridge.SeatCanvasCoreRendererGetZoneIdsInOriginalRect(cppObject, rect)
+        return zoneIds
     }
 }
