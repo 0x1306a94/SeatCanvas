@@ -415,6 +415,20 @@ CGRect SeatCanvasCoreRendererGetVisibleContentRect(CPPObject *_Nonnull cppObject
         static_cast<CGFloat>(rect.height()));
 }
 
+NSArray<NSString *> *SeatCanvasCoreRendererGetZoneIdsInOriginalRect(CPPObject *_Nonnull cppObject, CGRect rect) {
+    GetCPPObjectOrReturnValue(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer, @[]);
+    tgfx::Rect queryRect = tgfx::Rect::MakeXYWH(static_cast<float>(rect.origin.x),
+                                                static_cast<float>(rect.origin.y),
+                                                static_cast<float>(rect.size.width),
+                                                static_cast<float>(rect.size.height));
+    auto zoneIds = renderer->getZoneIdsInOriginalRect(queryRect);
+    NSMutableArray<NSString *> *result = [NSMutableArray arrayWithCapacity:zoneIds.size()];
+    for (const auto &zoneId : zoneIds) {
+        [result addObject:[NSString stringWithUTF8String:zoneId.c_str()]];
+    }
+    return [result copy];
+}
+
 void SeatCanvasCoreRendererZoomToRect(CPPObject *_Nonnull cppObject, CGRect rect, bool animated, CGFloat padding, double durationMs) {
     GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
     tgfx::Rect targetRect = tgfx::Rect::MakeXYWH(static_cast<float>(rect.origin.x),

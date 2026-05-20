@@ -634,6 +634,30 @@ tgfx::Rect SeatCanvasCoreRenderer::getVisibleOriginalRect() const {
     return _state->getVisibleOriginalRect();
 }
 
+std::vector<std::string> SeatCanvasCoreRenderer::getZoneIdsInOriginalRect(const tgfx::Rect &rect) const {
+    std::vector<std::string> zoneIds = {};
+
+    auto baseMapConfig = _useBaseMapConfig.lock();
+    if (!baseMapConfig) {
+        return zoneIds;
+    }
+
+    auto meshBuilder = baseMapConfig->meshBuilder();
+    if (!meshBuilder) {
+        return zoneIds;
+    }
+
+    auto zones = meshBuilder->findZoneIntersectingRect(rect);
+    for (const auto &zone : zones) {
+        if (!zone || zone->zoneId.empty()) {
+            continue;
+        }
+        zoneIds.push_back(zone->zoneId);
+    }
+
+    return zoneIds;
+}
+
 tgfx::Point SeatCanvasCoreRenderer::convertScreenToContent(const tgfx::Point &location, const tgfx::Point &contentOffset, float scale) const {
     assert(scale != 0.0f);
     auto x = (location.x - contentOffset.x) / scale;

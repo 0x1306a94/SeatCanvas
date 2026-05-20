@@ -428,6 +428,34 @@ Java_com_libseatcanvas_SeatCanvasView_nativeGetContentOffset(JNIEnv *env, jobjec
     return result;
 }
 
+JNIEXPORT jobject JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeGetVisibleOriginalRect(JNIEnv *env, jobject thiz) {
+    GetCPPObjectOrReturnValue(env, thiz, renderer, kk::jni::JRect::ToJava(env, tgfx::Rect::MakeEmpty()));
+    auto rect = renderer->getVisibleOriginalRect();
+    return kk::jni::JRect::ToJava(env, rect);
+}
+
+JNIEXPORT jobjectArray JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeGetZoneIdsInOriginalRect(JNIEnv *env, jobject thiz, jobject rect) {
+    jclass stringClass = env->FindClass("java/lang/String");
+    if (stringClass == nullptr) {
+        return nullptr;
+    }
+    GetCPPObjectOrReturnValue(env, thiz, renderer, env->NewObjectArray(0, stringClass, nullptr));
+    auto queryRect = kk::jni::JRect::FromJava(env, rect);
+    auto zoneIds = renderer->getZoneIdsInOriginalRect(queryRect);
+    jobjectArray result = env->NewObjectArray(static_cast<jsize>(zoneIds.size()), stringClass, nullptr);
+    if (result == nullptr) {
+        return nullptr;
+    }
+    for (size_t index = 0; index < zoneIds.size(); ++index) {
+        jstring zoneId = env->NewStringUTF(zoneIds[index].c_str());
+        env->SetObjectArrayElement(result, static_cast<jsize>(index), zoneId);
+        env->DeleteLocalRef(zoneId);
+    }
+    return result;
+}
+
 JNIEXPORT void JNICALL
 Java_com_libseatcanvas_SeatCanvasView_00024Companion_nativeInitSystemProperties(JNIEnv *env,
                                                                                 jobject thiz,

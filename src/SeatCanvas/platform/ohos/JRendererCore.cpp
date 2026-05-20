@@ -379,6 +379,86 @@ static napi_value GetMaximumZoomScale(napi_env env, napi_callback_info info) {
     return result;
 }
 
+static napi_value GetZoomScale(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+    napi_value jsView = nullptr;
+    size_t argc = 0;
+    napi_value args[1] = {nullptr};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr) {
+        napi_value def = nullptr;
+        napi_create_double(env, 1.0, &def);
+        return def;
+    }
+    auto *renderer = view->internalRenderer();
+    if (renderer == nullptr) {
+        napi_value def = nullptr;
+        napi_create_double(env, 1.0, &def);
+        return def;
+    }
+    napi_value result = nullptr;
+    napi_create_double(env, renderer->getZoomScale(), &result);
+    return result;
+}
+
+static napi_value GetVisibleOriginalRect(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+    napi_value jsView = nullptr;
+    size_t argc = 0;
+    napi_value args[1] = {nullptr};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr) {
+        return CreateRect(env, tgfx::Rect::MakeEmpty());
+    }
+    auto *renderer = view->internalRenderer();
+    if (renderer == nullptr) {
+        return CreateRect(env, tgfx::Rect::MakeEmpty());
+    }
+    return CreateRect(env, renderer->getVisibleOriginalRect());
+}
+
+static napi_value GetZoneIdsInOriginalRect(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+    napi_value jsView = nullptr;
+    size_t argc = 1;
+    napi_value args[1] = {nullptr};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+
+    napi_value emptyArray = nullptr;
+    napi_create_array(env, &emptyArray);
+
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr || argc < 1) {
+        return emptyArray;
+    }
+
+    auto *renderer = view->internalRenderer();
+    if (renderer == nullptr) {
+        return emptyArray;
+    }
+
+    auto queryRect = GetRect(env, args[0]);
+    auto zoneIds = renderer->getZoneIdsInOriginalRect(queryRect);
+
+    napi_value result = nullptr;
+    napi_create_array_with_length(env, zoneIds.size(), &result);
+    if (result == nullptr) {
+        return emptyArray;
+    }
+
+    for (size_t index = 0; index < zoneIds.size(); ++index) {
+        napi_value zoneId = nullptr;
+        napi_create_string_utf8(env, zoneIds[index].c_str(), NAPI_AUTO_LENGTH, &zoneId);
+        napi_set_element(env, result, index, zoneId);
+    }
+    return result;
+}
+
 static napi_value SetSeatSize(napi_env env, napi_callback_info info) {
     kk::js::NapiEnvHolder::setEnv(env);
     napi_value jsView = nullptr;
@@ -964,6 +1044,9 @@ bool JRendererCore::Init(napi_env env, napi_value exports) {
         JS_DEFAULT_METHOD_ENTRY(setSeatSize, SetSeatSize),
         JS_DEFAULT_METHOD_ENTRY(getMinimumZoomScale, GetMinimumZoomScale),
         JS_DEFAULT_METHOD_ENTRY(getMaximumZoomScale, GetMaximumZoomScale),
+        JS_DEFAULT_METHOD_ENTRY(getZoomScale, GetZoomScale),
+        JS_DEFAULT_METHOD_ENTRY(getVisibleOriginalRect, GetVisibleOriginalRect),
+        JS_DEFAULT_METHOD_ENTRY(getZoneIdsInOriginalRect, GetZoneIdsInOriginalRect),
         JS_DEFAULT_METHOD_ENTRY(zoomLevel, GetZoomLevel),
         JS_DEFAULT_METHOD_ENTRY(getSeatRenderZoomThreshold, GetSeatRenderZoomThreshold),
         JS_DEFAULT_METHOD_ENTRY(setSeatRenderZoomThreshold, SetSeatRenderZoomThreshold),

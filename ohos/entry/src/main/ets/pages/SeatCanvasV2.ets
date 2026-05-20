@@ -25,6 +25,7 @@ export struct SeatCanvasV2 {
 
   aboutToDisappear(): void {
     this.sampleModel.stopAvailableSeatsTimer();
+    this.sampleModel.detachSeatCanvasController();
     this.controller.setDelegate(null);
     this.controller.release();
   }

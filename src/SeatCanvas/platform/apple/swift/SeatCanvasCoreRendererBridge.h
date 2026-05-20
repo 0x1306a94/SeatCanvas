@@ -122,7 +122,7 @@ void SeatCanvasCoreRendererUpdateZoomScale(CPPObject *_Nonnull cppObject, CGFloa
 ///   - y: 垂直方向偏移
 void SeatCanvasCoreRendererUpdateContentOffset(CPPObject *_Nonnull cppObject, CGPoint contentOffset);
 
-/// 渲染器缩放级别
+/// 渲染器当前缩放级别
 /// - Parameters:
 ///   - cppObject: C++渲染器实例
 /// - Returns: 缩放级别
@@ -255,6 +255,13 @@ CGFloat SeatCanvasCoreRendererGetDensity(CPPObject *_Nonnull cppObject);
 ///   - cppObject: C++渲染器实例
 /// - Returns: 显示区域
 CGRect SeatCanvasCoreRendererGetVisibleContentRect(CPPObject *_Nonnull cppObject);
+
+/// 查找与指定矩形相交的区域 ID 列表（原始坐标系）
+/// - Parameters:
+///   - cppObject: C++渲染器实例
+///   - rect: 查询矩形（原始坐标系，通常配合 SeatCanvasCoreRendererGetVisibleContentRect 使用）
+/// - Returns: 相交区域的 zoneId 列表，已过滤空 zoneId
+NSArray<NSString *> *_Nonnull SeatCanvasCoreRendererGetZoneIdsInOriginalRect(CPPObject *_Nonnull cppObject, CGRect rect);
 
 /// 缩放到指定区域并居中显示
 /// - Parameters:

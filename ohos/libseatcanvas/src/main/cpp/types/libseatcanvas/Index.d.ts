@@ -134,6 +134,22 @@ export declare namespace seatcanvas {
      */
     getMaximumZoomScale(): number;
 
+    /**
+     * 获取当前缩放级别
+     */
+    getZoomScale(): number;
+
+    /**
+     * 获取当前显示范围（原始坐标系）
+     */
+    getVisibleOriginalRect(): Rect;
+
+    /**
+     * 查找与指定矩形相交的区域 ID 列表（原始坐标系）
+     * @param rect 查询矩形，通常配合 getVisibleOriginalRect 使用
+     */
+    getZoneIdsInOriginalRect(rect: Rect): string[];
+
     zoomLevel(): ZoomLevel;
 
     getSeatRenderZoomThreshold(): number;

@@ -50,6 +50,7 @@ class SecondFragment : Fragment() {
 
     override fun onDestroyView() {
         sampleModel.stopAvailableSeatsTimer()
+        sampleModel.detachSeatCanvasView()
         binding.seatCanvasView.setDelegate(null)
         binding.seatCanvasView.onDestroy()
         super.onDestroyView()

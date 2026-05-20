@@ -174,6 +174,12 @@ class SeatCanvasCoreRenderer {
     /// @return 在原始坐标系中的可见区域矩形，如果内容为空则返回空矩形
     tgfx::Rect getVisibleOriginalRect() const;
 
+    /// 查找与指定矩形相交的区域 ID 列表（原始坐标系）
+    /// 遍历底图网格，判断 fillBounds 或 strokeBounds 与入参 rect 是否相交
+    /// @param rect 查询矩形（原始坐标系，通常配合 getVisibleOriginalRect 使用）
+    /// @return 相交区域的 zoneId 列表，已过滤空 zoneId
+    std::vector<std::string> getZoneIdsInOriginalRect(const tgfx::Rect &rect) const;
+
     /// 将屏幕坐标转为内容坐标系中的坐标
     /// @param location viewport 坐标系
     /// @param contentOffset 位移
