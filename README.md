@@ -1,21 +1,21 @@
 # SeatCanvas
 
-SeatCanvas is a cross-platform seat map rendering library supporting iOS, Android, and OHOS (HarmonyOS) platforms, with Web platform support planned. The library provides seat map rendering, interactive gesture handling, seat state management, and more.
+SeatCanvas is a cross-platform seat map rendering library supporting iOS, Android, and OHOS (HarmonyOS) platforms. The library provides seat map rendering, interactive gesture handling, seat state management, and more.
 
 ## Core Features
 
-- **Cross-Platform Support**: iOS, Android, OHOS, Web (planned)
+- **Cross-Platform Support**: iOS, Android, OHOS
 - **High-Performance Rendering**: GPU-accelerated rendering based on the tgfx graphics library
 - **SVG Basemap Support**: Supports venue basemaps in SVG format
 - **Gesture Interaction**: Supports tap, pan, zoom gestures with iOS-style inertial scrolling and elastic bounce-back animations
 - **Customizable Styles**: Supports circle and SVG seat style configurations with dynamic switching
+- **Push-Based Seat State**: Apps push pricecode, availability status, and selection; C++ resolves style keys at render time (no per-frame delegate style lookup)
 
 ## Supported Platforms
 
 - iOS 15.0+
 - Android (via JNI)
 - OHOS (HarmonyOS)
-- Web (planned, via WebAssembly)
 
 ## Dependency Management
 
@@ -65,7 +65,6 @@ The project uses the CMake build system, supporting:
 - iOS (Xcode)
 - Android (Gradle + CMake)
 - OHOS (DevEco Studio + CMake)
-- Web (planned, via Emscripten)
 
 ### Build Requirements
 
@@ -166,15 +165,16 @@ Zone data (`zonedata/*.json`) format:
 ]
 ```
 
-Seat data (`seatdata/*.json`) format:
+Seat data (`seatdata/*.json`) format (geometry + pricecode; status/selection are pushed at runtime):
 ```json
 {
   "37492": [
     {
       "seatId": "seat_0_0",
-      "status": 0,
+      "pricecode": "1",
       "x": 33,
-      "y": 411
+      "y": 411,
+      "rotation": 0
     }
   ]
 }
@@ -187,10 +187,13 @@ Seat data (`seatdata/*.json`) format:
 
 - **String style keys**: Seat style JSON is a list of entries, each with a string `key` and a `config` (circle or SVG). Register keys with `SeatStyleConfigBuilder`; keys must match `SeatRenderStyleId.compose(pricecode, status, selected)`. Unknown or empty keys skip drawing that seat.
 - **Push-based render state**: Styles are not resolved per frame via delegate. Call `setDelegate` **before** `loadBaseMap()`. Push data in `didLoadBaseMap`: `registerPricecodes` → `applySeatStyleJSONConfig` → per zone: `updateSeatDatas`/`updateSeats` (with `pricecode`) → `updateSeatStatusesForZone` → `setSelectedSeatIds`; use `updateSelectedSeatIds` on tap.
+- **Typical load order**: `setDelegate` → `loadBaseMap` → (core fires `didLoadBaseMap` when ready) → optional `seatRenderZoomThreshold` → push pricecodes, styles, seat geometry, statuses, selection.
+- **`didLoadBaseMap` timing**: Fired after the basemap is parsed and viewport zoom levels are computed. On Android/OHOS, the callback is deferred until `PlatformView` is attached with valid bounds (avoids placeholder viewport sizes). It is **not** replayed if the delegate is set after `loadBaseMap()`.
+- **`SeatCanvasBaseMapLoadedEvent`**: Includes basemap size, `zoomLevels` (seat/row/zone/venue), min/max/current zoom, and `visibleOriginalRect` (original coordinates). Use `event.zoomLevels.venue` or leave `seatRenderZoomThreshold` unset (defaults to venue) for seat visibility threshold.
 - **`updateSeats` / `updateSeatDatas` side effect**: Resets that zone's statuses to 0 and clears selected state for removed seats; you must re-push status/selected afterward.
 - **Updating and clearing**: Call `clearSeatData` on the view or controller to remove all seat data and refresh rendering.
 - **Circle style**: For builders that support it, `overlay` and `checkmark` are optional; only `fill` is required.
-- **Delegate**: Implement `didTapSeat` and optionally `didTapZone` for taps and selection. Use optional `didLoadBaseMap` / `didUnloadBaseMap` to push seat data and styles after the basemap is ready, and to clear cached state on unload (see sample apps). Callbacks are **not** replayed if the delegate is set after `loadBaseMap()`.
+- **Delegate callbacks**: `didLoadBaseMap` / `didUnloadBaseMap` for basemap lifecycle; `didTapSeat` / `didTapZone` for interaction. Stop polling and clear cached seat state in `didUnloadBaseMap`.
 
 ## Usage Examples
 
@@ -204,6 +207,35 @@ seatCanvasView.delegate = self
 seatCanvasView.loadBaseMap(svgData)
 ```
 
+#### Basemap lifecycle and seat data
+
+Implement `SeatCanvasViewDelegate` and push styles/seats in `didLoadBaseMap`:
+
+```swift
+extension MyViewController: SeatCanvasViewDelegate {
+    func seatCanvasView(_ view: SeatCanvasView, didLoadBaseMap event: SeatCanvasBaseMapLoadedEvent) {
+        view.registerPricecodes(["1", "2"])
+        view.applySeatStyleJSONConfig(styleJson)
+        view.updateSeatDatas(zoneId: "37492", seats: seatDataArray)
+        view.updateSeatStatusesForZone(zoneId: "37492", statuses: statuses)
+        view.setSelectedSeatIds(selectedSeatIds)
+    }
+
+    func seatCanvasViewDidUnloadBaseMap(_ view: SeatCanvasView) {
+        // Stop timers, clear cached seat state
+    }
+
+    func seatCanvasView(_ view: SeatCanvasView, didTapSeat zoneId: String, seatId: String) -> Bool {
+        // Update selection, then view.updateSelectedSeatIds(added:removed:)
+        return true
+    }
+
+    func seatCanvasView(_ view: SeatCanvasView, didTapZone zoneId: String) {}
+}
+```
+
+Style keys must match `SeatRenderStyleId.compose(pricecode, status, selected)`.
+
 #### Applying Style Configuration
 
 ```swift
@@ -211,13 +243,13 @@ let builder = SeatStyleConfigBuilder()
 builder.addCircleStyle(styleId: "selectable_unselected", fill: .red, overlay: .black, checkmark: .white)
 builder.addSVGStyle(styleId: "custom_svg", content: svgContent)
 
-seatCanvasView.applySeatStyleJSONConfig(builder.toJSONData())
+let styleJson = builder.toJSONData()
+// Apply in didLoadBaseMap via view.applySeatStyleJSONConfig(styleJson)
 ```
 
-#### Seat data and clearing
+#### Clearing seat data
 
 ```swift
-seatCanvasView.updateSeatDatas(zoneId: "37492", seats: seatDataArray)
 seatCanvasView.clearSeatData()
 ```
 
@@ -231,6 +263,32 @@ seatCanvasView.setDelegate(delegate)
 seatCanvasView.loadBaseMap(svgData)
 ```
 
+#### Basemap lifecycle and seat data
+
+```kotlin
+val delegate = object : SeatCanvasRendererDelegate {
+    override fun didLoadBaseMap(event: SeatCanvasBaseMapLoadedEvent) {
+        seatCanvasView.registerPricecodes(arrayOf("1", "2"))
+        seatCanvasView.applySeatStyleJSONConfig(styleJson)
+        seatCanvasView.updateSeats("37492", seatDataArray)
+        seatCanvasView.updateSeatStatusesForZone("37492", statuses)
+        seatCanvasView.setSelectedSeatIds(selectedSeatIds.toTypedArray())
+    }
+
+    override fun didUnloadBaseMap() {
+        // Stop timers, clear cached seat state
+    }
+
+    override fun didTapSeat(zoneId: String, seatId: String): Boolean {
+        // Update selection, then seatCanvasView.updateSelectedSeatIds(added, removed)
+        return true
+    }
+
+    override fun didTapZone(zoneId: String) {}
+}
+seatCanvasView.setDelegate(delegate)
+```
+
 #### Applying Style Configuration
 
 ```kotlin
@@ -238,13 +296,13 @@ val builder = SeatStyleConfigBuilder()
 builder.addCircleStyle("selectable_unselected", Color.RED, Color.BLACK, Color.WHITE)
 builder.addSVGStyle("custom_svg", svgContent)
 
-seatCanvasView.applySeatStyleJSONConfig(builder.toJSONData())
+val styleJson = builder.toJSONData()
+// Apply in didLoadBaseMap via seatCanvasView.applySeatStyleJSONConfig(styleJson)
 ```
 
-#### Seat data and clearing
+#### Clearing seat data
 
 ```kotlin
-seatCanvasView.updateSeats("37492", seatDataArray)
 seatCanvasView.clearSeatData()
 ```
 
@@ -300,9 +358,9 @@ controller.applySeatStyleJSONConfig(config);
 ```
 
 `SeatStyleBuilder.BuildSVGSeatStyleConfig()` automatically loads the following SVG icons from sample resource files:
-- `SeatCanvasSample.bundle/default/seatstyle/icon_chooseSeat_canSelected.svg` - Selectable seat
-- `SeatCanvasSample.bundle/default/seatstyle/icon_chooseSeat_selected.svg` - Selected seat
-- `SeatCanvasSample.bundle/default/seatstyle/icon_chooseSeat_noSelected.svg` - Non-selectable seat (sold/locked/disabled)
+- `SeatCanvasSample.bundle/default/seatstyle/icon_seat_selectable.svg` - Selectable seat
+- `SeatCanvasSample.bundle/default/seatstyle/icon_seat_selected.svg` - Selected seat
+- `SeatCanvasSample.bundle/default/seatstyle/icon_seat_nonselectable.svg` - Non-selectable seat (sold/locked/disabled)
 
 #### Renderer delegate and clearing seats
 
@@ -334,10 +392,6 @@ controller.clearSeatData();
 // Style registration keys must match:
 SeatRenderStyleId.compose('1', 1, false);
 ```
-
-### Web (Planned)
-
-Web platform support is under development and will be implemented via WebAssembly.
 
 ### Demo Video
 #### Youtube

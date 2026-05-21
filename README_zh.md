@@ -1,21 +1,21 @@
 # SeatCanvas
 
-SeatCanvas 是一个跨平台的座位图渲染库，支持 iOS、Android 和 OHOS（鸿蒙）平台，Web 平台也在计划中。该库提供了座位图渲染、交互手势处理、座位状态管理等功能。
+SeatCanvas 是一个跨平台的座位图渲染库，支持 iOS、Android 和 OHOS（鸿蒙）平台。该库提供了座位图渲染、交互手势处理、座位状态管理等功能。
 
 ## 核心特性
 
-- **跨平台支持**: iOS、Android、OHOS，Web 平台（计划中）
+- **跨平台支持**: iOS、Android、OHOS
 - **高性能渲染**: 基于 tgfx 图形库的 GPU 加速渲染
 - **SVG 底图支持**: 支持 SVG 格式的场馆底图
 - **手势交互**: 支持点击、平移、缩放等手势操作，采用 iOS 风格的惯性滚动和弹性回弹动画
 - **自定义样式**: 支持圆形和 SVG 两种座位样式配置，支持动态切换
+- **推送式座位状态**: 业务 push pricecode、可售 status、选中态；C++ 在渲染时解析样式键（不再通过 delegate 按帧查样式）
 
 ## 支持的平台
 
 - iOS 15.0+
 - Android (通过 JNI)
 - OHOS (鸿蒙系统)
-- Web (计划中，将通过 WebAssembly 实现)
 
 ## 依赖管理
 
@@ -65,7 +65,6 @@ depctl
 - iOS (Xcode)
 - Android (Gradle + CMake)
 - OHOS (DevEco Studio + CMake)
-- Web (计划中，通过 Emscripten)
 
 ### 构建要求
 
@@ -166,15 +165,16 @@ SeatCanvasSample.bundle/
 ]
 ```
 
-座位数据 (`seatdata/*.json`) 格式：
+座位数据 (`seatdata/*.json`) 格式（几何 + pricecode；status/选中态在运行时 push）：
 ```json
 {
   "37492": [
     {
       "seatId": "seat_0_0",
-      "status": 0,
+      "pricecode": "1",
       "x": 33,
-      "y": 411
+      "y": 411,
+      "rotation": 0
     }
   ]
 }
@@ -187,10 +187,13 @@ SeatCanvasSample.bundle/
 
 - **字符串样式键**：座位样式 JSON 为若干条记录，每条含字符串 `key` 与 `config`（圆形或 SVG）。用 `SeatStyleConfigBuilder` 注册键名；键名须与 `SeatRenderStyleId.compose(pricecode, status, selected)` 返回值一致。未注册或空键则跳过该座位。
 - **推送式渲染状态**：不再通过 delegate 按帧解析样式。须先 `setDelegate`，再 `loadBaseMap`；在 `didLoadBaseMap` 中推送：`registerPricecodes` → `applySeatStyleJSONConfig` → 每 zone：`updateSeatDatas`/`updateSeats`（含 `pricecode`）→ `updateSeatStatusesForZone` → `setSelectedSeatIds`；点选时用 `updateSelectedSeatIds`。
+- **典型加载顺序**：`setDelegate` → `loadBaseMap` →（Core 就绪后触发 `didLoadBaseMap`）→ 可选 `seatRenderZoomThreshold` → push pricecodes、样式、座位几何、status、选中态。
+- **`didLoadBaseMap` 触发时机**：底图解析完成且 zoom level 计算就绪后触发。Android/OHOS 会延迟到 `PlatformView` attach 且 viewport 尺寸有效（避免占位尺寸）。若在 `loadBaseMap` 之后才设置 delegate，**不会**补发回调。
+- **`SeatCanvasBaseMapLoadedEvent`**：含底图尺寸、`zoomLevels`（seat/row/zone/venue）、min/max/current zoom、`visibleOriginalRect`（原始坐标）。可用 `event.zoomLevels.venue` 作为座位显示阈值，或不设置 `seatRenderZoomThreshold`（默认跟随 venue）。
 - **`updateSeats` / `updateSeatDatas` 副作用**：会重置该 zone 的 status 为 0，并清除旧 seat 的 selected，随后必须 re-push status/selected。
 - **更新与清空**：调用视图或控制器上的 `clearSeatData` 可清空全部座位数据并重绘。
 - **圆形样式**：在支持的 Builder 上，`overlay` 与 `checkmark` 为可选，仅 `fill` 必填。
-- **代理**：实现 `didTapSeat`、可选 `didTapZone` 处理点击与选座。可选实现 `didLoadBaseMap` / `didUnloadBaseMap`：底图就绪后推送座位数据与样式，卸载时清理缓存状态（见各端 Sample）。若在 `loadBaseMap` 之后才设置 delegate，**不会**补发回调。
+- **Delegate 回调**：`didLoadBaseMap` / `didUnloadBaseMap` 处理底图生命周期；`didTapSeat` / `didTapZone` 处理交互。在 `didUnloadBaseMap` 中停止轮询并清理座位缓存。
 
 ## 使用示例
 
@@ -204,6 +207,35 @@ seatCanvasView.delegate = self
 seatCanvasView.loadBaseMap(svgData)
 ```
 
+#### 底图生命周期与座位数据
+
+实现 `SeatCanvasViewDelegate`，在 `didLoadBaseMap` 中 push 样式与座位：
+
+```swift
+extension MyViewController: SeatCanvasViewDelegate {
+    func seatCanvasView(_ view: SeatCanvasView, didLoadBaseMap event: SeatCanvasBaseMapLoadedEvent) {
+        view.registerPricecodes(["1", "2"])
+        view.applySeatStyleJSONConfig(styleJson)
+        view.updateSeatDatas(zoneId: "37492", seats: seatDataArray)
+        view.updateSeatStatusesForZone(zoneId: "37492", statuses: statuses)
+        view.setSelectedSeatIds(selectedSeatIds)
+    }
+
+    func seatCanvasViewDidUnloadBaseMap(_ view: SeatCanvasView) {
+        // 停止定时器、清理座位缓存
+    }
+
+    func seatCanvasView(_ view: SeatCanvasView, didTapSeat zoneId: String, seatId: String) -> Bool {
+        // 更新选中态后调用 view.updateSelectedSeatIds(added:removed:)
+        return true
+    }
+
+    func seatCanvasView(_ view: SeatCanvasView, didTapZone zoneId: String) {}
+}
+```
+
+样式键须与 `SeatRenderStyleId.compose(pricecode, status, selected)` 一致。
+
 #### 应用样式配置
 
 ```swift
@@ -211,13 +243,13 @@ let builder = SeatStyleConfigBuilder()
 builder.addCircleStyle(styleId: "selectable_unselected", fill: .red, overlay: .black, checkmark: .white)
 builder.addSVGStyle(styleId: "custom_svg", content: svgContent)
 
-seatCanvasView.applySeatStyleJSONConfig(builder.toJSONData())
+let styleJson = builder.toJSONData()
+// 在 didLoadBaseMap 中调用 view.applySeatStyleJSONConfig(styleJson)
 ```
 
-#### 座位数据与清空
+#### 清空座位数据
 
 ```swift
-seatCanvasView.updateSeatDatas(zoneId: "37492", seats: seatDataArray)
 seatCanvasView.clearSeatData()
 ```
 
@@ -231,6 +263,32 @@ seatCanvasView.setDelegate(delegate)
 seatCanvasView.loadBaseMap(svgData)
 ```
 
+#### 底图生命周期与座位数据
+
+```kotlin
+val delegate = object : SeatCanvasRendererDelegate {
+    override fun didLoadBaseMap(event: SeatCanvasBaseMapLoadedEvent) {
+        seatCanvasView.registerPricecodes(arrayOf("1", "2"))
+        seatCanvasView.applySeatStyleJSONConfig(styleJson)
+        seatCanvasView.updateSeats("37492", seatDataArray)
+        seatCanvasView.updateSeatStatusesForZone("37492", statuses)
+        seatCanvasView.setSelectedSeatIds(selectedSeatIds.toTypedArray())
+    }
+
+    override fun didUnloadBaseMap() {
+        // 停止定时器、清理座位缓存
+    }
+
+    override fun didTapSeat(zoneId: String, seatId: String): Boolean {
+        // 更新选中态后调用 seatCanvasView.updateSelectedSeatIds(added, removed)
+        return true
+    }
+
+    override fun didTapZone(zoneId: String) {}
+}
+seatCanvasView.setDelegate(delegate)
+```
+
 #### 应用样式配置
 
 ```kotlin
@@ -238,13 +296,13 @@ val builder = SeatStyleConfigBuilder()
 builder.addCircleStyle("selectable_unselected", Color.RED, Color.BLACK, Color.WHITE)
 builder.addSVGStyle("custom_svg", svgContent)
 
-seatCanvasView.applySeatStyleJSONConfig(builder.toJSONData())
+val styleJson = builder.toJSONData()
+// 在 didLoadBaseMap 中调用 seatCanvasView.applySeatStyleJSONConfig(styleJson)
 ```
 
-#### 座位数据与清空
+#### 清空座位数据
 
 ```kotlin
-seatCanvasView.updateSeats("37492", seatDataArray)
 seatCanvasView.clearSeatData()
 ```
 
@@ -300,9 +358,9 @@ controller.applySeatStyleJSONConfig(config);
 ```
 
 `SeatStyleBuilder.BuildSVGSeatStyleConfig()` 会自动从示例资源文件加载以下 SVG 图标：
-- `SeatCanvasSample.bundle/default/seatstyle/icon_chooseSeat_canSelected.svg` - 可选座位
-- `SeatCanvasSample.bundle/default/seatstyle/icon_chooseSeat_selected.svg` - 已选座位
-- `SeatCanvasSample.bundle/default/seatstyle/icon_chooseSeat_noSelected.svg` - 不可选座位（已售/锁定/禁用）
+- `SeatCanvasSample.bundle/default/seatstyle/icon_seat_selectable.svg` - 可选座位
+- `SeatCanvasSample.bundle/default/seatstyle/icon_seat_selected.svg` - 已选座位
+- `SeatCanvasSample.bundle/default/seatstyle/icon_seat_nonselectable.svg` - 不可选座位（已售/锁定/禁用）
 
 #### 渲染代理与清空座位
 
@@ -334,10 +392,6 @@ controller.clearSeatData();
 // 样式注册键须与以下格式一致：
 SeatRenderStyleId.compose('1', 1, false);
 ```
-
-### Web (计划中)
-
-Web 平台支持正在开发中，将通过 WebAssembly 实现渲染。
 
 ## 许可证
 
