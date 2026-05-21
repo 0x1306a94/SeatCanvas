@@ -1,15 +1,16 @@
-import { SeatStyleConfigBuilder } from 'libseatcanvas'
-import { resourceManager } from '@kit.LocalizationKit'
+import { SeatStyleConfigBuilder, SeatRenderStyleId } from 'libseatcanvas'
+import { resourceManager } from '@kit.LocalizationKit';
 import { util } from '@kit.ArkTS';
 import { ColorExtensions } from './ColorExtensions';
 import { MockPriceData } from './MockPriceData';
 
+export class SeatStatus {
+  static readonly UNAVAILABLE: number = 0;
+  static readonly AVAILABLE: number = 1;
+}
+
 export class SeatStyleBuilder {
   private static readonly SEAT_DISABLED_COLOR: string = '#FFDDDDDD';
-
-  private static styleId(pricecode: string, available: boolean, selected: boolean): string {
-    return `pricecode_${pricecode}_available_${available}_selected_${selected ? 1 : 0}`;
-  }
 
   static buildCircleSeatStyleConfig(prices: MockPriceData[]): string | null {
     if (prices.length === 0) {
@@ -20,9 +21,9 @@ export class SeatStyleBuilder {
     const overlay = '#B2000000';
     const checkmark = '#FFFFFFFF';
     for (const price of prices) {
-      builder.addCircleStyle(SeatStyleBuilder.styleId(price.code, false, false), disabled);
-      builder.addCircleStyle(SeatStyleBuilder.styleId(price.code, true, false), price.color);
-      builder.addCircleStyle(SeatStyleBuilder.styleId(price.code, true, true), price.color, overlay, checkmark);
+      builder.addCircleStyle(SeatRenderStyleId.compose(price.code, SeatStatus.UNAVAILABLE, false), disabled);
+      builder.addCircleStyle(SeatRenderStyleId.compose(price.code, SeatStatus.AVAILABLE, false), price.color);
+      builder.addCircleStyle(SeatRenderStyleId.compose(price.code, SeatStatus.AVAILABLE, true), price.color, overlay, checkmark);
     }
     return builder.toJSONString();
   }
@@ -45,15 +46,15 @@ export class SeatStyleBuilder {
 
     const builder = new SeatStyleConfigBuilder();
     for (const price of prices) {
-      builder.addSVGStyle(SeatStyleBuilder.styleId(price.code, false, false), disabled);
+      builder.addSVGStyle(SeatRenderStyleId.compose(price.code, SeatStatus.UNAVAILABLE, false), disabled);
       const rgbHex = ColorExtensions.rgbHexFromArgb(price.color);
       if (rgbHex == null) {
         continue;
       }
       const modifiedAvailable = available.replace(/#EB484A/gi, rgbHex);
       const modifiedSelected = selected.replace(/#5BC64D/gi, rgbHex);
-      builder.addSVGStyle(SeatStyleBuilder.styleId(price.code, true, false), modifiedAvailable);
-      builder.addSVGStyle(SeatStyleBuilder.styleId(price.code, true, true), modifiedSelected);
+      builder.addSVGStyle(SeatRenderStyleId.compose(price.code, SeatStatus.AVAILABLE, false), modifiedAvailable);
+      builder.addSVGStyle(SeatRenderStyleId.compose(price.code, SeatStatus.AVAILABLE, true), modifiedSelected);
     }
     return builder.toJSONString();
   }

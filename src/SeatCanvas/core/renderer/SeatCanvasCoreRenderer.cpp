@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
+#include <cstdio>
+#include <memory>
 #include <mutex>
 #include <random>
 #include <unordered_map>
@@ -17,6 +19,7 @@
 
 #include <tgfx/core/Canvas.h>
 #include <tgfx/core/Data.h>
+#include <tgfx/core/Path.h>
 #include <tgfx/core/Stream.h>
 #include <tgfx/core/Surface.h>
 #include <tgfx/gpu/CommandEncoder.h>
@@ -84,8 +87,10 @@ SeatCanvasCoreRenderer::SeatCanvasCoreRenderer(
     _overlayLayer->setMinimapAlpha(0.0f);
 
     _seatAtlasManager = std::make_unique<SeatStyleAtlasManager>();
+    // atlas 生成完成后同步 UV 偏移，并重建样式键查表
     _seatAtlasManager->setOnAtlasGenerated([this](const SeatStyleAtlasManager *atlasManager) {
         _customSeatPass->updateUVOffset(atlasManager->getUVOffsets());
+        rebuildStyleKeyLookup();
     });
 
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
@@ -144,6 +149,9 @@ bool SeatCanvasCoreRenderer::updateSize() {
         _zoomPanController->setBounds(tgfx::Size::Make(size));
         updateContentSize();
         invalidateContent();
+    }
+    if (_pendingDidLoadBaseMap) {
+        dispatchBaseMapLifecycleCallback();
     }
     return sizeChanged;
 }
@@ -219,8 +227,11 @@ void SeatCanvasCoreRenderer::setSeatSize(float seatSize) {
 }
 
 void SeatCanvasCoreRenderer::setStyleIdToConfig(const std::unordered_map<std::string, std::shared_ptr<SeatStyleConfig>> &styleIdToConfig) {
+    _registeredStyleIdToConfig = styleIdToConfig;
     auto changed = _seatAtlasManager->setStyleIdToConfigs(styleIdToConfig);
     if (changed) {
+        // 样式变更会 invalidate atlas，查表需等 atlas 重新生成后再 rebuild
+        _uvIndexByStyleKey.clear();
         invalidateContent();
     }
 }
@@ -519,10 +530,13 @@ void SeatCanvasCoreRenderer::draw(bool force) {
         return;
     }
 
-    PROFILE_STAGE_START(group, prepareSeat, "Prepare Seat");
+    PROFILE_STAGE_START(group, prepareSeatAtlas, "Prepare Seat Atlas");
     _seatAtlasManager->update(statePtr->getDensity(), {_seatSize, _seatSize});
+    PROFILE_STAGE_END(group, prepareSeatAtlas);
+
+    PROFILE_STAGE_START(group, prepareSeatInstances, "Prepare Seat Instances");
     prepareSeatIfNeeded();
-    PROFILE_STAGE_END(group, prepareSeat);
+    PROFILE_STAGE_END(group, prepareSeatInstances);
 
     canvas->clear(_backgroundColor);
 
@@ -548,7 +562,7 @@ void SeatCanvasCoreRenderer::draw(bool force) {
     PROFILE_STAGE_START(group, canvasOverlay, "Canvas Overlay");
     canvas->save();
     _overlayLayer->draw(canvas, statePtr);
-    drawFPS(canvas);
+    drawDebugHUD(canvas);
     canvas->restore();
     PROFILE_STAGE_END(group, canvasOverlay);
 
@@ -598,36 +612,112 @@ bool SeatCanvasCoreRenderer::executeCustomRenderPass(tgfx::Context *context, con
     return result;
 }
 
-void SeatCanvasCoreRenderer::drawFPS(tgfx::Canvas *canvas) {
-    if (canvas == nullptr || !_textShaper) {
+void SeatCanvasCoreRenderer::drawDebugHUD(tgfx::Canvas *canvas) {
+    if (canvas == nullptr || !_textShaper || _frameMetrics->isFirstFrame()) {
         return;
     }
 
-    if (_frameMetrics->isFirstFrame()) {
+    struct HudLine {
+        std::string text = {};
+        tgfx::Color color = {tgfx::Color::White()};
+    };
+
+    size_t zoneCount = _seatDataMap.size();
+    size_t seatCount = 0;
+    for (const auto &entry : _seatDataMap) {
+        seatCount += entry.second.size();
+    }
+
+    const int fps = static_cast<int>(_frameMetrics->currentFPS());
+    char buffer[160] = {};
+
+    std::vector<HudLine> lines = {};
+    lines.reserve(9);
+    lines.push_back(HudLine{
+        "FPS: " + std::to_string(fps),
+        fps < 30 ? tgfx::Color::Red() : tgfx::Color::Green(),
+    });
+
+    std::snprintf(buffer, sizeof(buffer), "Zoom: %.3f", getZoomScale());
+    lines.push_back(HudLine{buffer, tgfx::Color::White()});
+
+    std::snprintf(buffer, sizeof(buffer), "Loaded: %zu zones  %zu seats", zoneCount, seatCount);
+    lines.push_back(HudLine{buffer, tgfx::Color::White()});
+
+    std::snprintf(buffer, sizeof(buffer), "Drawn: %zu zones  %zu seats", _renderedSeatZoneCount, _renderedSeatCount);
+    lines.push_back(HudLine{buffer, tgfx::Color::White()});
+
+    std::snprintf(buffer, sizeof(buffer), "Seat thresh: %.3f", getSeatRenderZoomThreshold());
+    lines.push_back(HudLine{buffer, tgfx::Color::White()});
+
+    std::snprintf(buffer, sizeof(buffer), "Level seat: %.3f", _zoomLevelConfig.seat);
+    lines.push_back(HudLine{buffer, tgfx::Color::White()});
+    std::snprintf(buffer, sizeof(buffer), "Level row: %.3f", _zoomLevelConfig.row);
+    lines.push_back(HudLine{buffer, tgfx::Color::White()});
+    std::snprintf(buffer, sizeof(buffer), "Level zone: %.3f", _zoomLevelConfig.zone);
+    lines.push_back(HudLine{buffer, tgfx::Color::White()});
+    std::snprintf(buffer, sizeof(buffer), "Level venue: %.3f", _zoomLevelConfig.venue);
+    lines.push_back(HudLine{buffer, tgfx::Color::White()});
+
+    const float fontSize = kk::utils::fp2px(11.0f);
+    const float padding = kk::utils::vp2px(8.0f);
+    const float lineSpacing = fontSize * 1.35f;
+    const float cornerRadius = kk::utils::vp2px(6.0f);
+    const float originX = kk::utils::vp2px(10.0f);
+    const float originY = kk::utils::vp2px(10.0f);
+
+    struct ShapedHudLine {
+        std::shared_ptr<tgfx::TextBlob> blob = {nullptr};
+        tgfx::Color color = {tgfx::Color::White()};
+        float topY = 0.0f;
+    };
+
+    std::vector<ShapedHudLine> shapedLines = {};
+    shapedLines.reserve(lines.size());
+
+    float maxTextWidth = 0.0f;
+    float contentTop = originY + padding;
+    for (const auto &line : lines) {
+        auto blob = _textShaper->shape(line.text, nullptr, fontSize);
+        if (!blob) {
+            continue;
+        }
+
+        auto bounds = blob->getTightBounds();
+        maxTextWidth = std::max(maxTextWidth, bounds.width());
+
+        ShapedHudLine shapedLine = {};
+        shapedLine.blob = blob;
+        shapedLine.color = line.color;
+        shapedLine.topY = contentTop;
+        shapedLines.push_back(std::move(shapedLine));
+
+        contentTop += lineSpacing;
+    }
+
+    if (shapedLines.empty()) {
         return;
     }
 
-    auto fps = static_cast<int>(_frameMetrics->currentFPS());
-    auto text = "FPS: " + std::to_string(fps);
-    auto fontSize = kk::utils::fp2px(24.0f);
-    auto textBlob = _textShaper->shape(text, nullptr, fontSize);
-    if (!textBlob) {
-        return;
-    }
+    const float panelWidth = maxTextWidth + padding * 2.0f;
+    const float panelHeight = padding * 2.0f + lineSpacing * static_cast<float>(shapedLines.size() - 1) + fontSize * 1.15f;
+    tgfx::Path panelPath = {};
+    panelPath.addRoundRect(tgfx::Rect::MakeXYWH(originX, originY, panelWidth, panelHeight), cornerRadius, cornerRadius);
 
-    auto bounds = textBlob->getTightBounds();
-    tgfx::Paint paint;
-    if (fps < 30) {
-        paint.setColor(tgfx::Color::Red());
-    } else {
-        paint.setColor(tgfx::Color::Green());
+    tgfx::Paint panelPaint = {};
+    panelPaint.setColor(tgfx::Color{0.0f, 0.0f, 0.0f, 0.55f});
+    canvas->drawPath(panelPath, panelPaint);
+
+    const float textX = originX + padding;
+    tgfx::Paint textPaint = {};
+    for (auto &shapedLine : shapedLines) {
+        if (!shapedLine.blob) {
+            continue;
+        }
+        auto bounds = shapedLine.blob->getTightBounds();
+        textPaint.setColor(shapedLine.color);
+        canvas->drawTextBlob(shapedLine.blob, textX, shapedLine.topY - bounds.y(), textPaint);
     }
-    // drawTextBlob 的 Y 坐标是基线位置，需要调整以使文本顶部在期望位置
-    // getTightBounds() 返回的 bounds 是相对于基线的，bounds.y() 通常是负数（文本顶部在基线上方）
-    // 所以要让文本顶部在 desiredTopY，基线应该在 desiredTopY - bounds.y()
-    auto desiredTopY = kk::utils::vp2px(10.0f);
-    auto baselineY = desiredTopY - bounds.y();
-    canvas->drawTextBlob(std::move(textBlob), kk::utils::vp2px(10.0f), baselineY, paint);
 }
 
 tgfx::Rect SeatCanvasCoreRenderer::getVisibleOriginalRect() const {
@@ -883,6 +973,8 @@ void SeatCanvasCoreRenderer::updateUseBaseMapConfig(std::shared_ptr<kk::BaseMapC
 
         applyBaseMapColorState(kk::BaseMapColorState::Original);
         _customBaseMapPass->updateMeshBuilder(nullptr);
+        _renderedSeatZoneCount = 0;
+        _renderedSeatCount = 0;
         _customSeatPass->clearSeats();
     } else {
         setBaseMapLayer(config->baseMapSize());
@@ -895,6 +987,8 @@ void SeatCanvasCoreRenderer::updateUseBaseMapConfig(std::shared_ptr<kk::BaseMapC
         applySavedMiniMapZoneAlternateColors(config->meshBuilder());
         _customBaseMapPass->updateMeshBuilder(config->meshBuilder());
 
+        _renderedSeatZoneCount = 0;
+        _renderedSeatCount = 0;
         _customSeatPass->clearSeats();
     }
 
@@ -903,7 +997,57 @@ void SeatCanvasCoreRenderer::updateUseBaseMapConfig(std::shared_ptr<kk::BaseMapC
 
 void SeatCanvasCoreRenderer::handleBaseMapChanged() {
     updateContentScale();
+    syncBoundsFromPlatformView();
     updateContentSize();
+    dispatchBaseMapLifecycleCallback();
+}
+
+bool SeatCanvasCoreRenderer::syncBoundsFromPlatformView() {
+    if (_platformView == nullptr) {
+        return false;
+    }
+
+    auto size = _platformView->getSize();
+    auto density = _platformView->getDensity();
+    if (size.width <= 0 || size.height <= 0 || density < 1.0f) {
+        return false;
+    }
+
+    _state->updateScreen(size.width, size.height, density);
+    _zoomPanController->setBounds(tgfx::Size::Make(size));
+    return true;
+}
+
+void SeatCanvasCoreRenderer::dispatchBaseMapLifecycleCallback() {
+    if (!_delegate) {
+        return;
+    }
+
+    auto config = _useBaseMapConfig.lock();
+    if (!config) {
+        _pendingDidLoadBaseMap = false;
+        _delegate->didUnloadBaseMap(_coreID);
+        return;
+    }
+
+    if (!isBoundsReadyForBaseMapCallback()) {
+        _pendingDidLoadBaseMap = true;
+        return;
+    }
+
+    syncBoundsFromPlatformView();
+    updateContentSize();
+    _pendingDidLoadBaseMap = false;
+    _delegate->didLoadBaseMap(_coreID, makeBaseMapLoadedEvent());
+}
+
+bool SeatCanvasCoreRenderer::isBoundsReadyForBaseMapCallback() const {
+    if (_platformView == nullptr) {
+        return false;
+    }
+
+    auto bounds = _state->getBoundsSize();
+    return !bounds.isEmpty();
 }
 
 void SeatCanvasCoreRenderer::setBaseMapLayer(const tgfx::Size &baseMapSize) {
@@ -1041,6 +1185,19 @@ SeatCanvasViewportEvent SeatCanvasCoreRenderer::makeViewportEvent() const {
     return event;
 }
 
+SeatCanvasBaseMapLoadedEvent SeatCanvasCoreRenderer::makeBaseMapLoadedEvent() const {
+    SeatCanvasBaseMapLoadedEvent event = {};
+    if (auto config = _useBaseMapConfig.lock()) {
+        event.baseMapSize = config->baseMapSize();
+    }
+    event.zoomLevels = _zoomLevelConfig;
+    event.minimumZoomScale = getMinimumZoomScale();
+    event.maximumZoomScale = getMaximumZoomScale();
+    event.zoomScale = getZoomScale();
+    event.visibleOriginalRect = getVisibleOriginalRect();
+    return event;
+}
+
 void SeatCanvasCoreRenderer::notifyViewportDidEndDeceleratingIfNeeded() {
     if (!_panAnimationActive || _zoomPanController->hasPendingAnimation()) {
         return;
@@ -1164,13 +1321,21 @@ void SeatCanvasCoreRenderer::prepareSeatIfNeeded() {
         return;
     }
 
+    auto clearSeatsAndStats = [this]() {
+        _renderedSeatZoneCount = 0;
+        _renderedSeatCount = 0;
+        _customSeatPass->clearSeats();
+    };
+
     auto baseMapConfig = _useBaseMapConfig.lock();
     if (!baseMapConfig) {
+        clearSeatsAndStats();
         return;
     }
 
     auto meshBuilder = baseMapConfig->meshBuilder();
     if (meshBuilder == nullptr) {
+        clearSeatsAndStats();
         return;
     }
 
@@ -1182,7 +1347,7 @@ void SeatCanvasCoreRenderer::prepareSeatIfNeeded() {
      * 所以当 zoomScale < seatRenderZoomThreshold 时，应该隐藏座位
      */
     if (zoomScale < getSeatRenderZoomThreshold()) {
-        _customSeatPass->clearSeats();
+        clearSeatsAndStats();
         if (_autoChangeBaseMapColorState) {
             applyBaseMapColorState(kk::BaseMapColorState::Rainbow);
         }
@@ -1194,28 +1359,29 @@ void SeatCanvasCoreRenderer::prepareSeatIfNeeded() {
     }
 
     if (!shouldAutoDrawSeat()) {
-        _customSeatPass->clearSeats();
+        clearSeatsAndStats();
         return;
     }
 
     auto visibleOriginalRect = getVisibleOriginalRect();
     if (visibleOriginalRect.isEmpty()) {
-        _customSeatPass->clearSeats();
+        clearSeatsAndStats();
         return;
     }
 
     /*
      * 扩大一点点，避免出现刚好在边缘的隐藏/显示，视觉上体验不好
      */
-    visibleOriginalRect.outset(60, 60);
+    visibleOriginalRect.outset(_seatSize * 2.0, _seatSize * 2.0);
 
     auto zones = meshBuilder->findZoneIntersectingRect(visibleOriginalRect);
     if (zones.empty()) {
-        _customSeatPass->clearSeats();
+        clearSeatsAndStats();
         return;
     }
 
-    std::vector<SeatInstanceData> instances{};
+    std::vector<SeatInstanceData> instances = {};
+    size_t renderedZoneCount = 0;
     for (const auto &zone : zones) {
         if (!zone) {
             continue;
@@ -1226,31 +1392,41 @@ void SeatCanvasCoreRenderer::prepareSeatIfNeeded() {
             continue;
         }
 
+        auto stateIter = _seatStateByZone.find(zone->zoneId);
+        if (stateIter == _seatStateByZone.end()) {
+            continue;
+        }
+
+        const auto &seats = iter->second;
+        const auto &statuses = stateIter->second.statuses;
         auto partial = !visibleOriginalRect.contains(zone->fillBounds);
-        for (const auto &seat : iter->second) {
+        const size_t instanceCountBefore = instances.size();
+        for (size_t index = 0; index < seats.size(); ++index) {
+            const auto &seat = seats[index];
             if (partial && !tgfx::Rect::Intersects(visibleOriginalRect, tgfx::Rect::MakeXYWH(seat.x, seat.y, _seatSize, _seatSize))) {
                 continue;
             }
 
-            if (!_delegate) {
-                continue;
-            }
+            uint32_t status = index < statuses.size() ? statuses[index] : 0;
+            bool selected = _selectedSeatIds.find(seat.seatId) != _selectedSeatIds.end();
+            SeatRenderStyleKey styleKey{seat.pricecodeIndex, status, selected};
 
-            std::string styleId = {};
-            if (!_delegate->styleIdForSeat(_coreID, zone->zoneId, seat.seatId, styleId) || styleId.empty()) {
-                continue;
-            }
-
-            auto uvOffsetIndex = _seatAtlasManager->getUVOffsetIndex(styleId);
-            if (uvOffsetIndex == -1) {
+            auto uvIter = _uvIndexByStyleKey.find(styleKey);
+            if (uvIter == _uvIndexByStyleKey.end() || uvIter->second < 0) {
                 continue;
             }
 
             float rotationRad = seat.rotation * (M_PI / 180.0f);
-            instances.emplace_back(seat.x, seat.y, uvOffsetIndex, rotationRad);
+            instances.emplace_back(seat.x, seat.y, uvIter->second, rotationRad);
+        }
+
+        if (instances.size() > instanceCountBefore) {
+            renderedZoneCount++;
         }
     }
 
+    _renderedSeatZoneCount = renderedZoneCount;
+    _renderedSeatCount = instances.size();
     _customSeatPass->updateSeats(std::move(instances));
 }
 
@@ -1954,6 +2130,13 @@ void SeatCanvasCoreRenderer::setSeatData(const std::string &zoneId, const std::v
         return;
     }
 
+    if (auto oldIter = _seatDataMap.find(zoneId); oldIter != _seatDataMap.end()) {
+        for (const auto &seat : oldIter->second) {
+            _seatIndexById.erase(seat.seatId);
+            _selectedSeatIds.erase(seat.seatId);
+        }
+    }
+
     std::vector<kk::SeatData> validSeats = {};
     validSeats.reserve(seats.size());
     for (const auto &seat : seats) {
@@ -1964,15 +2147,154 @@ void SeatCanvasCoreRenderer::setSeatData(const std::string &zoneId, const std::v
     }
 
     _seatDataMap[zoneId] = std::move(validSeats);
+
+    ZoneSeatRuntimeState runtimeState = {};
+    runtimeState.statuses.assign(_seatDataMap[zoneId].size(), 0);
+    _seatStateByZone[zoneId] = std::move(runtimeState);
+
+    const auto &storedSeats = _seatDataMap[zoneId];
+    for (size_t index = 0; index < storedSeats.size(); ++index) {
+        _seatIndexById[storedSeats[index].seatId] = SeatLocation{zoneId, index};
+    }
+
     _customSeatPass->clearSeats();
     invalidateContent();
 }
 
 void SeatCanvasCoreRenderer::clearSeatData() {
     _seatDataMap.clear();
+    _seatStateByZone.clear();
+    _seatIndexById.clear();
+    _selectedSeatIds.clear();
 
     _customSeatPass->clearSeats();
 
     invalidateContent();
+}
+
+void SeatCanvasCoreRenderer::registerPricecodes(const std::vector<std::string> &pricecodes) {
+    _pricecodes = pricecodes;
+    _pricecodeToIndex.clear();
+    _pricecodeToIndex.reserve(pricecodes.size());
+    for (size_t index = 0; index < pricecodes.size(); ++index) {
+        if (pricecodes[index].empty()) {
+            continue;
+        }
+        _pricecodeToIndex.emplace(pricecodes[index], static_cast<uint16_t>(index));
+    }
+    // atlas 已就绪时价档表变更需立即重建查表
+    if (_seatAtlasManager->getUVOffsetCount() > 0) {
+        rebuildStyleKeyLookup();
+    }
+}
+
+uint16_t SeatCanvasCoreRenderer::pricecodeIndexForCode(const std::string &pricecode) const {
+    return resolvePricecodeIndex(_pricecodeToIndex, pricecode);
+}
+
+void SeatCanvasCoreRenderer::updateSeatStatuses(const std::vector<kk::SeatStatusUpdate> &updates) {
+    if (updates.empty()) {
+        return;
+    }
+
+    bool changed = false;
+    for (const auto &update : updates) {
+        if (update.seatId.empty()) {
+            continue;
+        }
+        auto locationIter = _seatIndexById.find(update.seatId);
+        if (locationIter == _seatIndexById.end()) {
+            continue;
+        }
+        auto stateIter = _seatStateByZone.find(locationIter->second.zoneId);
+        if (stateIter == _seatStateByZone.end()) {
+            continue;
+        }
+        if (locationIter->second.index >= stateIter->second.statuses.size()) {
+            continue;
+        }
+        stateIter->second.statuses[locationIter->second.index] = update.status;
+        changed = true;
+    }
+
+    if (changed) {
+        _customSeatPass->clearSeats();
+        invalidateContent();
+    }
+}
+
+void SeatCanvasCoreRenderer::updateSeatStatusesForZone(const std::string &zoneId, const std::vector<uint32_t> &statuses) {
+    if (zoneId.empty()) {
+        return;
+    }
+
+    auto dataIter = _seatDataMap.find(zoneId);
+    auto stateIter = _seatStateByZone.find(zoneId);
+    if (dataIter == _seatDataMap.end() || stateIter == _seatStateByZone.end()) {
+        return;
+    }
+    if (statuses.size() != dataIter->second.size()) {
+        return;
+    }
+
+    stateIter->second.statuses = statuses;
+    _customSeatPass->clearSeats();
+    invalidateContent();
+}
+
+void SeatCanvasCoreRenderer::setSelectedSeatIds(const std::vector<std::string> &seatIds) {
+    _selectedSeatIds.clear();
+    _selectedSeatIds.insert(seatIds.begin(), seatIds.end());
+    _customSeatPass->clearSeats();
+    invalidateContent();
+}
+
+void SeatCanvasCoreRenderer::updateSelectedSeatIds(const std::vector<std::string> &added, const std::vector<std::string> &removed) {
+    if (added.empty() && removed.empty()) {
+        return;
+    }
+
+    for (const auto &seatId : removed) {
+        _selectedSeatIds.erase(seatId);
+    }
+    for (const auto &seatId : added) {
+        if (!seatId.empty()) {
+            _selectedSeatIds.insert(seatId);
+        }
+    }
+
+    _customSeatPass->clearSeats();
+    invalidateContent();
+}
+
+void SeatCanvasCoreRenderer::rebuildStyleKeyLookup() {
+    _uvIndexByStyleKey.clear();
+    if (_registeredStyleIdToConfig.empty()) {
+        return;
+    }
+
+    for (const auto &entry : _registeredStyleIdToConfig) {
+        auto parsed = parseSeatStyleId(entry.first);
+        if (!parsed.has_value()) {
+            continue;
+        }
+
+        uint16_t pricecodeIndex = kNoPricecodeIndex;
+        if (!parsed->pricecode.empty()) {
+            auto pricecodeIter = _pricecodeToIndex.find(parsed->pricecode);
+            if (pricecodeIter == _pricecodeToIndex.end()) {
+                continue;
+            }
+            pricecodeIndex = pricecodeIter->second;
+        }
+
+        auto uvIndex = _seatAtlasManager->getUVOffsetIndex(entry.first);
+        if (uvIndex < 0) {
+            continue;
+        }
+
+        SeatRenderStyleKey styleKey{pricecodeIndex, parsed->status, parsed->selected};
+        _uvIndexByStyleKey[styleKey] = uvIndex;
+    }
 }
 };  // namespace kk::renderer

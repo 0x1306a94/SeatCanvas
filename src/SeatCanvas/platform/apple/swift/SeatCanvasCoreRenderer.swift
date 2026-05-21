@@ -7,7 +7,6 @@
 
 import Foundation
 import MetalKit
-internal import CxxStdlib
 internal import SeatCanvas_Private
 
 @MainActor
@@ -259,11 +258,49 @@ extension SeatCanvasCoreRenderer {
 
         var builder = kk.bridge.CreateSeatDataBuilder()
         for seat in seats {
-            kk.bridge.SeatDataBuilderPut(builder, std.string(seat.seatId), seat.position, seat.rotation)
+            let pricecodeIndex = kk.bridge.SeatCanvasCoreRendererPricecodeIndexForCode(cppObject, seat.pricecode ?? "")
+            kk.bridge.SeatDataBuilderPut(builder, seat.seatId, seat.position, seat.rotation, pricecodeIndex)
         }
 
-        kk.bridge.SeatCanvasCoreRendererSetSeatDatas(cppObject, std.string(zoneId), builder)
+        kk.bridge.SeatCanvasCoreRendererSetSeatDatas(cppObject, zoneId, builder)
         kk.bridge.ReleaseCPPObject(&builder)
+    }
+
+    func registerPricecodes(_ pricecodes: [String]) {
+        guard let cppObject else {
+            return
+        }
+        kk.bridge.SeatCanvasCoreRendererRegisterPricecodes(cppObject, pricecodes)
+    }
+
+    func updateSeatStatuses(seatIds: [String], statuses: [UInt32]) {
+        guard let cppObject else {
+            return
+        }
+        let statusNumbers = statuses.map { NSNumber(value: $0) }
+        kk.bridge.SeatCanvasCoreRendererUpdateSeatStatuses(cppObject, seatIds, statusNumbers)
+    }
+
+    func updateSeatStatusesForZone(zoneId: String, statuses: [UInt32]) {
+        guard let cppObject else {
+            return
+        }
+        let statusNumbers = statuses.map { NSNumber(value: $0) }
+        kk.bridge.SeatCanvasCoreRendererUpdateSeatStatusesForZone(cppObject, zoneId, statusNumbers)
+    }
+
+    func setSelectedSeatIds(_ seatIds: [String]) {
+        guard let cppObject else {
+            return
+        }
+        kk.bridge.SeatCanvasCoreRendererSetSelectedSeatIds(cppObject, seatIds)
+    }
+
+    func updateSelectedSeatIds(added: [String], removed: [String]) {
+        guard let cppObject else {
+            return
+        }
+        kk.bridge.SeatCanvasCoreRendererUpdateSelectedSeatIds(cppObject, added, removed)
     }
 
     func clearSeatData() {

@@ -34,16 +34,11 @@ class SecondFragment : Fragment() {
         val data = readAssetFileToByteArray(requireContext(), baseMapInfo.assetPath) ?: return
         val parseConfig = SVGBaseMapParseConfig(listOf("zoneId", "regioncode"))
 
+        binding.seatCanvasView.seatSize = 24.0f
         binding.seatCanvasView.canvasColor = ContextCompat.getColor(requireContext(), R.color.canvas_bg)
+        sampleModel.attach(requireContext(), baseMapInfo, binding.seatCanvasView)
         binding.seatCanvasView.setDelegate(sampleModel.rendererDelegate)
         binding.seatCanvasView.loadBaseMap(data, BaseMapFormat.SVG, parseConfig)
-
-        sampleModel.loadMockData(requireContext(), baseMapInfo, binding.seatCanvasView)
-        sampleModel.regenerateRandomAvailableSeats()
-        sampleModel.startAvailableSeatsTimer()
-        binding.seatCanvasView.applySeatStyleJSONConfig(
-            SeatStyleBuilder.buildSVGSeatStyleConfig(requireContext(), sampleModel.prices)
-        )
 
         setupStyleSwitches()
     }

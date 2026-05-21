@@ -13,6 +13,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <tgfx/core/Color.h>
@@ -26,6 +27,7 @@
 #include "core/ZoomScaleConfig.hpp"
 #include "core/gesture/GestureState.hpp"
 #include "core/renderer/SeatCanvasCoreRendererDelegate.hpp"
+#include "core/style/SeatRenderStyleKey.hpp"
 #include "core/style/SeatStyleConfig.hpp"
 
 namespace tgfx {
@@ -230,11 +232,30 @@ class SeatCanvasCoreRenderer {
 
     /// 设置某个区域的座位数据
     /// @param zoneId 区域ID
-    /// @param seats 座位几何数据列表，每个座位包含 seatId, x, y, rotation
+    /// @param seats 座位几何数据列表，每个座位包含 seatId, x, y, rotation, pricecodeIndex
+    /// @note 会重置该 zone 的 status 为 0，并清除旧 seat 的 selected；随后需 re-push status/selected
     void setSeatData(const std::string &zoneId, const std::vector<kk::SeatData> &seats);
 
     /// 清除所有区域和座位数据
     void clearSeatData();
+
+    /// 注册价档表（load 前调用一次）
+    void registerPricecodes(const std::vector<std::string> &pricecodes);
+
+    /// 将价档字符串解析为 pricecodeIndex
+    uint16_t pricecodeIndexForCode(const std::string &pricecode) const;
+
+    /// 批量更新单个座位 status
+    void updateSeatStatuses(const std::vector<kk::SeatStatusUpdate> &updates);
+
+    /// 批量更新某个 zone 内全部座位 status（数组下标与 setSeatData 顺序一致）
+    void updateSeatStatusesForZone(const std::string &zoneId, const std::vector<uint32_t> &statuses);
+
+    /// 全量替换选中座位
+    void setSelectedSeatIds(const std::vector<std::string> &seatIds);
+
+    /// 增量更新选中座位
+    void updateSelectedSeatIds(const std::vector<std::string> &added, const std::vector<std::string> &removed);
 
   private:
     /// 设置当前的底图配置
@@ -243,6 +264,14 @@ class SeatCanvasCoreRenderer {
 
     /// 底图发生变化
     void handleBaseMapChanged();
+
+    /// 从 PlatformView 同步 viewport 尺寸到 state（不触发 content size 重算）
+    bool syncBoundsFromPlatformView();
+
+    /// PlatformView 已就绪且 bounds 有效时派发 didLoadBaseMap，否则标记 pending
+    void dispatchBaseMapLifecycleCallback();
+
+    bool isBoundsReadyForBaseMapCallback() const;
 
     /// 设置底图
     /// @param layer 底图
@@ -269,6 +298,7 @@ class SeatCanvasCoreRenderer {
     /// 内部方法，更新ZoomPanController状态并通知App
     void updateZoomPanControllerState(bool notifyViewport = true);
     SeatCanvasViewportEvent makeViewportEvent() const;
+    SeatCanvasBaseMapLoadedEvent makeBaseMapLoadedEvent() const;
     void notifyViewportDidEndDeceleratingIfNeeded();
     void notifyViewportDidEndScrollingAnimation();
     void beginViewportScrollingAnimation();
@@ -304,7 +334,19 @@ class SeatCanvasCoreRenderer {
     void applySavedSeatZoneAlternateColors(std::shared_ptr<BaseMapMeshBuilder> meshBuilder);
     void applySavedMiniMapZoneAlternateColors(std::shared_ptr<BaseMapMeshBuilder> meshBuilder);
 
-    void drawFPS(tgfx::Canvas *canvas);
+    /// atlas 生成后重建 {pricecodeIndex, status, selected} → uvIndex 查表
+    void rebuildStyleKeyLookup();
+
+    struct SeatLocation {
+        std::string zoneId = {};
+        size_t index = 0;
+    };
+
+    struct ZoneSeatRuntimeState {
+        std::vector<uint32_t> statuses = {};
+    };
+
+    void drawDebugHUD(tgfx::Canvas *canvas);
 
     bool executeCustomRenderPass(tgfx::Context *context, const SeatCanvasCoreRendererState *state);
 
@@ -344,11 +386,21 @@ class SeatCanvasCoreRenderer {
     uint32_t _minimapAnimationId = {0};
     bool _panAnimationActive = {false};
     bool _scrollingAnimationActive = {false};
+    bool _pendingDidLoadBaseMap = {false};
 
     std::unordered_map<std::string, tgfx::Color> _zoneColorMap = {};
     std::unordered_map<std::string, tgfx::Color> _minimapZoneColorMap = {};
     std::unordered_map<std::string, std::vector<kk::SeatData>> _seatDataMap = {};
+    std::unordered_map<std::string, ZoneSeatRuntimeState> _seatStateByZone = {};
+    std::unordered_map<std::string, SeatLocation> _seatIndexById = {};
+    std::unordered_set<std::string> _selectedSeatIds = {};
+    std::vector<std::string> _pricecodes = {};
+    std::unordered_map<std::string, uint16_t> _pricecodeToIndex = {};
+    std::unordered_map<SeatRenderStyleKey, int32_t, SeatRenderStyleKeyHash> _uvIndexByStyleKey = {};
+    std::unordered_map<std::string, std::shared_ptr<SeatStyleConfig>> _registeredStyleIdToConfig = {};
     float _seatSize = {36.0f};
+    size_t _renderedSeatZoneCount = {0};
+    size_t _renderedSeatCount = {0};
 };
 };  // namespace kk::renderer
 

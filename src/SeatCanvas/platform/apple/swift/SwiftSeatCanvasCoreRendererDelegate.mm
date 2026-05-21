@@ -22,19 +22,29 @@ SwiftSeatCanvasCoreRendererDelegate::~SwiftSeatCanvasCoreRendererDelegate() {
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
 }
 
-void SwiftSeatCanvasCoreRendererDelegate::didTapZone(uint32_t coreID, const std::string &zoneId) {
-    ::switf_bridge_didTapZone(coreID, zoneId.c_str());
+void SwiftSeatCanvasCoreRendererDelegate::didLoadBaseMap(uint32_t coreID, const kk::renderer::SeatCanvasBaseMapLoadedEvent &event) {
+    ::switf_bridge_didLoadBaseMap(coreID,
+                                  event.baseMapSize.width,
+                                  event.baseMapSize.height,
+                                  event.zoomLevels.seat,
+                                  event.zoomLevels.row,
+                                  event.zoomLevels.zone,
+                                  event.zoomLevels.venue,
+                                  event.minimumZoomScale,
+                                  event.maximumZoomScale,
+                                  event.zoomScale,
+                                  event.visibleOriginalRect.x(),
+                                  event.visibleOriginalRect.y(),
+                                  event.visibleOriginalRect.width(),
+                                  event.visibleOriginalRect.height());
 }
 
-bool SwiftSeatCanvasCoreRendererDelegate::styleIdForSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId, std::string &outStyleId) {
-    constexpr size_t kMaxStyleIdLength = 1024;
-    char buffer[kMaxStyleIdLength] = {0};
-    auto found = ::switf_bridge_styleIdForSeat(coreID, zoneId.c_str(), seatId.c_str(), buffer, kMaxStyleIdLength);
-    if (!found || buffer[0] == '\0') {
-        return false;
-    }
-    outStyleId = buffer;
-    return true;
+void SwiftSeatCanvasCoreRendererDelegate::didUnloadBaseMap(uint32_t coreID) {
+    ::switf_bridge_didUnloadBaseMap(coreID);
+}
+
+void SwiftSeatCanvasCoreRendererDelegate::didTapZone(uint32_t coreID, const std::string &zoneId) {
+    ::switf_bridge_didTapZone(coreID, zoneId.c_str());
 }
 
 bool SwiftSeatCanvasCoreRendererDelegate::didTapSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId) {

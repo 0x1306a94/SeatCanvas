@@ -12,7 +12,7 @@ class SeatStyleConfigBuilder {
 
     /**
      * 注册圆形样式。
-     * @param styleId 样式键（与 delegate 返回的样式 ID 对应）
+     * @param styleId 样式键（与 [SeatRenderStyleId.compose] 返回值一致）
      * @param fill 填充色
      * @param overlay 遮罩色，仅选中态需要时可传
      * @param checkmark 对勾色，仅选中态需要时可传

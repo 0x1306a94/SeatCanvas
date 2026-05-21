@@ -185,11 +185,12 @@ Seat data (`seatdata/*.json`) format:
 
 ## Seat Data, Style Keys, and Renderer Delegate
 
-- **String style keys**: Seat style JSON is a list of entries, each with a string `key` and a `config` (circle or SVG). Register keys with `SeatStyleConfigBuilder`; the same strings must be returned from `styleIdForSeat` (or the platform equivalent) so each seat resolves to a registered style. Unknown or empty keys skip drawing that seat.
-- **Per-seat `styleId`**: `SeatData` may carry an optional `styleId`. The renderer still consults your delegate for the final style when implemented.
-- **Updating and clearing**: Use `updateSeatDatas` (iOS) / `updateSeats` (Android, OHOS) to set geometry per zone. Call `clearSeatData` on the view or controller to remove all seat data and refresh rendering.
+- **String style keys**: Seat style JSON is a list of entries, each with a string `key` and a `config` (circle or SVG). Register keys with `SeatStyleConfigBuilder`; keys must match `SeatRenderStyleId.compose(pricecode, status, selected)`. Unknown or empty keys skip drawing that seat.
+- **Push-based render state**: Styles are not resolved per frame via delegate. Call `setDelegate` **before** `loadBaseMap()`. Push data in `didLoadBaseMap`: `registerPricecodes` → `applySeatStyleJSONConfig` → per zone: `updateSeatDatas`/`updateSeats` (with `pricecode`) → `updateSeatStatusesForZone` → `setSelectedSeatIds`; use `updateSelectedSeatIds` on tap.
+- **`updateSeats` / `updateSeatDatas` side effect**: Resets that zone's statuses to 0 and clears selected state for removed seats; you must re-push status/selected afterward.
+- **Updating and clearing**: Call `clearSeatData` on the view or controller to remove all seat data and refresh rendering.
 - **Circle style**: For builders that support it, `overlay` and `checkmark` are optional; only `fill` is required.
-- **Delegate**: Implement `styleIdForSeat`, `didTapSeat`, and optionally `didTapZone` to drive selection and redraws (see platform types in the sample app).
+- **Delegate**: Implement `didTapSeat` and optionally `didTapZone` for taps and selection. Use optional `didLoadBaseMap` / `didUnloadBaseMap` to push seat data and styles after the basemap is ready, and to clear cached state on unload (see sample apps). Callbacks are **not** replayed if the delegate is set after `loadBaseMap()`.
 
 ## Usage Examples
 
@@ -226,6 +227,7 @@ seatCanvasView.clearSeatData()
 
 ```kotlin
 val seatCanvasView = SeatCanvasView(context)
+seatCanvasView.setDelegate(delegate)
 seatCanvasView.loadBaseMap(svgData)
 ```
 
@@ -255,11 +257,12 @@ import { SeatCanvasView, SeatCanvasViewController, BaseMapFormat } from 'libseat
 
 @State controller: SeatCanvasViewController = new SeatCanvasViewController()
 
+this.controller.setDelegate(delegate)
 SeatCanvasView({ controller: this.controller })
   .width('100%')
   .height('100%')
 
-// Load basemap
+// Load basemap (push seat data in didLoadBaseMap)
 let manager = getContext(this).resourceManager;
 await this.controller.loadFromAssets(manager, `svg/${basemapName}.svg`, BaseMapFormat.SVG);
 ```
@@ -304,11 +307,18 @@ controller.applySeatStyleJSONConfig(config);
 #### Renderer delegate and clearing seats
 
 ```typescript
-import { SeatCanvasRendererDelegate } from 'libseatcanvas';
+import { SeatCanvasRendererDelegate, SeatRenderStyleId } from 'libseatcanvas';
 
 let delegate: SeatCanvasRendererDelegate = {
-  styleIdForSeat: (zoneId: string, seatId: string) => {
-    return 'selectable_unselected';
+  didLoadBaseMap: (event) => {
+    controller.registerPricecodes(['1', '2']);
+    controller.applySeatStyleJSONConfig(styleJson);
+    controller.updateSeats('37492', seatDataArray);
+    controller.updateSeatStatusesForZone('37492', statuses);
+    controller.setSelectedSeatIds(selectedSeatIds);
+  },
+  didUnloadBaseMap: () => {
+    // Stop timers, clear cached seat state
   },
   didTapSeat: (zoneId: string, seatId: string) => {
     return true;
@@ -318,8 +328,11 @@ let delegate: SeatCanvasRendererDelegate = {
 };
 
 controller.setDelegate(delegate);
-controller.updateSeats('37492', seatDataArray);
+await controller.loadFromAssets(manager, assetPath, BaseMapFormat.SVG, parseConfig);
 controller.clearSeatData();
+
+// Style registration keys must match:
+SeatRenderStyleId.compose('1', 1, false);
 ```
 
 ### Web (Planned)

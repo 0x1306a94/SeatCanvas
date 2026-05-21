@@ -24,6 +24,77 @@ AndroidSeatCanvasCoreRendererDelegate::~AndroidSeatCanvasCoreRendererDelegate() 
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
 }
 
+void AndroidSeatCanvasCoreRendererDelegate::didLoadBaseMap(uint32_t, const SeatCanvasBaseMapLoadedEvent &event) {
+    kk::jni::JNIEnvironment environment;
+    auto env = environment.current();
+    if (env == nullptr || _seatCanvasView.isEmpty()) {
+        return;
+    }
+
+    jclass clazz = env->GetObjectClass(_seatCanvasView.get());
+    if (clazz == nullptr) {
+        env->ExceptionClear();
+        return;
+    }
+
+    jmethodID methodID = env->GetMethodID(clazz, "nativeOnDidLoadBaseMap", "(FFFFFFFFFFFFF)V");
+    if (methodID == nullptr) {
+        env->ExceptionClear();
+        env->DeleteLocalRef(clazz);
+        return;
+    }
+
+    env->CallVoidMethod(_seatCanvasView.get(), methodID,
+                        static_cast<jfloat>(event.baseMapSize.width),
+                        static_cast<jfloat>(event.baseMapSize.height),
+                        static_cast<jfloat>(event.zoomLevels.seat),
+                        static_cast<jfloat>(event.zoomLevels.row),
+                        static_cast<jfloat>(event.zoomLevels.zone),
+                        static_cast<jfloat>(event.zoomLevels.venue),
+                        static_cast<jfloat>(event.minimumZoomScale),
+                        static_cast<jfloat>(event.maximumZoomScale),
+                        static_cast<jfloat>(event.zoomScale),
+                        static_cast<jfloat>(event.visibleOriginalRect.x()),
+                        static_cast<jfloat>(event.visibleOriginalRect.y()),
+                        static_cast<jfloat>(event.visibleOriginalRect.width()),
+                        static_cast<jfloat>(event.visibleOriginalRect.height()));
+
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+    }
+
+    env->DeleteLocalRef(clazz);
+}
+
+void AndroidSeatCanvasCoreRendererDelegate::didUnloadBaseMap(uint32_t) {
+    kk::jni::JNIEnvironment environment;
+    auto env = environment.current();
+    if (env == nullptr || _seatCanvasView.isEmpty()) {
+        return;
+    }
+
+    jclass clazz = env->GetObjectClass(_seatCanvasView.get());
+    if (clazz == nullptr) {
+        env->ExceptionClear();
+        return;
+    }
+
+    jmethodID methodID = env->GetMethodID(clazz, "nativeOnDidUnloadBaseMap", "()V");
+    if (methodID == nullptr) {
+        env->ExceptionClear();
+        env->DeleteLocalRef(clazz);
+        return;
+    }
+
+    env->CallVoidMethod(_seatCanvasView.get(), methodID);
+
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+    }
+
+    env->DeleteLocalRef(clazz);
+}
+
 void AndroidSeatCanvasCoreRendererDelegate::didTapZone(uint32_t coreID, const std::string &zoneId) {
     kk::jni::JNIEnvironment environment;
     auto env = environment.current();
@@ -52,52 +123,6 @@ void AndroidSeatCanvasCoreRendererDelegate::didTapZone(uint32_t coreID, const st
 
     env->DeleteLocalRef(clazz);
     env->DeleteLocalRef(jzoneId);
-}
-
-bool AndroidSeatCanvasCoreRendererDelegate::styleIdForSeat(uint32_t coreID, const std::string &zoneId,
-                                                           const std::string &seatId, std::string &outStyleId) {
-    kk::jni::JNIEnvironment environment;
-    auto env = environment.current();
-    if (env == nullptr || _seatCanvasView.isEmpty()) {
-        return false;
-    }
-
-    auto jzoneId = kk::jni::SafeConvertToJString(env, zoneId);
-    auto jSeatId = kk::jni::SafeConvertToJString(env, seatId);
-
-    jclass clazz = env->GetObjectClass(_seatCanvasView.get());
-    if (clazz == nullptr) {
-        env->ExceptionClear();
-        env->DeleteLocalRef(jzoneId);
-        env->DeleteLocalRef(jSeatId);
-        return false;
-    }
-
-    jmethodID methodID = env->GetMethodID(clazz, "nativeOnStyleIdForSeat", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
-    if (methodID == nullptr) {
-        env->ExceptionClear();
-        env->DeleteLocalRef(clazz);
-        env->DeleteLocalRef(jzoneId);
-        env->DeleteLocalRef(jSeatId);
-        return false;
-    }
-
-    jobject jresult = env->CallObjectMethod(_seatCanvasView.get(), methodID, jzoneId, jSeatId);
-
-    env->DeleteLocalRef(clazz);
-    env->DeleteLocalRef(jzoneId);
-    env->DeleteLocalRef(jSeatId);
-
-    if (jresult == nullptr) {
-        return false;
-    }
-    auto jstr = static_cast<jstring>(jresult);
-    outStyleId = kk::jni::SafeConvertToStdString(env, jstr);
-    env->DeleteLocalRef(jresult);
-    if (outStyleId.empty()) {
-        return false;
-    }
-    return true;
 }
 
 bool AndroidSeatCanvasCoreRendererDelegate::didTapSeat(uint32_t coreID, const std::string &zoneId,

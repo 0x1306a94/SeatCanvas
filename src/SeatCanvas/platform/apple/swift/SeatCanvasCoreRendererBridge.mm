@@ -18,6 +18,7 @@
 #import "core/parser/BaseMapParserFactory.hpp"
 #import "core/renderer/SeatCanvasCoreRenderer.hpp"
 #import "core/renderer/SeatCanvasCoreRendererState.hpp"
+#import "core/style/SeatRenderStyleKey.hpp"
 #import "core/svg/ConvertSVGLayer.hpp"
 #import "core/svg/SVGMeshParser.hpp"
 #import "core/utils/SystemProperties.hpp"
@@ -232,18 +233,100 @@ void SeatCanvasCoreRendererSetMiniMapZoneAlternateColors(CPPObject *_Nonnull cpp
     renderer->updateMiniMapZoneAlternateColors(cppColors);
 }
 
-void SeatCanvasCoreRendererSetSeatDatas(CPPObject *_Nonnull cppObject, const std::string &zoneId, CPPObject *_Nullable seatBuilder) {
+void SeatCanvasCoreRendererSetSeatDatas(CPPObject *_Nonnull cppObject, NSString *_Nonnull zoneId, CPPObject *_Nullable seatBuilder) {
     GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
     if (seatBuilder == nullptr) {
         return;
     }
     auto seats = static_cast<std::vector<kk::SeatData> *>(seatBuilder->realValue);
-    renderer->setSeatData(zoneId, *seats);
+    renderer->setSeatData(std::string(zoneId.UTF8String), *seats);
 }
 
 void SeatCanvasCoreRendererClearSeatData(CPPObject *_Nonnull cppObject) {
     GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
     renderer->clearSeatData();
+}
+
+void SeatCanvasCoreRendererRegisterPricecodes(CPPObject *_Nonnull cppObject, NSArray<NSString *> *_Nonnull pricecodes) {
+    GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
+    std::vector<std::string> codes = {};
+    codes.reserve(pricecodes.count);
+    for (NSString *code in pricecodes) {
+        if (code == nil) {
+            codes.emplace_back("");
+        } else {
+            codes.emplace_back(code.UTF8String);
+        }
+    }
+    renderer->registerPricecodes(codes);
+}
+
+uint16_t SeatCanvasCoreRendererPricecodeIndexForCode(CPPObject *_Nonnull cppObject, NSString *_Nonnull pricecode) {
+    GetCPPObjectOrReturnValue(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer, kk::kNoPricecodeIndex);
+    return renderer->pricecodeIndexForCode(std::string(pricecode.UTF8String));
+}
+
+void SeatCanvasCoreRendererUpdateSeatStatuses(CPPObject *_Nonnull cppObject, NSArray<NSString *> *_Nonnull seatIds,
+                                              NSArray<NSNumber *> *_Nonnull statuses) {
+    GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
+    std::vector<kk::SeatStatusUpdate> updates = {};
+    NSUInteger count = MIN(seatIds.count, statuses.count);
+    updates.reserve(count);
+    for (NSUInteger index = 0; index < count; ++index) {
+        NSString *seatId = seatIds[index];
+        if (seatId.length == 0) {
+            continue;
+        }
+        kk::SeatStatusUpdate update = {};
+        update.seatId = seatId.UTF8String;
+        update.status = statuses[index].unsignedIntValue;
+        updates.push_back(std::move(update));
+    }
+    renderer->updateSeatStatuses(updates);
+}
+
+void SeatCanvasCoreRendererUpdateSeatStatusesForZone(CPPObject *_Nonnull cppObject, NSString *_Nonnull zoneId,
+                                                     NSArray<NSNumber *> *_Nonnull statuses) {
+    GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
+    std::vector<uint32_t> cppStatuses = {};
+    cppStatuses.reserve(statuses.count);
+    for (NSNumber *status in statuses) {
+        cppStatuses.push_back(status.unsignedIntValue);
+    }
+    renderer->updateSeatStatusesForZone(std::string(zoneId.UTF8String), cppStatuses);
+}
+
+void SeatCanvasCoreRendererSetSelectedSeatIds(CPPObject *_Nonnull cppObject, NSArray<NSString *> *_Nonnull seatIds) {
+    GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
+    std::vector<std::string> ids = {};
+    ids.reserve(seatIds.count);
+    for (NSString *seatId in seatIds) {
+        if (seatId.length == 0) {
+            continue;
+        }
+        ids.emplace_back(seatId.UTF8String);
+    }
+    renderer->setSelectedSeatIds(ids);
+}
+
+void SeatCanvasCoreRendererUpdateSelectedSeatIds(CPPObject *_Nonnull cppObject, NSArray<NSString *> *_Nullable added,
+                                                 NSArray<NSString *> *_Nullable removed) {
+    GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
+    auto readIds = [](NSArray<NSString *> *values) {
+        std::vector<std::string> ids = {};
+        if (values == nil) {
+            return ids;
+        }
+        ids.reserve(values.count);
+        for (NSString *seatId in values) {
+            if (seatId.length == 0) {
+                continue;
+            }
+            ids.emplace_back(seatId.UTF8String);
+        }
+        return ids;
+    };
+    renderer->updateSelectedSeatIds(readIds(added), readIds(removed));
 }
 
 void SeatCanvasCoreRendererSetSeatStyleJSONConfig(CPPObject *_Nonnull cppObject, const void *_Nullable __sized_by_or_null(len) bytes, size_t len) {
@@ -436,5 +519,11 @@ void SeatCanvasCoreRendererZoomToRect(CPPObject *_Nonnull cppObject, CGRect rect
                                                  static_cast<float>(rect.size.width),
                                                  static_cast<float>(rect.size.height));
     renderer->zoomToRect(targetRect, animated, static_cast<float>(padding), durationMs);
+}
+
+NSString *SeatCanvasComposeSeatStyleId(NSString *pricecode, uint32_t status, bool selected) {
+    std::string code = pricecode != nil ? std::string(pricecode.UTF8String) : std::string();
+    auto styleId = kk::renderer::composeSeatStyleId(code, status, selected);
+    return [NSString stringWithUTF8String:styleId.c_str()];
 }
 };  // namespace kk::bridge

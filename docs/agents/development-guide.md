@@ -28,19 +28,19 @@
 ### Loading a Seat Map
 
 ```
-Prepare SVG basemap
-→ setBaseMapConfig()
-→ setStyleKeyToConfigFromJSON()
-→ Auto-extracts regions and seat info
+setDelegate() before loadBaseMap()
+→ loadBaseMap() / setBaseMapConfig()
+→ didLoadBaseMap: registerPricecodes → applySeatStyleJSONConfig → setSeatData/updateSeats per zone → updateSeatStatusesForZone → setSelectedSeatIds
+→ didUnloadBaseMap: stop polling, clear cached seat state
 ```
 
 ### Handling Seat Tap
 
 ```
 Implement SeatCanvasCoreRendererDelegate
-→ setDelegate()
-→ handleTap()
-→ getSeatRegionDataByPoint() to find region
+→ setDelegate() before loadBaseMap()
+→ didTapSeat: update business state → updateSelectedSeatIds(added, removed) when selection changes
+→ handleTap() → getSeatRegionDataByPoint() to find region
 ```
 
 ### Custom Seat Styles

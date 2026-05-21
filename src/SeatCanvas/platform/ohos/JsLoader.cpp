@@ -7,6 +7,7 @@
 
 #include "JFont.h"
 #include "JRendererCore.h"
+#include "JSeatRenderStyleId.h"
 #include "NativeDisplayLink.hpp"
 #include "XComponentHandler.h"
 #include "core/gesture/GestureState.hpp"
@@ -43,6 +44,7 @@ static napi_value Init(napi_env env, napi_value exports) {
 
     kk::js::JFont::Init(env, namespaceExports);
     kk::js::JRendererCore::Init(env, namespaceExports);
+    kk::js::JSeatRenderStyleId::Init(env, namespaceExports);
     InitEnums(env, namespaceExports);
 
     kk::js::XComponentHandler::Init(env, exports);

@@ -8,8 +8,9 @@
 #import "CPPObject.hpp"
 
 #import <CoreGraphics/CGGeometry.h>
-#import <string>
+#import <Foundation/NSString.h>
 namespace kk::bridge {
 CPPObject *_Nonnull CreateSeatDataBuilder();
-void SeatDataBuilderPut(CPPObject *_Nonnull cppObject, const std::string &seatId, CGPoint position, float rotationDegrees);
+void SeatDataBuilderPut(CPPObject *_Nonnull cppObject, NSString *_Nonnull seatId, CGPoint position, float rotationDegrees,
+                        uint16_t pricecodeIndex);
 };  // namespace kk::bridge

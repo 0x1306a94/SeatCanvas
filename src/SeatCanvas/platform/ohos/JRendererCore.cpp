@@ -661,33 +661,6 @@ static napi_value HandlePinch(napi_env env, napi_callback_info info) {
     return nullptr;
 }
 
-static napi_value SetStyleIdForSeatCallback(napi_env env, napi_callback_info info) {
-    kk::js::NapiEnvHolder::setEnv(env);
-    napi_value jsView = nullptr;
-    size_t argc = 1;
-    napi_value args[1] = {0};
-    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
-    JRendererCore *view = nullptr;
-    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
-    if (view == nullptr) {
-        return nullptr;
-    }
-
-    auto delegate = view->getDelegate();
-    if (delegate == nullptr) {
-        return nullptr;
-    }
-
-    napi_value callback = nullptr;
-    if (argc > 0 && args[0] != nullptr) {
-        callback = args[0];
-    }
-
-    delegate->setStyleIdForSeatCallback(env, callback);
-
-    return nullptr;
-}
-
 static napi_value SetDidTapSeatCallback(napi_env env, napi_callback_info info) {
     kk::js::NapiEnvHolder::setEnv(env);
     napi_value jsView = nullptr;
@@ -799,6 +772,14 @@ static napi_value SetViewportDidEndZoomingCallback(napi_env env, napi_callback_i
 
 static napi_value SetViewportDidEndScrollingAnimationCallback(napi_env env, napi_callback_info info) {
     return SetDelegateCallback(env, info, &OHOSSeatCanvasCoreRendererDelegate::setViewportDidEndScrollingAnimationCallback);
+}
+
+static napi_value SetDidLoadBaseMapCallback(napi_env env, napi_callback_info info) {
+    return SetDelegateCallback(env, info, &OHOSSeatCanvasCoreRendererDelegate::setDidLoadBaseMapCallback);
+}
+
+static napi_value SetDidUnloadBaseMapCallback(napi_env env, napi_callback_info info) {
+    return SetDelegateCallback(env, info, &OHOSSeatCanvasCoreRendererDelegate::setDidUnloadBaseMapCallback);
 }
 
 static napi_value ZoomToRect(napi_env env, napi_callback_info info) {
@@ -975,16 +956,204 @@ static napi_value UpdateSeats(napi_env env, napi_callback_info info) {
     }
     std::vector<kk::SeatData> seats{};
     seats.reserve(static_cast<size_t>(length));
+    auto pricecodeIndexResolver = [renderer](const std::string &pricecode) {
+        return renderer->pricecodeIndexForCode(pricecode);
+    };
     for (uint32_t i = 0; i < length; ++i) {
         napi_value element;
         napi_get_element(env, args[1], i, &element);
-        auto seatData = GetSeatData(env, element);
+        auto seatData = GetSeatData(env, element, pricecodeIndexResolver);
         if (seatData) {
             seats.push_back(seatData.value());
         }
     }
 
     renderer->setSeatData(zoneId, seats);
+    return nullptr;
+}
+
+static std::vector<std::string> ReadStringArray(napi_env env, napi_value arrayValue) {
+    std::vector<std::string> values = {};
+    if (env == nullptr || arrayValue == nullptr) {
+        return values;
+    }
+    bool isArray = false;
+    napi_is_array(env, arrayValue, &isArray);
+    if (!isArray) {
+        return values;
+    }
+    uint32_t length = 0;
+    napi_get_array_length(env, arrayValue, &length);
+    values.reserve(length);
+    for (uint32_t index = 0; index < length; ++index) {
+        napi_value element = nullptr;
+        napi_get_element(env, arrayValue, index, &element);
+        if (element == nullptr) {
+            continue;
+        }
+        values.push_back(GetUtf8String(env, element));
+    }
+    return values;
+}
+
+static napi_value RegisterPricecodes(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+
+    napi_value jsView = nullptr;
+    size_t argc = 1;
+    napi_value args[1] = {0};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr) {
+        return nullptr;
+    }
+
+    auto renderer = view->internalRenderer();
+    if (renderer == nullptr) {
+        return nullptr;
+    }
+
+    renderer->registerPricecodes(ReadStringArray(env, argc > 0 ? args[0] : nullptr));
+    return nullptr;
+}
+
+static napi_value UpdateSeatStatuses(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+
+    napi_value jsView = nullptr;
+    size_t argc = 1;
+    napi_value args[1] = {0};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr || argc == 0) {
+        return nullptr;
+    }
+
+    auto renderer = view->internalRenderer();
+    if (renderer == nullptr) {
+        return nullptr;
+    }
+
+    bool isArray = false;
+    napi_is_array(env, args[0], &isArray);
+    if (!isArray) {
+        return nullptr;
+    }
+
+    uint32_t length = 0;
+    napi_get_array_length(env, args[0], &length);
+    std::vector<kk::SeatStatusUpdate> updates = {};
+    updates.reserve(length);
+    for (uint32_t index = 0; index < length; ++index) {
+        napi_value element = nullptr;
+        napi_get_element(env, args[0], index, &element);
+        if (element == nullptr) {
+            continue;
+        }
+        kk::SeatStatusUpdate update = {};
+        update.seatId = ReadString(env, element, "seatId");
+        update.status = ReadUInt32(env, element, "status");
+        if (!update.seatId.empty()) {
+            updates.push_back(std::move(update));
+        }
+    }
+
+    renderer->updateSeatStatuses(updates);
+    return nullptr;
+}
+
+static napi_value UpdateSeatStatusesForZone(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+
+    napi_value jsView = nullptr;
+    size_t argc = 2;
+    napi_value args[2] = {0};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr || argc < 2) {
+        return nullptr;
+    }
+
+    auto renderer = view->internalRenderer();
+    if (renderer == nullptr) {
+        return nullptr;
+    }
+
+    auto zoneId = GetUtf8String(env, args[0]);
+    if (zoneId.empty()) {
+        return nullptr;
+    }
+
+    bool isArray = false;
+    napi_is_array(env, args[1], &isArray);
+    if (!isArray) {
+        return nullptr;
+    }
+
+    uint32_t length = 0;
+    napi_get_array_length(env, args[1], &length);
+    std::vector<uint32_t> statuses = {};
+    statuses.reserve(length);
+    for (uint32_t index = 0; index < length; ++index) {
+        napi_value element = nullptr;
+        napi_get_element(env, args[1], index, &element);
+        if (element == nullptr) {
+            continue;
+        }
+        double value = 0.0;
+        napi_get_value_double(env, element, &value);
+        statuses.push_back(static_cast<uint32_t>(value));
+    }
+
+    renderer->updateSeatStatusesForZone(zoneId, statuses);
+    return nullptr;
+}
+
+static napi_value SetSelectedSeatIds(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+
+    napi_value jsView = nullptr;
+    size_t argc = 1;
+    napi_value args[1] = {0};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr) {
+        return nullptr;
+    }
+
+    auto renderer = view->internalRenderer();
+    if (renderer == nullptr) {
+        return nullptr;
+    }
+
+    renderer->setSelectedSeatIds(ReadStringArray(env, argc > 0 ? args[0] : nullptr));
+    return nullptr;
+}
+
+static napi_value UpdateSelectedSeatIds(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+
+    napi_value jsView = nullptr;
+    size_t argc = 2;
+    napi_value args[2] = {0};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr) {
+        return nullptr;
+    }
+
+    auto renderer = view->internalRenderer();
+    if (renderer == nullptr) {
+        return nullptr;
+    }
+
+    renderer->updateSelectedSeatIds(ReadStringArray(env, argc > 0 ? args[0] : nullptr),
+                                    ReadStringArray(env, argc > 1 ? args[1] : nullptr));
     return nullptr;
 }
 
@@ -1055,7 +1224,6 @@ bool JRendererCore::Init(napi_env env, napi_value exports) {
         JS_DEFAULT_METHOD_ENTRY(handlePan, HandlePan),
         JS_DEFAULT_METHOD_ENTRY(handlePinch, HandlePinch),
         JS_DEFAULT_METHOD_ENTRY(zoomToRect, ZoomToRect),
-        JS_DEFAULT_METHOD_ENTRY(setStyleIdForSeatCallback, SetStyleIdForSeatCallback),
         JS_DEFAULT_METHOD_ENTRY(setDidTapSeatCallback, SetDidTapSeatCallback),
         JS_DEFAULT_METHOD_ENTRY(setDidTapZoneCallback, SetDidTapZoneCallback),
         JS_DEFAULT_METHOD_ENTRY(setViewportWillBeginDraggingCallback, SetViewportWillBeginDraggingCallback),
@@ -1066,9 +1234,16 @@ bool JRendererCore::Init(napi_env env, napi_value exports) {
         JS_DEFAULT_METHOD_ENTRY(setViewportDidZoomCallback, SetViewportDidZoomCallback),
         JS_DEFAULT_METHOD_ENTRY(setViewportDidEndZoomingCallback, SetViewportDidEndZoomingCallback),
         JS_DEFAULT_METHOD_ENTRY(setViewportDidEndScrollingAnimationCallback, SetViewportDidEndScrollingAnimationCallback),
+        JS_DEFAULT_METHOD_ENTRY(setDidLoadBaseMapCallback, SetDidLoadBaseMapCallback),
+        JS_DEFAULT_METHOD_ENTRY(setDidUnloadBaseMapCallback, SetDidUnloadBaseMapCallback),
         JS_DEFAULT_METHOD_ENTRY(updateSeatZoneAlternateColors, UpdateSeatZoneAlternateColors),
         JS_DEFAULT_METHOD_ENTRY(updateMiniMapZoneAlternateColors, UpdateMiniMapZoneAlternateColors),
         JS_DEFAULT_METHOD_ENTRY(updateSeats, UpdateSeats),
+        JS_DEFAULT_METHOD_ENTRY(registerPricecodes, RegisterPricecodes),
+        JS_DEFAULT_METHOD_ENTRY(updateSeatStatuses, UpdateSeatStatuses),
+        JS_DEFAULT_METHOD_ENTRY(updateSeatStatusesForZone, UpdateSeatStatusesForZone),
+        JS_DEFAULT_METHOD_ENTRY(setSelectedSeatIds, SetSelectedSeatIds),
+        JS_DEFAULT_METHOD_ENTRY(updateSelectedSeatIds, UpdateSelectedSeatIds),
         JS_DEFAULT_METHOD_ENTRY(clearSeatData, ClearSeatData),
     };
 

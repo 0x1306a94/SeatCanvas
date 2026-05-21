@@ -12,13 +12,11 @@ import Foundation
 @MainActor
 @objc(KKSeatCanvasViewDelegate)
 public protocol SeatCanvasViewDelegate: AnyObject {
-    /// 根据区域和座位ID返回样式ID。
-    /// - Parameters:
-    ///   - view: SeatCanvasView 实例
-    ///   - zoneId: 区域ID
-    ///   - seatId: 座位ID（由业务保证全局唯一）
-    /// - Returns: 样式ID。返回 nil 或空字符串表示该座位不渲染。
-    func seatCanvasView(_ view: SeatCanvasView, styleIdForSeat zoneId: String, seatId: String) -> String?
+    /// 底图加载完成；此时 ZoomLevelConfig 与初始缩放已就绪，可设置 seatRenderZoomThreshold 并 push 座位数据。
+    @objc optional func seatCanvasView(_ view: SeatCanvasView, didLoadBaseMap event: SeatCanvasBaseMapLoadedEvent)
+
+    /// 底图已卸载。
+    @objc optional func seatCanvasViewDidUnloadBaseMap(_ view: SeatCanvasView)
 
     /// 点击某个座位，业务层处理状态变更。
     /// - Parameters:

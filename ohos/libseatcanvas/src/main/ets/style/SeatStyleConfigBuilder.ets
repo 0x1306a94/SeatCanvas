@@ -10,7 +10,7 @@ export class SeatStyleConfigBuilder {
 
   /**
    * 注册圆形样式。
-   * @param styleId 样式键（与 styleIdForSeat 返回值一致）
+   * @param styleId 样式键（与 SeatRenderStyleId.compose 返回值一致）
    * @param fill 填充色（#AARRGGBB 或 #RRGGBB）
    * @param overlay 遮罩色，仅选中态需要时传入
    * @param checkmark 对勾色，仅选中态需要时传入
