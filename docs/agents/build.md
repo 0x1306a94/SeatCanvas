@@ -1,14 +1,50 @@
 # Build Guide
 
+Run `./sync_deps.sh` before the first build (or when `third_party` is missing).
+
 ## Build Commands
+
+From the **repository root** (each block includes `cd` where needed).
+
+**iOS** (run `xcodebuild` outside the sandbox; see [iOS Build Notes](#ios-build-notes)):
+
+```bash
+./ios/gen_ios
+xcodebuild -workspace ios/SeatCanvas.xcworkspace \
+  -scheme SeatCanvasSample \
+  -configuration Release \
+  -sdk iphoneos \
+  -arch arm64 \
+  CODE_SIGN_IDENTITY="" \
+  CODE_SIGNING_REQUIRED=NO
+```
+
+**Android** (JDK 17+ required; see [Android Build Notes](#android-build-notes)):
+
+```bash
+cd android/SeatCanvasSample
+./gradlew assembleRelease -Parm64-only --no-daemon
+```
+
+**OHOS** (see [OHOS Build Notes](#ohos-build-notes)):
+
+```bash
+cd ohos
+export DEVECO_SDK_HOME=/Applications/DevEco-Studio.app/Contents/sdk
+$DEVECO_SDK_HOME/../tools/hvigor/bin/hvigorw assembleHar \
+  --mode module \
+  -p module=libseatcanvas@default \
+  -p buildMode=release \
+  -p product=default \
+  --no-daemon
+```
+
+### Variants
 
 | Platform | Command | Notes |
 |----------|---------|-------|
-| iOS Device | `./ios/gen_ios && cd ios && xcodebuild -workspace ios/SeatCanvas.xcworkspace -scheme SeatCanvasSample -configuration Release -sdk iphoneos -arch arm64 CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO` | Requires Xcode |
-| iOS (custom flags) | `./ios/gen_ios -DENABLE_TIME_PROFILER=ON` | Custom CMake flags |
-| Android (all arch) | `cd android/SeatCanvasSample && ./gradlew assembleRelease` | All architectures |
-| Android (arm64) | `cd android/SeatCanvasSample && ./gradlew assembleRelease -Parm64-only` | Faster builds |
-| OHOS | `cd ohos && hvigorw assembleHar --mode module -p module=libseatcanvas@default -p buildMode=release -p product=default --no-daemon` | Requires HarmonyOS SDK |
+| iOS (CMake flags) | `./ios/gen_ios -D<FLAG>=ON` then `xcodebuild` as above | e.g. `-DENABLE_TIME_PROFILER=ON` |
+| Android (all arch) | `cd android/SeatCanvasSample && ./gradlew assembleRelease` | Slower; all architectures |
 
 ## Dependency Management
 
@@ -50,6 +86,62 @@ Uses clang-format 14.x for C++ and swiftformat for Swift. A pre-commit hook auto
 
 **Build system**: CMake, C++17, supports iOS/Android/OHOS, enables tgfx SVG and Layers support.
 
+## iOS Build Notes
+
+- `./ios/gen_ios` only generates the Xcode project — it is **not** a full build. Always follow with `xcodebuild` from the repo root (see [Build Commands](#build-commands)).
+- Default local build uses **device** (`-sdk iphoneos`). Do **not** substitute `./ios/gen_simulator` unless explicitly requested.
+- **Agent: run `xcodebuild` outside the sandbox.** Do not invoke `xcodebuild` inside a sandboxed shell. The sandbox blocks access to CoreSimulator, temp directories, and XPC services that Xcode requires. Request full (non-sandbox) permissions when running iOS build commands.
+- Typical sandbox failures:
+  - `Operation not permitted`
+  - `couldn't create cache file`
+  - `Connection invalid`
+  - CoreSimulator connection errors
+
+## Android Build Notes
+
+- Requires **JDK 17+** (AGP 8.x / Gradle 8.x). Verify before building:
+
+```bash
+java -version   # must report 17 or higher
+```
+
+- **jenv** (preferred when available):
+
+```bash
+jenv versions                              # list installed JDKs; use the full name shown
+jenv shell 17.0                            # example: match an entry from jenv versions
+# or, from android/SeatCanvasSample:
+jenv local 17.0                            # persist for this directory
+```
+
+- **Without jenv** — set `JAVA_HOME` explicitly:
+
+```bash
+# macOS: use built-in java_home helper
+export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+
+# macOS (Homebrew), if openjdk@17 is installed:
+# Apple Silicon:
+export JAVA_HOME="/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home"
+# Intel:
+# export JAVA_HOME="/usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home"
+# install if missing: brew install openjdk@17
+```
+
+- Default local build uses **arm64-only** with `--no-daemon` for faster iteration (see [Build Commands](#build-commands)).
+
+## OHOS Build Notes
+
+- Requires **DevEco Studio** with HarmonyOS SDK (no separate JDK setup — DevEco/hvigor handles the toolchain).
+- Set `DEVECO_SDK_HOME` and use the bundled `hvigorw` (see [Build Commands](#build-commands)).
+- Install dependencies first (see [OHOS Dependencies](#ohos-dependencies)).
+- **Stale C++ native cache** — `ohos/.cxx` holds CMake output for the C++ core (`libseatcanvas` native code). If native build fails unexpectedly, clean and rebuild:
+
+```bash
+rm -rf ohos/.cxx
+# then re-run the OHOS command in Build Commands
+```
+
 ## Troubleshooting
 
 **Build fails with missing dependencies**
@@ -61,8 +153,17 @@ Uses clang-format 14.x for C++ and swiftformat for Swift. A pre-commit hook auto
 **iOS build fails with signing error**
 → Add `CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO` to xcodebuild command
 
+**iOS build fails with sandbox / CoreSimulator errors**
+→ Run `xcodebuild` outside the sandbox (see [iOS Build Notes](#ios-build-notes))
+
+**Android build fails with unsupported Java / Gradle JVM errors**
+→ Use JDK 17+ and confirm `java -version` (see [Android Build Notes](#android-build-notes))
+
 **OHOS dependencies fail to install**
 → `ohpm config set registry https://ohpm.openharmony.cn/ohpm/`
+
+**OHOS C++ native build fails or behaves inconsistently**
+→ `rm -rf ohos/.cxx` (C++ CMake cache) then rebuild (see [OHOS Build Notes](#ohos-build-notes))
 
 **Pre-commit hook reformats code unexpectedly**
 → Expected behavior — commit will succeed after auto-formatting

@@ -2,10 +2,8 @@
 
 ## Quick Reference
 
-**Common Commands**
-- Build iOS: `./ios/gen_ios`
-- Build Android: `cd android/SeatCanvasSample && ./gradlew assembleRelease`
-- Build OHOS: `cd ohos && hvigorw assembleHar --mode module -p module=libseatcanvas@default -p buildMode=release -p product=default --no-daemon`
+**Build & Tooling** — when a build is required (verification, debugging, or user request), read and follow @./docs/agents/build.md exactly: full platform commands, prerequisites, and troubleshooting. Do not substitute `./ios/gen_simulator` unless the user explicitly requests a simulator build. Do not claim a build passes without running the complete command sequence from that guide.
+
 - Format code: `./codeformat.sh`
 - Sync dependencies: `./sync_deps.sh`
 
@@ -60,9 +58,9 @@ SeatCanvas/
 
 | Topic | File |
 |-------|------|
-| Build commands, dependencies, formatting | [docs/agents/build.md](docs/agents/build.md) |
-| Architecture, core components, render pipeline, APIs | [docs/agents/architecture.md](docs/agents/architecture.md) |
-| Platform integration (iOS / Android / OHOS) | [docs/agents/platform.md](docs/agents/platform.md) |
-| C++ coding standards, naming, commit format | [docs/agents/coding-standards.md](docs/agents/coding-standards.md) |
-| Adding features, common tasks | [docs/agents/development-guide.md](docs/agents/development-guide.md) |
-| Layer version implementation | [docs/layer_version_implementation.md](docs/layer_version_implementation.md) |
+| Build commands, dependencies, formatting | @./docs/agents/build.md |
+| Architecture, core components, render pipeline, APIs | @./docs/agents/architecture.md |
+| Platform integration (iOS / Android / OHOS) | @./docs/agents/platform.md |
+| C++ coding standards, naming, commit format | @./docs/agents/coding-standards.md |
+| Adding features, common tasks | @./docs/agents/development-guide.md |
+| Layer version implementation | @./docs/layer_version_implementation.md |
