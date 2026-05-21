@@ -43,6 +43,22 @@ export declare namespace seatcanvas {
     x: number;
     y: number;
     rotation?: number;
+    pricecode?: string;
+  }
+
+  export interface SeatStatusUpdate {
+    seatId: string;
+    status: number;
+  }
+
+  export class JSeatRenderStyleId {
+    /**
+     * 生成与 C++ 渲染器相同格式的座位样式 ID。
+     * @param pricecode 价档 code；空字符串表示无价档槽位。
+     * @param status 业务自定义座位状态。
+     * @param selected 是否选中。
+     */
+    static compose(pricecode: string, status: number, selected: boolean): string;
   }
 
   export interface ZoomLevel {
@@ -56,6 +72,16 @@ export declare namespace seatcanvas {
     zoomScale: number;
     contentOffsetX: number;
     contentOffsetY: number;
+    visibleOriginalRect: Rect;
+  }
+
+  export interface SeatCanvasBaseMapLoadedEvent {
+    baseMapWidth: number;
+    baseMapHeight: number;
+    zoomLevels: ZoomLevel;
+    minimumZoomScale: number;
+    maximumZoomScale: number;
+    zoomScale: number;
     visibleOriginalRect: Rect;
   }
 
@@ -195,11 +221,6 @@ export declare namespace seatcanvas {
     zoomToRect(bounds: Rect, animated: boolean, padding: number, duration: number);
 
     /**
-     * 解析座位样式 ID；返回 null 表示不绘制。
-     */
-    setStyleIdForSeatCallback(callback: ((zoneId: string, seatId: string) => string | null) | null);
-
-    /**
      * 座位点击；返回 true 表示需要重绘。
      */
     setDidTapSeatCallback(callback: ((zoneId: string, seatId: string) => boolean) | null);
@@ -222,11 +243,30 @@ export declare namespace seatcanvas {
 
     setViewportDidEndScrollingAnimationCallback(callback: ((viewport: SeatCanvasViewport) => void) | null);
 
+    setDidLoadBaseMapCallback(callback: ((event: SeatCanvasBaseMapLoadedEvent) => void) | null);
+
+    setDidUnloadBaseMapCallback(callback: (() => void) | null);
+
     updateSeatZoneAlternateColors(colors: SeatZoneColor[]);
-    
+
     updateMiniMapZoneAlternateColors(colors: SeatZoneColor[]);
 
     updateSeats(zoneId: string, seats: SeatData[]);
+
+    /** 注册价档表（load 前调用一次） */
+    registerPricecodes(pricecodes: string[]);
+
+    /** 批量更新单个座位 status */
+    updateSeatStatuses(updates: SeatStatusUpdate[]);
+
+    /** 批量更新某个 zone 内全部座位 status（数组下标与 updateSeats 顺序一致） */
+    updateSeatStatusesForZone(zoneId: string, statuses: number[]);
+
+    /** 全量替换选中座位 */
+    setSelectedSeatIds(seatIds: string[]);
+
+    /** 增量更新选中座位 */
+    updateSelectedSeatIds(added: string[], removed: string[]);
 
     /**
      * 清除全部座位数据

@@ -105,7 +105,7 @@ public class SeatCanvasView: UIView {
         renderer?.updateMiniMapZoneAlternateColors(colors: colors)
     }
 
-    /// 更新区域座位信息
+    /// 更新区域座位几何数据；会重置该 zone 的 status 为 0，并清除旧 seat 的 selected，随后需 re-push status/selected。
     /// - Parameters:
     ///   - zoneId: 区域ID
     ///   - seats: 座位集合
@@ -118,6 +118,38 @@ public class SeatCanvasView: UIView {
     @objc
     public func clearSeatData() {
         renderer?.clearSeatData()
+    }
+
+    /// 注册价档表
+    @objc
+    public func registerPricecodes(_ pricecodes: [String]) {
+        renderer?.registerPricecodes(pricecodes)
+    }
+
+    /// 批量更新单个座位 status
+    @objc
+    public func updateSeatStatuses(seatIds: [String], statuses: [NSNumber]) {
+        let values = statuses.map { $0.uint32Value }
+        renderer?.updateSeatStatuses(seatIds: seatIds, statuses: values)
+    }
+
+    /// 批量更新某个 zone 内全部座位 status（数组下标与 updateSeatDatas 顺序一致）
+    @objc
+    public func updateSeatStatusesForZone(zoneId: String, statuses: [NSNumber]) {
+        let values = statuses.map { $0.uint32Value }
+        renderer?.updateSeatStatusesForZone(zoneId: zoneId, statuses: values)
+    }
+
+    /// 全量替换选中座位
+    @objc
+    public func setSelectedSeatIds(_ seatIds: [String]) {
+        renderer?.setSelectedSeatIds(seatIds)
+    }
+
+    /// 增量更新选中座位
+    @objc
+    public func updateSelectedSeatIds(added: [String], removed: [String]) {
+        renderer?.updateSelectedSeatIds(added: added, removed: removed)
     }
 
     /// 座位大小
@@ -382,10 +414,6 @@ extension SeatCanvasView: SeatCanvasRendererDelegate {
         delegate?.seatCanvasView(self, didTapZone: zoneId)
     }
 
-    func seatCanvasRendererStyleIdForSeat(zoneId: String, seatId: String) -> String? {
-        delegate?.seatCanvasView(self, styleIdForSeat: zoneId, seatId: seatId)
-    }
-
     func seatCanvasRendererDidTapSeat(zoneId: String, seatId: String) -> Bool {
         delegate?.seatCanvasView(self, didTapSeat: zoneId, seatId: seatId) ?? false
     }
@@ -420,5 +448,13 @@ extension SeatCanvasView: SeatCanvasRendererDelegate {
 
     func seatCanvasRendererDidEndScrollingAnimation(zoomScale: CGFloat, contentOffset: CGPoint, visibleOriginalRect: CGRect) {
         delegate?.seatCanvasViewDidEndScrollingAnimation?(self, zoomScale: zoomScale, contentOffset: contentOffset, visibleOriginalRect: visibleOriginalRect)
+    }
+
+    func seatCanvasRendererDidLoadBaseMap(event: SeatCanvasBaseMapLoadedEvent) {
+        delegate?.seatCanvasView?(self, didLoadBaseMap: event)
+    }
+
+    func seatCanvasRendererDidUnloadBaseMap() {
+        delegate?.seatCanvasViewDidUnloadBaseMap?(self)
     }
 }

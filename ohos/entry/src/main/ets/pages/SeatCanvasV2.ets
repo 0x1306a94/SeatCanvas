@@ -19,6 +19,7 @@ export struct SeatCanvasV2 {
   private sampleModel: SeatCanvasSampleModel = new SeatCanvasSampleModel();
 
   aboutToAppear(): void {
+    this.controller.seatSize = 24
     this.controller.setDelegate(this.sampleModel.getDelegate());
     this.controller.canvasColor = 0xFFF8F8F8;
   }
@@ -118,12 +119,11 @@ export struct SeatCanvasV2 {
       const manager = getContext(this).resourceManager;
       const readRawFile = (path: string): string | null => this.readRawFileToString(path);
       const parseConfig = new SVGBaseMapParseConfig(['zoneId', 'regioncode']);
+      this.sampleModel.prepareForBaseMap(this.controller, this.baseMap, readRawFile, () => {
+        this.applySVGSeatStyleConfig();
+      });
       await this.controller.loadFromAssets(manager, this.baseMap.assetPath, BaseMapFormat.SVG, parseConfig);
       console.log(`底图: ${this.baseMap.assetPath} 加载成功`);
-      this.sampleModel.loadMockData(this.baseMap, this.controller, readRawFile);
-      this.sampleModel.regenerateRandomAvailableSeats();
-      this.sampleModel.startAvailableSeatsTimer();
-      this.applySVGSeatStyleConfig();
     })
   }
 }

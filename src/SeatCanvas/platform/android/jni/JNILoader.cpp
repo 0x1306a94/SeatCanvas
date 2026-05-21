@@ -19,6 +19,7 @@
 #include "JNIHelper.hpp"
 #include "JRect.h"
 #include "JSeatData.h"
+#include "JSeatStatusUpdate.h"
 #include "JSeatZoneColor.h"
 #include "JStringUtil.hpp"
 #include "JZoomLevel.h"
@@ -30,6 +31,7 @@
 #include "core/parser/BaseMapLoadResult.hpp"
 #include "core/parser/BaseMapParserFactory.hpp"
 #include "core/renderer/SeatCanvasCoreRenderer.hpp"
+#include "core/style/SeatRenderStyleKey.hpp"
 #include "core/svg/ConvertSVGLayer.hpp"
 #include "core/svg/SVGMeshParser.hpp"
 #include "core/utils/ColorIntConverter.hpp"
@@ -247,18 +249,102 @@ Java_com_libseatcanvas_SeatCanvasView_nativeUpdateSeats(JNIEnv *env, jobject thi
     jsize length = env->GetArrayLength(jseats);
     std::vector<kk::SeatData> seats;
     seats.reserve(static_cast<size_t>(length));
+    auto pricecodeIndexResolver = [renderer](const std::string &pricecode) {
+        return renderer->pricecodeIndexForCode(pricecode);
+    };
     for (jsize i = 0; i < length; ++i) {
         jobject element = env->GetObjectArrayElement(jseats, i);
         if (element == nullptr) {
             continue;
         }
-        auto seatData = kk::jni::JSeatData::FromJava(env, element);
+        auto seatData = kk::jni::JSeatData::FromJava(env, element, pricecodeIndexResolver);
         env->DeleteLocalRef(element);
         if (seatData) {
             seats.push_back(*seatData);
         }
     }
     renderer->setSeatData(zoneId, seats);
+}
+
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeRegisterPricecodes(JNIEnv *env, jobject thiz, jobjectArray jpricecodes) {
+    GetCPPObjectOrReturn(env, thiz, renderer);
+    if (jpricecodes == nullptr) {
+        renderer->registerPricecodes({});
+        return;
+    }
+    jsize length = env->GetArrayLength(jpricecodes);
+    std::vector<std::string> pricecodes = {};
+    pricecodes.reserve(static_cast<size_t>(length));
+    for (jsize index = 0; index < length; ++index) {
+        auto element = static_cast<jstring>(env->GetObjectArrayElement(jpricecodes, index));
+        if (element == nullptr) {
+            continue;
+        }
+        pricecodes.push_back(kk::jni::SafeConvertToStdString(env, element));
+        env->DeleteLocalRef(element);
+    }
+    renderer->registerPricecodes(pricecodes);
+}
+
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeUpdateSeatStatuses(JNIEnv *env, jobject thiz, jobjectArray jupdates) {
+    GetCPPObjectOrReturn(env, thiz, renderer);
+    auto updates = kk::jni::JSeatStatusUpdate::FromJavaArray(env, jupdates);
+    renderer->updateSeatStatuses(updates);
+}
+
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeUpdateSeatStatusesForZone(JNIEnv *env, jobject thiz, jstring jzoneId,
+                                                                      jintArray jstatuses) {
+    GetCPPObjectOrReturn(env, thiz, renderer);
+    auto zoneId = kk::jni::SafeConvertToStdString(env, jzoneId);
+    if (zoneId.empty() || jstatuses == nullptr) {
+        return;
+    }
+    jsize length = env->GetArrayLength(jstatuses);
+    auto statusData = env->GetIntArrayElements(jstatuses, nullptr);
+    if (statusData == nullptr) {
+        return;
+    }
+    std::vector<uint32_t> statuses = {};
+    statuses.reserve(static_cast<size_t>(length));
+    for (jsize index = 0; index < length; ++index) {
+        statuses.push_back(static_cast<uint32_t>(statusData[index]));
+    }
+    env->ReleaseIntArrayElements(jstatuses, statusData, JNI_ABORT);
+    renderer->updateSeatStatusesForZone(zoneId, statuses);
+}
+
+static std::vector<std::string> ReadStringArray(JNIEnv *env, jobjectArray array) {
+    std::vector<std::string> values = {};
+    if (env == nullptr || array == nullptr) {
+        return values;
+    }
+    jsize length = env->GetArrayLength(array);
+    values.reserve(static_cast<size_t>(length));
+    for (jsize index = 0; index < length; ++index) {
+        auto element = static_cast<jstring>(env->GetObjectArrayElement(array, index));
+        if (element == nullptr) {
+            continue;
+        }
+        values.push_back(kk::jni::SafeConvertToStdString(env, element));
+        env->DeleteLocalRef(element);
+    }
+    return values;
+}
+
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeSetSelectedSeatIds(JNIEnv *env, jobject thiz, jobjectArray jseatIds) {
+    GetCPPObjectOrReturn(env, thiz, renderer);
+    renderer->setSelectedSeatIds(ReadStringArray(env, jseatIds));
+}
+
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeUpdateSelectedSeatIds(JNIEnv *env, jobject thiz, jobjectArray jadded,
+                                                                  jobjectArray jremoved) {
+    GetCPPObjectOrReturn(env, thiz, renderer);
+    renderer->updateSelectedSeatIds(ReadStringArray(env, jadded), ReadStringArray(env, jremoved));
 }
 
 JNIEXPORT void JNICALL
@@ -491,6 +577,13 @@ Java_com_libseatcanvas_Font_00024Companion_nativeSetFallbackFontPaths(JNIEnv *en
     tgfx::TextLayer::SetFallbackTypefaces(std::move(fallbackTypefaces));
 }
 
+extern "C" JNIEXPORT jstring JNICALL Java_com_libseatcanvas_SeatRenderStyleId_nativeCompose(JNIEnv *env, jclass, jstring jpricecode,
+                                                                                            jint status, jboolean selected) {
+    auto pricecode = kk::jni::SafeConvertToStdString(env, jpricecode);
+    auto styleId = kk::renderer::composeSeatStyleId(pricecode, static_cast<uint32_t>(status), selected == JNI_TRUE);
+    return kk::jni::SafeConvertToJString(env, styleId);
+}
+
 jint JNI_OnLoad(JavaVM *vm, void *) {
     tgfx::JNIEnvironment::SetJavaVM(vm);
     kk::NativePlatform::InitJNI();
@@ -510,6 +603,7 @@ jint JNI_OnLoad(JavaVM *vm, void *) {
     kk::jni::JRect::InitJNI(env);
     kk::jni::JZoomLevel::InitJNI(env);
     kk::jni::JSeatData::InitJNI(env);
+    kk::jni::JSeatStatusUpdate::InitJNI(env);
     kk::jni::JSeatZoneColor::InitJNI(env);
 
     return JNI_VERSION_1_4;

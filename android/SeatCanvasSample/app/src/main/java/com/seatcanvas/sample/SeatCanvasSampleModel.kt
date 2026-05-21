@@ -9,6 +9,7 @@ import com.google.gson.reflect.TypeToken
 import com.libseatcanvas.SeatCanvasRendererDelegate
 import com.libseatcanvas.SeatCanvasView
 import com.libseatcanvas.SeatCanvasViewport
+import com.libseatcanvas.SeatCanvasBaseMapLoadedEvent
 import com.libseatcanvas.SeatData
 import com.libseatcanvas.SeatZoneColor
 
@@ -21,16 +22,40 @@ class SeatCanvasSampleModel {
 
     private val handler = Handler(Looper.getMainLooper())
     private var refreshRunnable: Runnable? = null
+    private var availableSeatsTimerPaused = false
+    private var isViewportInteracting = false
     private var seatCanvasView: SeatCanvasView? = null
+    private var appContext: Context? = null
+    private var baseMapInfo: BaseMapFileInfo? = null
+
+    fun attach(context: Context, baseMapInfo: BaseMapFileInfo, seatCanvasView: SeatCanvasView) {
+        this.appContext = context.applicationContext
+        this.baseMapInfo = baseMapInfo
+        this.seatCanvasView = seatCanvasView
+    }
 
     val rendererDelegate: SeatCanvasRendererDelegate = object : SeatCanvasRendererDelegate {
-        override fun styleIdForSeat(zoneId: String, seatId: String): String? {
-            val seat = seatsMap[seatId] ?: return null
-            val available = seatAvailable(zoneId, seatId)
-            return styleId(seat.pricecode, available, selectedSeatIds.contains(seatId))
+        override fun didLoadBaseMap(event: SeatCanvasBaseMapLoadedEvent) {
+            val context = appContext ?: return
+            val info = baseMapInfo ?: return
+            val view = seatCanvasView ?: return
+            view.seatRenderZoomThreshold = event.zoomLevels.venue
+            loadMockData(context, info, view)
+            view.applySeatStyleJSONConfig(
+                SeatStyleBuilder.buildSVGSeatStyleConfig(context, prices)
+            )
+            regenerateRandomAvailableSeats(fullRefresh = true)
+            startAvailableSeatsTimer()
+        }
+
+        override fun didUnloadBaseMap() {
+            stopAvailableSeatsTimer()
+            availableSeats.clear()
+            selectedSeatIds.clear()
         }
 
         override fun didTapSeat(zoneId: String, seatId: String): Boolean {
+            val previousSelected = selectedSeatIds.toSet()
             var changed = false
             if (selectedSeatIds.contains(seatId)) {
                 selectedSeatIds.remove(seatId)
@@ -38,6 +63,9 @@ class SeatCanvasSampleModel {
             } else if (seatAvailable(zoneId, seatId)) {
                 selectedSeatIds.add(seatId)
                 changed = true
+            }
+            if (changed) {
+                pushSelectedSeatIds(previousSelected)
             }
             Log.d(TAG, "didTapSeat: zoneId=$zoneId, seatId=$seatId")
             return changed
@@ -49,26 +77,28 @@ class SeatCanvasSampleModel {
 
         override fun willBeginDragging(viewport: SeatCanvasViewport) {
             Log.d(TAG, "willBeginDragging: viewport=$viewport")
+            beginViewportInteraction()
         }
 
         override fun didScroll(viewport: SeatCanvasViewport) {
-            Log.d(TAG, "didScroll: viewport=$viewport")
+//            Log.d(TAG, "didScroll: viewport=$viewport")
         }
 
         override fun didEndDragging(viewport: SeatCanvasViewport, decelerate: Boolean) {
             Log.d(TAG, "didEndDragging: viewport=$viewport decelerate=$decelerate")
             if (!decelerate) {
-                scheduleRefreshForVisibleSeats()
+                endViewportInteraction()
             }
         }
 
         override fun didEndDecelerating(viewport: SeatCanvasViewport) {
             Log.d(TAG, "didEndDecelerating: viewport=$viewport")
-            scheduleRefreshForVisibleSeats()
+            endViewportInteraction()
         }
 
         override fun willBeginZooming(viewport: SeatCanvasViewport) {
             Log.d(TAG, "willBeginZooming: viewport=$viewport")
+            beginViewportInteraction()
         }
 
         override fun didZoom(viewport: SeatCanvasViewport) {
@@ -77,17 +107,15 @@ class SeatCanvasSampleModel {
 
         override fun didEndZooming(viewport: SeatCanvasViewport) {
             Log.d(TAG, "didEndZooming: viewport=$viewport")
-            scheduleRefreshForVisibleSeats()
+            endViewportInteraction()
         }
 
         override fun didEndScrollingAnimation(viewport: SeatCanvasViewport) {
             Log.d(TAG, "didEndScrollingAnimation: viewport=$viewport")
-            scheduleRefreshForVisibleSeats()
+            endViewportInteraction()
         }
-    }
 
-    fun styleId(pricecode: String, available: Boolean, selected: Boolean): String {
-        return SeatStyleBuilder.styleId(pricecode, available, selected)
+
     }
 
     fun loadMockPrice(context: Context, baseMapInfo: BaseMapFileInfo): List<MockPriceData> {
@@ -116,6 +144,8 @@ class SeatCanvasSampleModel {
         seatCanvasView.updateSeatZoneAlternateColors(zoneColors.toTypedArray())
         seatCanvasView.updateMiniMapZoneAlternateColors(zoneColors.toTypedArray())
 
+        seatCanvasView.registerPricecodes(prices.map { it.code }.toTypedArray())
+
         seatsMap.clear()
         seatZoneMap = loadSeatDatas(context, baseMapInfo)
         selectedSeatIds.clear()
@@ -131,11 +161,14 @@ class SeatCanvasSampleModel {
                     seatId = mockSeat.seatId,
                     x = mockSeat.x,
                     y = mockSeat.y,
-                    rotation = mockSeat.rotation
+                    rotation = mockSeat.rotation,
+                    pricecode = mockSeat.pricecode.takeIf { it.isNotEmpty() }
                 )
             }.toTypedArray()
             seatCanvasView.updateSeats(zoneId, seatDataArray)
+            seatCanvasView.updateSeatStatusesForZone(zoneId, buildStatusesForZone(zoneId, seats))
         }
+        seatCanvasView.setSelectedSeatIds(selectedSeatIds.toTypedArray())
     }
 
     private fun loadSeatDatas(context: Context, baseMapInfo: BaseMapFileInfo): Map<String, List<MockSeatData>> {
@@ -155,9 +188,28 @@ class SeatCanvasSampleModel {
         return availableSeats[zoneId]?.contains(seatId) == true
     }
 
-    fun regenerateRandomAvailableSeats() {
-        availableSeats.clear()
-        for ((zoneId, seats) in seatZoneMap) {
+    fun regenerateRandomAvailableSeats(fullRefresh: Boolean = false) {
+        val view = seatCanvasView ?: return
+
+        val zoneIds = if (fullRefresh) {
+            seatZoneMap.keys.toList()
+        } else {
+            if (view.zoomScale < view.seatRenderZoomThreshold) {
+                return
+            }
+            val zoneIdsInView = view.zoneIdsInOriginalRect(view.visibleOriginalRect())
+            if (zoneIdsInView.isEmpty()) {
+                return
+            }
+            zoneIdsInView
+        }
+
+        if (fullRefresh) {
+            availableSeats.clear()
+        }
+
+        for (zoneId in zoneIds) {
+            val seats = seatZoneMap[zoneId] ?: continue
             if (seats.isEmpty()) {
                 continue
             }
@@ -165,8 +217,51 @@ class SeatCanvasSampleModel {
             val availableCount = maxOf(1, (seats.size * ratio).toInt())
             val availableIds = seats.shuffled().take(availableCount).map { it.seatId }.toMutableSet()
             availableSeats[zoneId] = availableIds
+            view.updateSeatStatusesForZone(zoneId, buildStatusesForZone(zoneId, seats))
         }
         pruneSelectedSeatsForAvailability()
+        view.setSelectedSeatIds(selectedSeatIds.toTypedArray())
+
+        if (!fullRefresh) {
+            Log.d(TAG, "refreshAvailableSeatsForVisibleZones: zoneIds=$zoneIds")
+        }
+    }
+
+    private fun beginViewportInteraction() {
+        if (isViewportInteracting) {
+            return
+        }
+        isViewportInteracting = true
+        pauseAvailableSeatsTimer()
+    }
+
+    private fun endViewportInteraction() {
+        if (!isViewportInteracting) {
+            return
+        }
+        isViewportInteracting = false
+        regenerateRandomAvailableSeats(fullRefresh = false)
+        resumeAvailableSeatsTimer()
+    }
+
+    private fun buildStatusesForZone(zoneId: String, seats: List<MockSeatData>): IntArray {
+        val statuses = IntArray(seats.size)
+        val availableIds = availableSeats[zoneId]
+        for (index in seats.indices) {
+            statuses[index] = if (availableIds?.contains(seats[index].seatId) == true) {
+                SeatStatus.AVAILABLE
+            } else {
+                SeatStatus.UNAVAILABLE
+            }
+        }
+        return statuses
+    }
+
+    private fun pushSelectedSeatIds(previousSelected: Set<String>) {
+        val view = seatCanvasView ?: return
+        val added = selectedSeatIds.filter { !previousSelected.contains(it) }.toTypedArray()
+        val removed = previousSelected.filter { !selectedSeatIds.contains(it) }.toTypedArray()
+        view.updateSelectedSeatIds(added, removed)
     }
 
     private fun pruneSelectedSeatsForAvailability() {
@@ -181,51 +276,42 @@ class SeatCanvasSampleModel {
 
     fun startAvailableSeatsTimer() {
         stopAvailableSeatsTimer()
+        availableSeatsTimerPaused = false
         val runnable = object : Runnable {
             override fun run() {
-                regenerateRandomAvailableSeats()
+                if (availableSeatsTimerPaused) {
+                    return
+                }
+                regenerateRandomAvailableSeats(fullRefresh = false)
                 handler.postDelayed(this, REFRESH_INTERVAL_MS)
             }
         }
         refreshRunnable = runnable
-        handler.post(runnable)
+        handler.postDelayed(runnable, REFRESH_INTERVAL_MS)
+    }
+
+    fun pauseAvailableSeatsTimer() {
+        availableSeatsTimerPaused = true
+        refreshRunnable?.let { handler.removeCallbacks(it) }
+    }
+
+    fun resumeAvailableSeatsTimer() {
+        if (!availableSeatsTimerPaused) {
+            return
+        }
+        availableSeatsTimerPaused = false
+        refreshRunnable?.let { handler.postDelayed(it, REFRESH_INTERVAL_MS) }
     }
 
     fun stopAvailableSeatsTimer() {
+        availableSeatsTimerPaused = false
+        isViewportInteracting = false
         refreshRunnable?.let { handler.removeCallbacks(it) }
         refreshRunnable = null
     }
 
     fun detachSeatCanvasView() {
         seatCanvasView = null
-    }
-
-    private fun scheduleRefreshForVisibleSeats() {
-        val view = seatCanvasView ?: return
-
-        /*
-         * 1. 判断当前是否是显示座位级别
-         * 这里只判断了缩放级别，实际业务场景可能还有其他条件
-         */
-        val zoomScale = view.zoomScale
-        val seatRenderZoomThreshold = view.seatRenderZoomThreshold
-        if (zoomScale < seatRenderZoomThreshold) {
-            return
-        }
-
-        /*
-         * 2. 获取当前可视范围内的区域ID
-         * 2.1 刷新指定区域ID内的座位状态
-         *
-         * 根据实际业务场景调整
-         */
-        val visibleRect = view.visibleOriginalRect()
-        val zoneIds = view.zoneIdsInOriginalRect(visibleRect)
-        if (zoneIds.isEmpty()) {
-            return
-        }
-
-        Log.d(TAG, "scheduleRefreshForVisibleSeats: zoneIds=$zoneIds")
     }
 
     private fun readAssetFileToString(context: Context, fileName: String): String? {

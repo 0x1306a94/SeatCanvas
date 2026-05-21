@@ -7,6 +7,7 @@
 
 #import "CPPObject.hpp"
 #import "SeatDataBuilder.h"
+#import "core/SeatData.hpp"
 #import "core/gesture/GestureState.hpp"
 #import "core/parser/BaseMapFormat.hpp"
 
@@ -87,11 +88,32 @@ void SeatCanvasCoreRendererSetMiniMapZoneAlternateColors(CPPObject *_Nonnull cpp
 ///   - cppObject: C++渲染器实例
 ///   - zoneId: 区域ID
 ///   - seatBuilder: 座位信息
-void SeatCanvasCoreRendererSetSeatDatas(CPPObject *_Nonnull cppObject, const std::string &zoneId, CPPObject *_Nullable seatBuilder);
+void SeatCanvasCoreRendererSetSeatDatas(CPPObject *_Nonnull cppObject, NSString *_Nonnull zoneId, CPPObject *_Nullable seatBuilder);
 
 /// 清除全部座位数据
 /// - Parameter cppObject: C++渲染器实例
 void SeatCanvasCoreRendererClearSeatData(CPPObject *_Nonnull cppObject);
+
+/// 注册价档表（load 前调用一次）
+void SeatCanvasCoreRendererRegisterPricecodes(CPPObject *_Nonnull cppObject, NSArray<NSString *> *_Nonnull pricecodes);
+
+/// 将价档字符串解析为 pricecodeIndex
+uint16_t SeatCanvasCoreRendererPricecodeIndexForCode(CPPObject *_Nonnull cppObject, NSString *_Nonnull pricecode);
+
+/// 批量更新单个座位 status
+void SeatCanvasCoreRendererUpdateSeatStatuses(CPPObject *_Nonnull cppObject, NSArray<NSString *> *_Nonnull seatIds,
+                                              NSArray<NSNumber *> *_Nonnull statuses);
+
+/// 批量更新某个 zone 内全部座位 status
+void SeatCanvasCoreRendererUpdateSeatStatusesForZone(CPPObject *_Nonnull cppObject, NSString *_Nonnull zoneId,
+                                                     NSArray<NSNumber *> *_Nonnull statuses);
+
+/// 全量替换选中座位
+void SeatCanvasCoreRendererSetSelectedSeatIds(CPPObject *_Nonnull cppObject, NSArray<NSString *> *_Nonnull seatIds);
+
+/// 增量更新选中座位
+void SeatCanvasCoreRendererUpdateSelectedSeatIds(CPPObject *_Nonnull cppObject, NSArray<NSString *> *_Nullable added,
+                                                 NSArray<NSString *> *_Nullable removed);
 
 /// 设置座位样式
 /// - Parameters:
@@ -271,4 +293,7 @@ NSArray<NSString *> *_Nonnull SeatCanvasCoreRendererGetZoneIdsInOriginalRect(CPP
 ///   - padding: 区域周围的边距（在内容坐标系中），默认为 0
 ///   - durationMs: 动画持续时间（毫秒），仅在 animated 为 true 时有效，默认 300ms
 void SeatCanvasCoreRendererZoomToRect(CPPObject *_Nonnull cppObject, CGRect rect, bool animated, CGFloat padding, double durationMs);
+
+/// 生成与 C++ 渲染器相同格式的座位样式 ID
+NSString *_Nonnull SeatCanvasComposeSeatStyleId(NSString *_Nullable pricecode, uint32_t status, bool selected);
 }  // namespace kk::bridge

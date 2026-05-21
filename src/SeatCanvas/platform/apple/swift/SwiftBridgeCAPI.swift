@@ -70,31 +70,6 @@ func switf_bridge_didTapZone(_ coreID: UInt32, _ zoneId: UnsafePointer<CChar>?) 
     }
 }
 
-@c(switf_bridge_styleIdForSeat)
-func switf_bridge_styleIdForSeat(_ coreID: UInt32, _ zoneId: UnsafePointer<CChar>?, _ seatId: UnsafePointer<CChar>?, _ outStyleId: UnsafeMutablePointer<CChar>?, _ outStyleIdLen: Int) -> Bool {
-    let zoneIdString = bridgeString(zoneId)
-    let seatIdString = bridgeString(seatId)
-    let styleId = MainActor.assumeIsolated { () -> String? in
-        guard let delegate = SeatCanvasRendererDelegateRegistry.shared.delegate(for: coreID) else {
-            #if DEBUG
-                print("[SwiftBridge] 警告: 未找到 coreID \(coreID) 对应的 SeatCanvasRendererDelegate")
-            #endif
-            return nil
-        }
-
-        guard let styleId = delegate.seatCanvasRendererStyleIdForSeat(zoneId: zoneIdString, seatId: seatIdString), !styleId.isEmpty else {
-            return nil
-        }
-
-        return styleId
-    }
-
-    guard let styleId else {
-        return false
-    }
-    return writeCString(styleId, to: outStyleId, maxLength: outStyleIdLen)
-}
-
 /// 点击座位回调，由 C++ 层调用(仅内部调用)
 /// - Parameters:
 ///   - coreID: 座位渲染器实例ID
@@ -227,5 +202,45 @@ func switf_bridge_viewportDidEndScrollingAnimation(_ coreID: UInt32, _ zoomScale
             return
         }
         delegate.seatCanvasRendererDidEndScrollingAnimation(zoomScale: viewport.0, contentOffset: viewport.1, visibleOriginalRect: viewport.2)
+    }
+}
+
+@c(switf_bridge_didLoadBaseMap)
+func switf_bridge_didLoadBaseMap(_ coreID: UInt32, _ baseMapWidth: Float, _ baseMapHeight: Float,
+                                 _ seatZoom: Float, _ rowZoom: Float, _ zoneZoom: Float, _ venueZoom: Float,
+                                 _ minimumZoomScale: Float, _ maximumZoomScale: Float, _ zoomScale: Float,
+                                 _ visibleOriginalRectX: Float, _ visibleOriginalRectY: Float, _ visibleOriginalRectWidth: Float, _ visibleOriginalRectHeight: Float)
+{
+    MainActor.assumeIsolated {
+        guard let delegate = SeatCanvasRendererDelegateRegistry.shared.delegate(for: coreID) else {
+            #if DEBUG
+                print("[SwiftBridge] 警告: 未找到 coreID \(coreID) 对应的 SeatCanvasRendererDelegate")
+            #endif
+            return
+        }
+
+        let event = SeatCanvasBaseMapLoadedEvent(
+            baseMapSize: CGSize(width: CGFloat(baseMapWidth), height: CGFloat(baseMapHeight)),
+            zoomLevels: ZoomLevel(seat: CGFloat(seatZoom), row: CGFloat(rowZoom), zone: CGFloat(zoneZoom), venue: CGFloat(venueZoom)),
+            minimumZoomScale: CGFloat(minimumZoomScale),
+            maximumZoomScale: CGFloat(maximumZoomScale),
+            zoomScale: CGFloat(zoomScale),
+            visibleOriginalRect: CGRect(x: CGFloat(visibleOriginalRectX), y: CGFloat(visibleOriginalRectY), width: CGFloat(visibleOriginalRectWidth), height: CGFloat(visibleOriginalRectHeight))
+        )
+
+        delegate.seatCanvasRendererDidLoadBaseMap(event: event)
+    }
+}
+
+@c(switf_bridge_didUnloadBaseMap)
+func switf_bridge_didUnloadBaseMap(_ coreID: UInt32) {
+    MainActor.assumeIsolated {
+        guard let delegate = SeatCanvasRendererDelegateRegistry.shared.delegate(for: coreID) else {
+            #if DEBUG
+                print("[SwiftBridge] 警告: 未找到 coreID \(coreID) 对应的 SeatCanvasRendererDelegate")
+            #endif
+            return
+        }
+        delegate.seatCanvasRendererDidUnloadBaseMap()
     }
 }

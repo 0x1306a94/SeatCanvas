@@ -273,7 +273,7 @@ napi_value CreateZoomLevel(napi_env env, float seat, float row, float zone, floa
     return jsValue;
 }
 
-std::optional<kk::SeatData> GetSeatData(napi_env env, napi_value value) {
+std::optional<kk::SeatData> GetSeatData(napi_env env, napi_value value, const PricecodeIndexResolver &resolver) {
     if (env == nullptr || value == nullptr) {
         return std::nullopt;
     }
@@ -284,7 +284,14 @@ std::optional<kk::SeatData> GetSeatData(napi_env env, napi_value value) {
     auto x = ReadDouble(env, value, "x");
     auto y = ReadDouble(env, value, "y");
     auto rotation = static_cast<float>(ReadDouble(env, value, "rotation"));
-    return {kk::SeatData(seatId, static_cast<float>(x), static_cast<float>(y), rotation)};
+
+    uint16_t pricecodeIndex = kk::kNoPricecodeIndex;
+    if (resolver) {
+        auto pricecode = ReadOptionalString(env, value, "pricecode").value_or("");
+        pricecodeIndex = resolver(pricecode);
+    }
+
+    return {kk::SeatData(seatId, static_cast<float>(x), static_cast<float>(y), rotation, pricecodeIndex)};
 }
 
 std::shared_ptr<tgfx::Data> LoadDataFromAsset(NativeResourceManager *mNativeResMgr, const char *name) {

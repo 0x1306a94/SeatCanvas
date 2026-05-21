@@ -9,6 +9,7 @@
 #define SEATCANVASSAMPLE_JSHELPER_H
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <napi/native_api.h>
 #include <optional>
@@ -53,7 +54,9 @@ tgfx::Rect GetRect(napi_env env, napi_value value);
 
 napi_value CreateZoomLevel(napi_env env, float seat, float row, float zone, float venue);
 
-std::optional<kk::SeatData> GetSeatData(napi_env env, napi_value value);
+using PricecodeIndexResolver = std::function<uint16_t(const std::string &)>;
+
+std::optional<kk::SeatData> GetSeatData(napi_env env, napi_value value, const PricecodeIndexResolver &resolver = nullptr);
 
 std::shared_ptr<tgfx::Data> LoadDataFromAsset(NativeResourceManager *mNativeResMgr, const char *name);
 }  // namespace kk::js

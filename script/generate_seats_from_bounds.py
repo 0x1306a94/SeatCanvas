@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import Any
 
 
-DEFAULT_SEAT_SIZE = 36
-DEFAULT_SPACING = 10
+DEFAULT_SEAT_SIZE = 24
+DEFAULT_SPACING = 5
 
 # Curated palette: #AARRGGBB (opaque, vivid but balanced)
 TIER_COLORS = [
@@ -36,11 +36,23 @@ PREFIX_GROUPS: list[tuple[str, int, list[str]]] = [
 ]
 
 
-def count_seats_along_axis(region_length: float, seat_size: int, spacing: int) -> int:
-    step = seat_size + spacing
+def compute_axis_layout(
+    region_length: float, seat_size: int, min_spacing: int
+) -> tuple[int, float, float]:
+    """Return seat count, step between seat origins, and leading offset along one axis."""
+    min_step = seat_size + min_spacing
     if region_length < seat_size:
-        return 0
-    return int((region_length - seat_size + spacing) // step)
+        return 0, 0.0, 0.0
+
+    count = int((region_length - seat_size + min_spacing) // min_step)
+    if count <= 0:
+        return 0, 0.0, 0.0
+
+    if count == 1:
+        return 1, 0.0, (region_length - seat_size) / 2.0
+
+    gap = (region_length - count * seat_size) / (count - 1)
+    return count, seat_size + gap, 0.0
 
 
 def chunk_list(items: list[str], chunk_count: int) -> list[list[str]]:
@@ -116,14 +128,13 @@ def generate_seats_for_zone(
     global_seat_index: int,
     use_global_seat_id: bool,
 ) -> tuple[list[dict[str, Any]], int]:
-    step = seat_size + spacing
     origin_x = bounds["x"]
     origin_y = bounds["y"]
     width = bounds["w"]
     height = bounds["h"]
 
-    column_count = count_seats_along_axis(width, seat_size, spacing)
-    row_count = count_seats_along_axis(height, seat_size, spacing)
+    column_count, column_step, column_offset = compute_axis_layout(width, seat_size, spacing)
+    row_count, row_step, row_offset = compute_axis_layout(height, seat_size, spacing)
 
     seats: list[dict[str, Any]] = []
     for row in range(row_count):
@@ -138,8 +149,8 @@ def generate_seats_for_zone(
                 {
                     "seatId": seat_id,
                     "pricecode": pricecode,
-                    "y": int(round(origin_y + row * step)),
-                    "x": int(round(origin_x + column * step)),
+                    "y": int(round(origin_y + row_offset + row * row_step)),
+                    "x": int(round(origin_x + column_offset + column * column_step)),
                 }
             )
 

@@ -57,3 +57,4 @@ ios/SeatCanvasSample/Configuration/Developer.xcconfig
 
 resources/SeatCanvasSample.bundle/customized/
 .claude/settings.local.json
+__pycache__/

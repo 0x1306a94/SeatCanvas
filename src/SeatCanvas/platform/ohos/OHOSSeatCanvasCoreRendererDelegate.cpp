@@ -23,7 +23,6 @@ OHOSSeatCanvasCoreRendererDelegate::~OHOSSeatCanvasCoreRendererDelegate() {
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
     napi_env env = kk::js::NapiEnvHolder::getEnv();
     if (env != nullptr) {
-        clearCallback(env, _styleIdForSeat);
         clearCallback(env, _didTapSeat);
         clearCallback(env, _didTapZone);
         clearCallback(env, _viewportWillBeginDragging);
@@ -34,15 +33,21 @@ OHOSSeatCanvasCoreRendererDelegate::~OHOSSeatCanvasCoreRendererDelegate() {
         clearCallback(env, _viewportDidZoom);
         clearCallback(env, _viewportDidEndZooming);
         clearCallback(env, _viewportDidEndScrollingAnimation);
+        clearCallback(env, _didLoadBaseMap);
+        clearCallback(env, _didUnloadBaseMap);
     }
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::setDidLoadBaseMapCallback(napi_env env, napi_value callback) {
+    setCallback(env, callback, _didLoadBaseMap);
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::setDidUnloadBaseMapCallback(napi_env env, napi_value callback) {
+    setCallback(env, callback, _didUnloadBaseMap);
 }
 
 void OHOSSeatCanvasCoreRendererDelegate::setDidTapZoneCallback(napi_env env, napi_value callback) {
     setCallback(env, callback, _didTapZone);
-}
-
-void OHOSSeatCanvasCoreRendererDelegate::setStyleIdForSeatCallback(napi_env env, napi_value callback) {
-    setCallback(env, callback, _styleIdForSeat);
 }
 
 void OHOSSeatCanvasCoreRendererDelegate::setDidTapSeatCallback(napi_env env, napi_value callback) {
@@ -100,6 +105,52 @@ void OHOSSeatCanvasCoreRendererDelegate::clearCallback(napi_env env, napi_ref &r
     }
 }
 
+void OHOSSeatCanvasCoreRendererDelegate::didLoadBaseMap(uint32_t, const kk::renderer::SeatCanvasBaseMapLoadedEvent &event) {
+    if (_didLoadBaseMap == nullptr) {
+        return;
+    }
+
+    napi_env env = kk::js::NapiEnvHolder::getEnv();
+    if (env == nullptr) {
+        return;
+    }
+
+    napi_value callback = nullptr;
+    napi_get_reference_value(env, _didLoadBaseMap, &callback);
+    if (callback == nullptr) {
+        return;
+    }
+
+    napi_value loadedEvent = makeBaseMapLoadedEventValue(env, event);
+    napi_value argv[1] = {loadedEvent};
+    napi_status status = napi_call_function(env, nullptr, callback, 1, argv, nullptr);
+    if (status != napi_ok) {
+        tgfx::PrintError("OHOSSeatCanvasCoreRendererDelegate::didLoadBaseMap failed: %d", static_cast<int>(status));
+    }
+}
+
+void OHOSSeatCanvasCoreRendererDelegate::didUnloadBaseMap(uint32_t) {
+    if (_didUnloadBaseMap == nullptr) {
+        return;
+    }
+
+    napi_env env = kk::js::NapiEnvHolder::getEnv();
+    if (env == nullptr) {
+        return;
+    }
+
+    napi_value callback = nullptr;
+    napi_get_reference_value(env, _didUnloadBaseMap, &callback);
+    if (callback == nullptr) {
+        return;
+    }
+
+    napi_status status = napi_call_function(env, nullptr, callback, 0, nullptr, nullptr);
+    if (status != napi_ok) {
+        tgfx::PrintError("OHOSSeatCanvasCoreRendererDelegate::didUnloadBaseMap failed: %d", static_cast<int>(status));
+    }
+}
+
 void OHOSSeatCanvasCoreRendererDelegate::didTapZone(uint32_t coreID, const std::string &zoneId) {
     if (_didTapZone == nullptr) {
         return;
@@ -121,55 +172,6 @@ void OHOSSeatCanvasCoreRendererDelegate::didTapZone(uint32_t coreID, const std::
 
     napi_value argv[1] = {zoneIdValue};
     napi_call_function(env, nullptr, callback, 1, argv, nullptr);
-}
-
-bool OHOSSeatCanvasCoreRendererDelegate::styleIdForSeat(uint32_t coreID, const std::string &zoneId,
-                                                        const std::string &seatId, std::string &outStyleId) {
-    if (_styleIdForSeat == nullptr) {
-        return false;
-    }
-
-    napi_env env = kk::js::NapiEnvHolder::getEnv();
-    if (env == nullptr) {
-        return false;
-    }
-
-    napi_value callback = nullptr;
-    napi_get_reference_value(env, _styleIdForSeat, &callback);
-    if (callback == nullptr) {
-        return false;
-    }
-
-    napi_value zoneIdValue = nullptr;
-    napi_value seatIdValue = nullptr;
-    napi_create_string_utf8(env, zoneId.c_str(), zoneId.length(), &zoneIdValue);
-    napi_create_string_utf8(env, seatId.c_str(), seatId.length(), &seatIdValue);
-
-    napi_value result = nullptr;
-    napi_value argv[2] = {zoneIdValue, seatIdValue};
-    napi_status status = napi_call_function(env, nullptr, callback, 2, argv, &result);
-
-    if (status != napi_ok || result == nullptr) {
-        return false;
-    }
-
-    napi_valuetype resultType = napi_undefined;
-    napi_typeof(env, result, &resultType);
-    if (resultType == napi_null || resultType == napi_undefined) {
-        return false;
-    }
-
-    napi_value strValue = nullptr;
-    status = napi_coerce_to_string(env, result, &strValue);
-    if (status != napi_ok || strValue == nullptr) {
-        return false;
-    }
-
-    outStyleId = GetUtf8String(env, strValue);
-    if (outStyleId.empty()) {
-        return false;
-    }
-    return true;
 }
 
 bool OHOSSeatCanvasCoreRendererDelegate::didTapSeat(uint32_t coreID, const std::string &zoneId,
@@ -205,6 +207,75 @@ bool OHOSSeatCanvasCoreRendererDelegate::didTapSeat(uint32_t coreID, const std::
     bool boolResult = false;
     napi_get_value_bool(env, result, &boolResult);
     return boolResult;
+}
+
+napi_value OHOSSeatCanvasCoreRendererDelegate::makeBaseMapLoadedEventValue(napi_env env, const kk::renderer::SeatCanvasBaseMapLoadedEvent &event) {
+    napi_value loadedEvent = nullptr;
+    napi_create_object(env, &loadedEvent);
+
+    napi_value baseMapWidth = nullptr;
+    napi_create_double(env, event.baseMapSize.width, &baseMapWidth);
+    napi_set_named_property(env, loadedEvent, "baseMapWidth", baseMapWidth);
+
+    napi_value baseMapHeight = nullptr;
+    napi_create_double(env, event.baseMapSize.height, &baseMapHeight);
+    napi_set_named_property(env, loadedEvent, "baseMapHeight", baseMapHeight);
+
+    napi_value zoomLevels = nullptr;
+    napi_create_object(env, &zoomLevels);
+
+    napi_value seat = nullptr;
+    napi_create_double(env, event.zoomLevels.seat, &seat);
+    napi_set_named_property(env, zoomLevels, "seat", seat);
+
+    napi_value row = nullptr;
+    napi_create_double(env, event.zoomLevels.row, &row);
+    napi_set_named_property(env, zoomLevels, "row", row);
+
+    napi_value zone = nullptr;
+    napi_create_double(env, event.zoomLevels.zone, &zone);
+    napi_set_named_property(env, zoomLevels, "zone", zone);
+
+    napi_value venue = nullptr;
+    napi_create_double(env, event.zoomLevels.venue, &venue);
+    napi_set_named_property(env, zoomLevels, "venue", venue);
+
+    napi_set_named_property(env, loadedEvent, "zoomLevels", zoomLevels);
+
+    napi_value minimumZoomScale = nullptr;
+    napi_create_double(env, event.minimumZoomScale, &minimumZoomScale);
+    napi_set_named_property(env, loadedEvent, "minimumZoomScale", minimumZoomScale);
+
+    napi_value maximumZoomScale = nullptr;
+    napi_create_double(env, event.maximumZoomScale, &maximumZoomScale);
+    napi_set_named_property(env, loadedEvent, "maximumZoomScale", maximumZoomScale);
+
+    napi_value zoomScale = nullptr;
+    napi_create_double(env, event.zoomScale, &zoomScale);
+    napi_set_named_property(env, loadedEvent, "zoomScale", zoomScale);
+
+    napi_value visibleOriginalRect = nullptr;
+    napi_create_object(env, &visibleOriginalRect);
+
+    napi_value rectX = nullptr;
+    napi_create_double(env, event.visibleOriginalRect.x(), &rectX);
+    napi_set_named_property(env, visibleOriginalRect, "x", rectX);
+
+    napi_value rectY = nullptr;
+    napi_create_double(env, event.visibleOriginalRect.y(), &rectY);
+    napi_set_named_property(env, visibleOriginalRect, "y", rectY);
+
+    napi_value rectWidth = nullptr;
+    napi_create_double(env, event.visibleOriginalRect.width(), &rectWidth);
+    napi_set_named_property(env, visibleOriginalRect, "width", rectWidth);
+
+    napi_value rectHeight = nullptr;
+    napi_create_double(env, event.visibleOriginalRect.height(), &rectHeight);
+    napi_set_named_property(env, visibleOriginalRect, "height", rectHeight);
+
+    napi_set_named_property(env, loadedEvent, "visibleOriginalRect", visibleOriginalRect);
+
+    return loadedEvent;
 }
 
 napi_value OHOSSeatCanvasCoreRendererDelegate::makeViewportValue(napi_env env, const kk::renderer::SeatCanvasViewportEvent &event) {

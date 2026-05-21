@@ -87,9 +87,28 @@ Seat rendering visibility is controlled by `ZoomLevelConfig` (per-scale threshol
 ### Delegate Pattern
 **Location**: `src/SeatCanvas/core/renderer/SeatCanvasCoreRendererDelegate.hpp`
 
+**Basemap lifecycle**
+
+- `didLoadBaseMap(coreID, event)` — basemap is loaded; `ZoomLevelConfig`, min/max/current zoom, and `visibleOriginalRect` are ready. Push seat styles and seat data here (or immediately after) so the first seat draw uses the correct threshold and viewport.
+- `didUnloadBaseMap(coreID)` — basemap was cleared or replaced. Stop polling, clear cached seat availability/selection, etc.
+
+**Important**: `setDelegate()` must be called **before** `loadBaseMap()`. Callbacks are fired from `handleBaseMapChanged()` only; they are **not** replayed when the delegate is set later. `didLoadBaseMap` is deferred until `PlatformView` is attached and viewport bounds are valid (avoids placeholder 1280×720 zoom levels on Android).
+
+**Interaction**
+
 - `didTapZone(coreID, zoneId)` — user tapped a region
-- `styleIdForSeat(coreID, zoneId, seatId, outStyleId)` — resolve style for a seat
-- `didTapSeat(coreID, zoneId, seatId)` — return whether the tap was handled
+- `didTapSeat(coreID, zoneId, seatId)` — return whether the tap was handled (selection / business state)
+
+Seat styles are **not** resolved via delegate. The app pushes render state with:
+
+- `registerPricecodes(pricecodes)` — once before load; array index is `pricecodeIndex`
+- `setSeatData(zoneId, seats)` — geometry + `pricecodeIndex`; resets zone statuses to 0
+- `updateSeatStatuses(updates)` / `updateSeatStatusesForZone(zoneId, statuses)`
+- `setSelectedSeatIds(seatIds)` / `updateSelectedSeatIds(added, removed)`
+
+Style keys registered via `setStyleKeyToConfigFromJSON` must match `SeatRenderStyleId.compose(pricecode, status, selected)` (C++ `composeSeatStyleId`). Unregistered keys skip drawing that seat.
+
+**Typical load order**: `setDelegate` → `loadBaseMap` → in `didLoadBaseMap`: `seatRenderZoomThreshold` (optional) → `registerPricecodes` → `applySeatStyleJSONConfig` / `setStyleKeyToConfigFromJSON` → per zone: `setSeatData` → `updateSeatStatusesForZone` → `setSelectedSeatIds`
 
 ## Render Pipeline
 
@@ -106,6 +125,10 @@ Seat rendering visibility is controlled by `ZoomLevelConfig` (per-scale threshol
 
 **Style**: `setStyleKeyToConfig()`, `setStyleKeyToConfigFromJSON(bytes, len)`
 
+**Seat state (push)**: `registerPricecodes()`, `setSeatData()`, `updateSeatStatuses()`, `updateSeatStatusesForZone()`, `setSelectedSeatIds()`, `updateSelectedSeatIds()`, `clearSeatData()`
+
+**Style key helper (platform lib)**: `SeatRenderStyleId.compose(pricecode, status, selected)` — must match registered JSON keys
+
 **Zoom**: `getZoomScale()`, `setZoomScale()`, `getMinimumZoomScale()`, `getMaximumZoomScale()`, `getContentOffset()`, `setContentOffset()`
 
 **Gesture**: `handleTap(location)`, `handlePan(state, translation, timestampMs)`, `handlePinch(state, scale, center)`
@@ -115,6 +138,8 @@ Seat rendering visibility is controlled by `ZoomLevelConfig` (per-scale threshol
 **Coordinates**: `convertScreenToOriginal()`, `convertOriginalToScreen()`, `getVisibleOriginalRect()`, `isPointInContentArea()`
 
 **Render control**: `start()`, `stop()`, `draw(force)`, `invalidateContent()`, `getFPS()`
+
+**Debug HUD** (overlay, drawn each frame): FPS, current zoom, loaded/drawn zone+seat counts, `seatRenderZoomThreshold`, and `ZoomLevelConfig` thresholds (seat / row / zone / venue on separate lines).
 
 **Config**: `setDelegate(delegate)`, `ZoomLevelConfig` (seat/row/zone/venue — per-scale visibility thresholds)
 

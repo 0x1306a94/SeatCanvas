@@ -15,8 +15,9 @@ class SwiftSeatCanvasCoreRendererDelegate : public kk::renderer::SeatCanvasCoreR
   public:
     explicit SwiftSeatCanvasCoreRendererDelegate();
     virtual ~SwiftSeatCanvasCoreRendererDelegate();
+    virtual void didLoadBaseMap(uint32_t coreID, const kk::renderer::SeatCanvasBaseMapLoadedEvent &event) override;
+    virtual void didUnloadBaseMap(uint32_t coreID) override;
     virtual void didTapZone(uint32_t coreID, const std::string &zoneId) override;
-    virtual bool styleIdForSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId, std::string &outStyleId) override;
     virtual bool didTapSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId) override;
     virtual void viewportWillBeginDragging(uint32_t coreID, const kk::renderer::SeatCanvasViewportEvent &event) override;
     virtual void viewportDidScroll(uint32_t coreID, const kk::renderer::SeatCanvasViewportEvent &event) override;

@@ -3,7 +3,7 @@
 ## Quick Reference
 
 **Common Commands**
-- Build iOS: `./ios/gen_ios` (simulator: `./ios/gen_simulator`)
+- Build iOS: `./ios/gen_ios`
 - Build Android: `cd android/SeatCanvasSample && ./gradlew assembleRelease`
 - Build OHOS: `cd ohos && hvigorw assembleHar --mode module -p module=libseatcanvas@default -p buildMode=release -p product=default --no-daemon`
 - Format code: `./codeformat.sh`

@@ -185,11 +185,12 @@ SeatCanvasSample.bundle/
 
 ## 座位数据、样式键与渲染代理
 
-- **字符串样式键**：座位样式 JSON 为若干条记录，每条含字符串 `key` 与 `config`（圆形或 SVG）。用 `SeatStyleConfigBuilder` 注册键名；渲染时由 `styleIdForSeat`（或各平台等价回调）返回相同样式 ID，才会按该配置绘制。未注册或空键则跳过该座位。
-- **每座位的 styleId**：`SeatData` 可带可选 `styleId`；若实现了代理，最终以代理返回的样式为准。
-- **更新与清空**：使用 `updateSeatDatas`（iOS）/ `updateSeats`（Android、鸿蒙）按区域写入几何信息；调用视图或控制器上的 `clearSeatData` 可清空全部座位数据并重绘。
+- **字符串样式键**：座位样式 JSON 为若干条记录，每条含字符串 `key` 与 `config`（圆形或 SVG）。用 `SeatStyleConfigBuilder` 注册键名；键名须与 `SeatRenderStyleId.compose(pricecode, status, selected)` 返回值一致。未注册或空键则跳过该座位。
+- **推送式渲染状态**：不再通过 delegate 按帧解析样式。须先 `setDelegate`，再 `loadBaseMap`；在 `didLoadBaseMap` 中推送：`registerPricecodes` → `applySeatStyleJSONConfig` → 每 zone：`updateSeatDatas`/`updateSeats`（含 `pricecode`）→ `updateSeatStatusesForZone` → `setSelectedSeatIds`；点选时用 `updateSelectedSeatIds`。
+- **`updateSeats` / `updateSeatDatas` 副作用**：会重置该 zone 的 status 为 0，并清除旧 seat 的 selected，随后必须 re-push status/selected。
+- **更新与清空**：调用视图或控制器上的 `clearSeatData` 可清空全部座位数据并重绘。
 - **圆形样式**：在支持的 Builder 上，`overlay` 与 `checkmark` 为可选，仅 `fill` 必填。
-- **代理**：实现 `styleIdForSeat`、`didTapSeat`，可选 `didTapZone`，用于样式解析、点击与选座逻辑（详见各端类型定义与示例）。
+- **代理**：实现 `didTapSeat`、可选 `didTapZone` 处理点击与选座。可选实现 `didLoadBaseMap` / `didUnloadBaseMap`：底图就绪后推送座位数据与样式，卸载时清理缓存状态（见各端 Sample）。若在 `loadBaseMap` 之后才设置 delegate，**不会**补发回调。
 
 ## 使用示例
 
@@ -226,6 +227,7 @@ seatCanvasView.clearSeatData()
 
 ```kotlin
 val seatCanvasView = SeatCanvasView(context)
+seatCanvasView.setDelegate(delegate)
 seatCanvasView.loadBaseMap(svgData)
 ```
 
@@ -255,11 +257,12 @@ import { SeatCanvasView, SeatCanvasViewController, BaseMapFormat } from 'libseat
 
 @State controller: SeatCanvasViewController = new SeatCanvasViewController()
 
+this.controller.setDelegate(delegate)
 SeatCanvasView({ controller: this.controller })
   .width('100%')
   .height('100%')
 
-// 加载底图
+// 加载底图（在 didLoadBaseMap 中推送座位数据）
 let manager = getContext(this).resourceManager;
 await this.controller.loadFromAssets(manager, `svg/${basemapName}.svg`, BaseMapFormat.SVG);
 ```
@@ -304,11 +307,18 @@ controller.applySeatStyleJSONConfig(config);
 #### 渲染代理与清空座位
 
 ```typescript
-import { SeatCanvasRendererDelegate } from 'libseatcanvas';
+import { SeatCanvasRendererDelegate, SeatRenderStyleId } from 'libseatcanvas';
 
 let delegate: SeatCanvasRendererDelegate = {
-  styleIdForSeat: (zoneId: string, seatId: string) => {
-    return 'selectable_unselected';
+  didLoadBaseMap: (event) => {
+    controller.registerPricecodes(['1', '2']);
+    controller.applySeatStyleJSONConfig(styleJson);
+    controller.updateSeats('37492', seatDataArray);
+    controller.updateSeatStatusesForZone('37492', statuses);
+    controller.setSelectedSeatIds(selectedSeatIds);
+  },
+  didUnloadBaseMap: () => {
+    // 停止定时器、清理座位缓存
   },
   didTapSeat: (zoneId: string, seatId: string) => {
     return true;
@@ -318,8 +328,11 @@ let delegate: SeatCanvasRendererDelegate = {
 };
 
 controller.setDelegate(delegate);
-controller.updateSeats('37492', seatDataArray);
+await controller.loadFromAssets(manager, assetPath, BaseMapFormat.SVG, parseConfig);
 controller.clearSeatData();
+
+// 样式注册键须与以下格式一致：
+SeatRenderStyleId.compose('1', 1, false);
 ```
 
 ### Web (计划中)

@@ -3,13 +3,15 @@ package com.seatcanvas.sample
 import android.content.Context
 import android.graphics.Color
 import androidx.core.content.ContextCompat
+import com.libseatcanvas.SeatRenderStyleId
 import com.libseatcanvas.style.SeatStyleConfigBuilder
 
-object SeatStyleBuilder {
-    fun styleId(pricecode: String, available: Boolean, selected: Boolean): String {
-        return "pricecode_${pricecode}_available_${available}_selected_${if (selected) 1 else 0}"
-    }
+object SeatStatus {
+    const val UNAVAILABLE: Int = 0
+    const val AVAILABLE: Int = 1
+}
 
+object SeatStyleBuilder {
     fun buildCircleSeatStyleConfig(context: Context, prices: List<MockPriceData>): ByteArray? {
         if (prices.isEmpty()) {
             return null
@@ -20,10 +22,10 @@ object SeatStyleBuilder {
         val checkmark = Color.WHITE
         for (price in prices) {
             val fill = ColorExtensions.colorFromArgbHex(price.color) ?: continue
-            builder.addCircleStyle(styleId(price.code, available = false, selected = false), disabled)
-            builder.addCircleStyle(styleId(price.code, available = true, selected = false), fill)
+            builder.addCircleStyle(SeatRenderStyleId.compose(price.code, SeatStatus.UNAVAILABLE, selected = false), disabled)
+            builder.addCircleStyle(SeatRenderStyleId.compose(price.code, SeatStatus.AVAILABLE, selected = false), fill)
             builder.addCircleStyle(
-                styleId = styleId(price.code, available = true, selected = true),
+                styleId = SeatRenderStyleId.compose(price.code, SeatStatus.AVAILABLE, selected = true),
                 fill = fill,
                 overlay = overlay,
                 checkmark = checkmark
@@ -43,11 +45,11 @@ object SeatStyleBuilder {
         val builder = SeatStyleConfigBuilder()
         for (price in prices) {
             val rgbHex = ColorExtensions.rgbHexFromArgb(price.color) ?: continue
-            builder.addSVGStyle(styleId(price.code, available = false, selected = false), disabled)
+            builder.addSVGStyle(SeatRenderStyleId.compose(price.code, SeatStatus.UNAVAILABLE, selected = false), disabled)
             val modifiedAvailable = available.replace(Regex("#EB484A", RegexOption.IGNORE_CASE), rgbHex)
             val modifiedSelected = selected.replace(Regex("#5BC64D", RegexOption.IGNORE_CASE), rgbHex)
-            builder.addSVGStyle(styleId(price.code, available = true, selected = false), modifiedAvailable)
-            builder.addSVGStyle(styleId(price.code, available = true, selected = true), modifiedSelected)
+            builder.addSVGStyle(SeatRenderStyleId.compose(price.code, SeatStatus.AVAILABLE, selected = false), modifiedAvailable)
+            builder.addSVGStyle(SeatRenderStyleId.compose(price.code, SeatStatus.AVAILABLE, selected = true), modifiedSelected)
         }
         return builder.toJSONData()
     }

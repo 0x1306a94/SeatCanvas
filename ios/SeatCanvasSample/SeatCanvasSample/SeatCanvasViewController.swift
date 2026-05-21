@@ -28,6 +28,8 @@ class SeatCanvasViewController: UIViewController {
     private var selectedSeatIds: Set<String> = []
     /// 定时刷新可售座位
     private var availableSeatsTimer: Timer?
+    private var availableSeatsTimerPaused = false
+    private var isViewportInteracting = false
     private let availableSeatsRefreshInterval: TimeInterval = 10.0
 
     var baseMap: BaseMapFileInfo?
@@ -42,6 +44,7 @@ class SeatCanvasViewController: UIViewController {
         seatCanvasView = SeatCanvasView(frame: .zero)
         seatCanvasView.backgroundColor = UIColor(named: "b1")
         seatCanvasView.canvasColor = UIColor(named: "b1")
+        seatCanvasView.seatSize = 24
         seatCanvasView.delegate = self
         seatCanvasView.translatesAutoresizingMaskIntoConstraints = false
 
@@ -56,11 +59,6 @@ class SeatCanvasViewController: UIViewController {
         ])
 
         loadBaseMap()
-        loadMockData()
-        regenerateRandomAvailableSeats()
-        startAvailableSeatsTimer()
-
-        seatCanvasView.applySeatStyleJSONConfig(buildSVGSeatStyleConfig())
     }
 
     isolated deinit {
@@ -69,8 +67,7 @@ class SeatCanvasViewController: UIViewController {
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        availableSeatsTimer?.invalidate()
-        availableSeatsTimer = nil
+        stopAvailableSeatsTimer()
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -111,9 +108,9 @@ class SeatCanvasViewController: UIViewController {
         }
 
         for price in prices {
-            builder.addCircleStyle(styleId: styleId(pricecode: price.code, available: false, selected: false), fill: disabled)
-            builder.addCircleStyle(styleId: styleId(pricecode: price.code, available: true, selected: false), fill: price.color)
-            builder.addCircleStyle(styleId: styleId(pricecode: price.code, available: true, selected: true), fill: price.color, overlay: overlay, checkmark: checkmark)
+            builder.addCircleStyle(styleId: SeatRenderStyleId.compose(pricecode: price.code, status: SeatStatus.unavailable, selected: false), fill: disabled)
+            builder.addCircleStyle(styleId: SeatRenderStyleId.compose(pricecode: price.code, status: SeatStatus.available, selected: false), fill: price.color)
+            builder.addCircleStyle(styleId: SeatRenderStyleId.compose(pricecode: price.code, status: SeatStatus.available, selected: true), fill: price.color, overlay: overlay, checkmark: checkmark)
         }
 
         return builder.toJSONData()
@@ -134,15 +131,15 @@ class SeatCanvasViewController: UIViewController {
         }
 
         for price in prices {
-            builder.addSVGStyle(styleId: styleId(pricecode: price.code, available: false, selected: false), content: disabled)
+            builder.addSVGStyle(styleId: SeatRenderStyleId.compose(pricecode: price.code, status: SeatStatus.unavailable, selected: false), content: disabled)
             let modifyAvailabe = availabe
                 .replacingOccurrences(of: "#EB484A", with: price.color.rgbHex)
 
             let modifySelected = selected
                 .replacingOccurrences(of: "#5BC64D", with: price.color.rgbHex)
 
-            builder.addSVGStyle(styleId: styleId(pricecode: price.code, available: true, selected: false), content: modifyAvailabe)
-            builder.addSVGStyle(styleId: styleId(pricecode: price.code, available: true, selected: true), content: modifySelected)
+            builder.addSVGStyle(styleId: SeatRenderStyleId.compose(pricecode: price.code, status: SeatStatus.available, selected: false), content: modifyAvailabe)
+            builder.addSVGStyle(styleId: SeatRenderStyleId.compose(pricecode: price.code, status: SeatStatus.available, selected: true), content: modifySelected)
         }
 
         return builder.toJSONData()
@@ -187,8 +184,11 @@ class SeatCanvasViewController: UIViewController {
         seatCanvasView.updateSeatZoneAlternateColors(colors: zoneColors)
         seatCanvasView.updateMiniMapZoneAlternateColors(colors: zoneColors)
 
+        seatCanvasView.registerPricecodes(prices.map(\.code))
+
         seatsMap.removeAll(keepingCapacity: true)
         seatZoneMap = loadSeatDatas()
+        selectedSeatIds.removeAll(keepingCapacity: true)
         for zoneSeat in seatZoneMap {
             for seat in zoneSeat.value {
                 seatsMap[seat.seatId] = seat
@@ -196,8 +196,38 @@ class SeatCanvasViewController: UIViewController {
                     selectedSeatIds.insert(seat.seatId)
                 }
             }
-            seatCanvasView.updateSeatDatas(zoneId: zoneSeat.key, seats: zoneSeat.value.map { SeatData(seatId: $0.seatId, position: $0.position, rotation: $0.rotation) })
+            let seatDatas = zoneSeat.value.map {
+                SeatData(
+                    seatId: $0.seatId,
+                    position: $0.position,
+                    rotation: $0.rotation,
+                    pricecode: $0.pricecode.isEmpty ? nil : $0.pricecode
+                )
+            }
+            seatCanvasView.updateSeatDatas(zoneId: zoneSeat.key, seats: seatDatas)
+            seatCanvasView.updateSeatStatusesForZone(
+                zoneId: zoneSeat.key,
+                statuses: buildStatusesForZone(zoneId: zoneSeat.key, seats: zoneSeat.value)
+            )
         }
+        seatCanvasView.setSelectedSeatIds(Array(selectedSeatIds))
+    }
+
+    private enum SeatStatus {
+        static let unavailable: UInt32 = 0
+        static let available: UInt32 = 1
+    }
+
+    private func buildStatusesForZone(zoneId: String, seats: [MockSeatData]) -> [NSNumber] {
+        seats.map { seat in
+            NSNumber(value: seatAvailable(zoneId: zoneId, seatId: seat.seatId) ? SeatStatus.available : SeatStatus.unavailable)
+        }
+    }
+
+    private func pushSelectedSeatIds(previousSelected: Set<String>) {
+        let added = selectedSeatIds.filter { !previousSelected.contains($0) }
+        let removed = previousSelected.filter { !selectedSeatIds.contains($0) }
+        seatCanvasView.updateSelectedSeatIds(added: Array(added), removed: Array(removed))
     }
 
     func loadZoneDatas() -> [MockZoneInfo] {
@@ -214,10 +244,6 @@ class SeatCanvasViewController: UIViewController {
             print(error)
             return []
         }
-    }
-
-    private func styleId(pricecode: String, available: Bool, selected: Bool) -> String {
-        "pricecode_\(pricecode)_available_\(available)_selected_\(selected ? 1 : 0)"
     }
 
     func loadSeatDatas() -> [String: [MockSeatData]] {
@@ -245,26 +271,94 @@ class SeatCanvasViewController: UIViewController {
 
     private func startAvailableSeatsTimer() {
         availableSeatsTimer?.invalidate()
+        availableSeatsTimerPaused = false
         availableSeatsTimer = Timer.scheduledTimer(
             withTimeInterval: availableSeatsRefreshInterval,
             repeats: true
         ) { [weak self] _ in
-            self?.regenerateRandomAvailableSeats()
+            guard let self, !self.availableSeatsTimerPaused else {
+                return
+            }
+            self.regenerateRandomAvailableSeats(fullRefresh: false)
         }
     }
 
-    private func regenerateRandomAvailableSeats() {
-        availableSeats.removeAll(keepingCapacity: true)
-        for (zoneId, seats) in seatZoneMap {
-            guard !seats.isEmpty else {
+    private func pauseAvailableSeatsTimer() {
+        availableSeatsTimerPaused = true
+    }
+
+    private func resumeAvailableSeatsTimer() {
+        guard availableSeatsTimerPaused else {
+            return
+        }
+        availableSeatsTimerPaused = false
+    }
+
+    private func stopAvailableSeatsTimer() {
+        availableSeatsTimerPaused = false
+        isViewportInteracting = false
+        availableSeatsTimer?.invalidate()
+        availableSeatsTimer = nil
+    }
+
+    private func beginViewportInteraction() {
+        if isViewportInteracting {
+            return
+        }
+        isViewportInteracting = true
+        pauseAvailableSeatsTimer()
+    }
+
+    private func endViewportInteraction() {
+        if !isViewportInteracting {
+            return
+        }
+        isViewportInteracting = false
+        regenerateRandomAvailableSeats(fullRefresh: false)
+        resumeAvailableSeatsTimer()
+    }
+
+    private func regenerateRandomAvailableSeats(fullRefresh: Bool = false) {
+        let zoneIds: [String]
+        if fullRefresh {
+            zoneIds = Array(seatZoneMap.keys)
+        } else {
+            let zoomScale = seatCanvasView.zoomScale
+            let seatRenderZoomThreshold = seatCanvasView.seatRenderZoomThreshold
+            guard zoomScale >= seatRenderZoomThreshold else {
+                return
+            }
+            let visibleRect = seatCanvasView.visibleOriginalRect()
+            let visibleZoneIds = seatCanvasView.zoneIds(inOriginalRect: visibleRect)
+            guard !visibleZoneIds.isEmpty else {
+                return
+            }
+            zoneIds = visibleZoneIds
+        }
+
+        if fullRefresh {
+            availableSeats.removeAll(keepingCapacity: true)
+        }
+
+        for zoneId in zoneIds {
+            guard let seats = seatZoneMap[zoneId], !seats.isEmpty else {
                 continue
             }
             let ratio = Double.random(in: 0.2 ... 0.9)
             let availableCount = max(1, Int(Double(seats.count) * ratio))
             let availableIds = Set(seats.shuffled().prefix(availableCount).map(\.seatId))
             availableSeats[zoneId] = availableIds
+            seatCanvasView.updateSeatStatusesForZone(
+                zoneId: zoneId,
+                statuses: buildStatusesForZone(zoneId: zoneId, seats: seats)
+            )
         }
         pruneSelectedSeatsForAvailability()
+        seatCanvasView.setSelectedSeatIds(Array(selectedSeatIds))
+
+        if !fullRefresh {
+            print("refreshAvailableSeatsForVisibleZones: zoneIds=\(zoneIds)")
+        }
     }
 
     private func pruneSelectedSeatsForAvailability() {
@@ -278,47 +372,24 @@ class SeatCanvasViewController: UIViewController {
             return false
         }
     }
-
-    private func scheduleRefreshForVisibleSeats() {
-        /*
-         * 1. 判断当前是否是显示座位级别
-         * 这里只判断了缩放级别，实际业务场景可能还有其他条件
-         */
-        let zoomScale = seatCanvasView.zoomScale
-        let seatRenderZoomThreshold = seatCanvasView.seatRenderZoomThreshold
-        guard zoomScale >= seatRenderZoomThreshold else {
-            return
-        }
-
-        /*
-         * 2. 获取当前可视范围内的区域ID
-         * 2.1 刷新指定区域ID内的座位状态
-         *
-         * 根据实际业务场景调整
-         */
-        let visibleRect = seatCanvasView.visibleOriginalRect()
-        let zoneIds = seatCanvasView.zoneIds(inOriginalRect: visibleRect)
-        guard !zoneIds.isEmpty else {
-            return
-        }
-
-        print(#function, zoneIds)
-    }
 }
 
 extension SeatCanvasViewController: SeatCanvasViewDelegate {
-    /// 根据区域和座位ID返回样式ID。
-    /// - Parameters:
-    ///   - view: SeatCanvasView 实例
-    ///   - zoneId: 区域ID
-    ///   - seatId: 座位ID（由业务保证全局唯一）
-    /// - Returns: 样式ID。返回 nil 或空字符串表示该座位不渲染。
-    func seatCanvasView(_: SeatCanvasView, styleIdForSeat zoneId: String, seatId: String) -> String? {
-        guard let seta = seatsMap[seatId] else {
-            return nil
+    /// 底图加载完成；此时 ZoomLevelConfig 与初始缩放已就绪，可设置 seatRenderZoomThreshold 并 push 座位数据。
+    func seatCanvasView(_ view: SeatCanvasView, didLoadBaseMap event: SeatCanvasBaseMapLoadedEvent) {
+        view.seatRenderZoomThreshold = event.zoomLevels.venue
+        loadMockData()
+        regenerateRandomAvailableSeats(fullRefresh: true)
+        view.applySeatStyleJSONConfig(buildSVGSeatStyleConfig())
+        if availableSeatsTimer == nil {
+            startAvailableSeatsTimer()
         }
-        let available = seatAvailable(zoneId: zoneId, seatId: seatId)
-        return styleId(pricecode: seta.pricecode, available: available, selected: selectedSeatIds.contains(seatId))
+    }
+
+    func seatCanvasViewDidUnloadBaseMap(_: SeatCanvasView) {
+        stopAvailableSeatsTimer()
+        availableSeats.removeAll()
+        selectedSeatIds.removeAll()
     }
 
     /// 点击某个座位，业务层处理状态变更。
@@ -328,6 +399,7 @@ extension SeatCanvasViewController: SeatCanvasViewDelegate {
     ///   - seatId: 座位ID
     /// - Returns: 是否发生了状态变化。true 则触发重绘。
     func seatCanvasView(_: SeatCanvasView, didTapSeat zoneId: String, seatId: String) -> Bool {
+        let previousSelected = selectedSeatIds
         var changed = false
         if selectedSeatIds.contains(seatId) {
             selectedSeatIds.remove(seatId)
@@ -335,6 +407,9 @@ extension SeatCanvasViewController: SeatCanvasViewDelegate {
         } else if seatAvailable(zoneId: zoneId, seatId: seatId) {
             selectedSeatIds.insert(seatId)
             changed = true
+        }
+        if changed {
+            pushSelectedSeatIds(previousSelected: previousSelected)
         }
         print(#function, zoneId, seatId)
         return changed
@@ -356,6 +431,7 @@ extension SeatCanvasViewController: SeatCanvasViewDelegate {
     ///   - visibleOriginalRect: 当前可见区域，使用底图原始坐标系
     func seatCanvasViewWillBeginDragging(_: SeatCanvasView, zoomScale _: CGFloat, contentOffset _: CGPoint, visibleOriginalRect _: CGRect) {
         print(#function)
+        beginViewportInteraction()
     }
 
     /// 视图发生滚动
@@ -365,7 +441,7 @@ extension SeatCanvasViewController: SeatCanvasViewDelegate {
     ///   - contentOffset: 当前内容偏移，单位为 viewport 像素
     ///   - visibleOriginalRect: 当前可见区域，使用底图原始坐标系
     func seatCanvasViewDidScroll(_: SeatCanvasView, zoomScale _: CGFloat, contentOffset _: CGPoint, visibleOriginalRect _: CGRect) {
-        print(#function)
+//        print(#function)
     }
 
     /// 拖动手势结束
@@ -378,7 +454,7 @@ extension SeatCanvasViewController: SeatCanvasViewDelegate {
     func seatCanvasViewDidEndDragging(_: SeatCanvasView, zoomScale _: CGFloat, contentOffset _: CGPoint, visibleOriginalRect _: CGRect, decelerate: Bool) {
         print(#function, decelerate)
         if !decelerate {
-            scheduleRefreshForVisibleSeats()
+            endViewportInteraction()
         }
     }
 
@@ -390,7 +466,7 @@ extension SeatCanvasViewController: SeatCanvasViewDelegate {
     ///   - visibleOriginalRect: 当前可见区域，使用底图原始坐标系
     func seatCanvasViewDidEndDecelerating(_: SeatCanvasView, zoomScale _: CGFloat, contentOffset _: CGPoint, visibleOriginalRect _: CGRect) {
         print(#function)
-        scheduleRefreshForVisibleSeats()
+        endViewportInteraction()
     }
 
     /// 即将开始缩放视图
@@ -401,6 +477,7 @@ extension SeatCanvasViewController: SeatCanvasViewDelegate {
     ///   - visibleOriginalRect: 当前可见区域，使用底图原始坐标系
     func seatCanvasViewWillBeginZooming(_: SeatCanvasView, zoomScale _: CGFloat, contentOffset _: CGPoint, visibleOriginalRect _: CGRect) {
         print(#function)
+        beginViewportInteraction()
     }
 
     /// 视图发生缩放
@@ -421,7 +498,7 @@ extension SeatCanvasViewController: SeatCanvasViewDelegate {
     ///   - visibleOriginalRect: 当前可见区域，使用底图原始坐标系
     func seatCanvasViewDidEndZooming(_: SeatCanvasView, zoomScale _: CGFloat, contentOffset _: CGPoint, visibleOriginalRect _: CGRect) {
         print(#function)
-        scheduleRefreshForVisibleSeats()
+        endViewportInteraction()
     }
 
     /// 程序触发的滚动或缩放动画结束
@@ -432,6 +509,6 @@ extension SeatCanvasViewController: SeatCanvasViewDelegate {
     ///   - visibleOriginalRect: 当前可见区域，使用底图原始坐标系
     func seatCanvasViewDidEndScrollingAnimation(_: SeatCanvasView, zoomScale _: CGFloat, contentOffset _: CGPoint, visibleOriginalRect _: CGRect) {
         print(#function)
-        scheduleRefreshForVisibleSeats()
+        endViewportInteraction()
     }
 }

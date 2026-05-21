@@ -231,11 +231,55 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         nativeUpdateMiniMapZoneAlternateColors(zones)
     }
 
+    /**
+     * 更新指定 zone 的座位几何数据。
+     * 会重置该 zone 的 status 为 0，并清除旧 seat 的 selected；随后需 re-push status/selected。
+     */
     fun updateSeats(zoneId: String, seats: Array<SeatData>) {
         if (!nativeInitialized()) {
             return
         }
         nativeUpdateSeats(zoneId, seats)
+    }
+
+    /** 注册价档表（load 前调用一次） */
+    fun registerPricecodes(pricecodes: Array<String>) {
+        if (!nativeInitialized()) {
+            return
+        }
+        nativeRegisterPricecodes(pricecodes)
+    }
+
+    /** 批量更新单个座位 status */
+    fun updateSeatStatuses(updates: Array<SeatStatusUpdate>) {
+        if (!nativeInitialized()) {
+            return
+        }
+        nativeUpdateSeatStatuses(updates)
+    }
+
+    /** 批量更新某个 zone 内全部座位 status（数组下标与 updateSeats 顺序一致） */
+    fun updateSeatStatusesForZone(zoneId: String, statuses: IntArray) {
+        if (!nativeInitialized()) {
+            return
+        }
+        nativeUpdateSeatStatusesForZone(zoneId, statuses)
+    }
+
+    /** 全量替换选中座位 */
+    fun setSelectedSeatIds(seatIds: Array<String>) {
+        if (!nativeInitialized()) {
+            return
+        }
+        nativeSetSelectedSeatIds(seatIds)
+    }
+
+    /** 增量更新选中座位 */
+    fun updateSelectedSeatIds(added: Array<String>, removed: Array<String>) {
+        if (!nativeInitialized()) {
+            return
+        }
+        nativeUpdateSelectedSeatIds(added, removed)
     }
 
     /**
@@ -369,19 +413,49 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         nativeHandleTap(x, y)
     }
 
+    private fun nativeOnDidLoadBaseMap(
+        baseMapWidth: Float,
+        baseMapHeight: Float,
+        seatZoom: Float,
+        rowZoom: Float,
+        zoneZoom: Float,
+        venueZoom: Float,
+        minimumZoomScale: Float,
+        maximumZoomScale: Float,
+        zoomScale: Float,
+        visibleOriginalRectX: Float,
+        visibleOriginalRectY: Float,
+        visibleOriginalRectWidth: Float,
+        visibleOriginalRectHeight: Float
+    ) {
+        delegate?.didLoadBaseMap(
+            SeatCanvasBaseMapLoadedEvent(
+                baseMapWidth = baseMapWidth,
+                baseMapHeight = baseMapHeight,
+                zoomLevels = ZoomLevel(seatZoom, rowZoom, zoneZoom, venueZoom),
+                minimumZoomScale = minimumZoomScale,
+                maximumZoomScale = maximumZoomScale,
+                zoomScale = zoomScale,
+                visibleOriginalRect = Rect(
+                    visibleOriginalRectX,
+                    visibleOriginalRectY,
+                    visibleOriginalRectWidth,
+                    visibleOriginalRectHeight
+                )
+            )
+        )
+    }
+
+    private fun nativeOnDidUnloadBaseMap() {
+        delegate?.didUnloadBaseMap()
+    }
+
     /**
      * 由 C++ 层调用，转发给 delegate
      * @param zoneId 区域ID
      */
     private fun nativeOnDidTapZone(zoneId: String) {
         delegate?.didTapZone(zoneId)
-    }
-
-    /**
-     * 由 native 层调用：查询座位对应样式 ID；返回 null 表示不绘制该座位。
-     */
-    private fun nativeOnStyleIdForSeat(zoneId: String, seatId: String): String? {
-        return delegate?.styleIdForSeat(zoneId, seatId)
     }
 
     /**
@@ -591,6 +665,8 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         )
     }
 
+
+
     private external fun nativeLoadBaseMapFromFormat(data: ByteArray?, formatName: String, parseConfigJSON: ByteArray?): Long
     private external fun nativeLoadBaseMap(ptr: Long): Boolean
     private external fun nativeSetCanvasColor(color: Int)
@@ -599,6 +675,11 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
     private external fun nativeUpdateSeatZoneAlternateColors(zones: Array<SeatZoneColor>)
     private external fun nativeUpdateMiniMapZoneAlternateColors(zones: Array<SeatZoneColor>)
     private external fun nativeUpdateSeats(zoneId: String, seats: Array<SeatData>)
+    private external fun nativeRegisterPricecodes(pricecodes: Array<String>)
+    private external fun nativeUpdateSeatStatuses(updates: Array<SeatStatusUpdate>)
+    private external fun nativeUpdateSeatStatusesForZone(zoneId: String, statuses: IntArray)
+    private external fun nativeSetSelectedSeatIds(seatIds: Array<String>)
+    private external fun nativeUpdateSelectedSeatIds(added: Array<String>, removed: Array<String>)
     private external fun nativeClearSeatData()
     private external fun nativeGetSeatSize(): Float
     private external fun nativeSetSeatSize(seatSize: Float)
