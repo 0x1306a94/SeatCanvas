@@ -340,9 +340,11 @@ SeatRenderStyleId.compose('1', 1, false);
 Web platform support is under development and will be implemented via WebAssembly.
 
 ### Demo Video
+#### Youtube
+[![Watch on YouTube](https://img.youtube.com/vi/WjgUrQ23ByA/maxresdefault.jpg)](https://www.youtube.com/watch?v=WjgUrQ23ByA)
 
-[![Watch on YouTube](https://img.youtube.com/vi/3RaeqIqPPs8/maxresdefault.jpg)](https://www.youtube.com/watch?v=3RaeqIqPPs8)
-
+#### Bilibil
+[![Watch Demo on Bilibili](https://i2.hdslb.com/bfs/archive/7237f42fa85778cad7542bb570c7457149893dff.jpg)](https://www.bilibili.com/video/BV1QnL46qEBb)
 
 ## License
 
