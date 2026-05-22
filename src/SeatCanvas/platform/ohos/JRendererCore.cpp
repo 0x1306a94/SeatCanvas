@@ -544,6 +544,44 @@ static napi_value SetSeatRenderZoomThreshold(napi_env env, napi_callback_info in
     return nullptr;
 }
 
+static napi_value IsDebugHUDEnabled(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+    napi_value jsView = nullptr;
+    napi_get_cb_info(env, info, nullptr, nullptr, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    napi_value result = nullptr;
+    bool enabled = false;
+    if (view != nullptr) {
+        auto *renderer = view->internalRenderer();
+        if (renderer != nullptr) {
+            enabled = renderer->isDebugHUDEnabled();
+        }
+    }
+    napi_get_boolean(env, enabled, &result);
+    return result;
+}
+
+static napi_value SetDebugHUDEnabled(napi_env env, napi_callback_info info) {
+    kk::js::NapiEnvHolder::setEnv(env);
+    napi_value jsView = nullptr;
+    size_t argc = 1;
+    napi_value args[1] = {nullptr};
+    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
+    JRendererCore *view = nullptr;
+    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
+    if (view == nullptr || argc < 1) {
+        return nullptr;
+    }
+    bool enabled = false;
+    napi_get_value_bool(env, args[0], &enabled);
+    auto *renderer = view->internalRenderer();
+    if (renderer != nullptr) {
+        renderer->setDebugHUDEnabled(enabled);
+    }
+    return nullptr;
+}
+
 static napi_value Release(napi_env env, napi_callback_info info) {
     kk::js::NapiEnvHolder::setEnv(env);
     napi_value jsView = nullptr;
@@ -1219,6 +1257,8 @@ bool JRendererCore::Init(napi_env env, napi_value exports) {
         JS_DEFAULT_METHOD_ENTRY(zoomLevel, GetZoomLevel),
         JS_DEFAULT_METHOD_ENTRY(getSeatRenderZoomThreshold, GetSeatRenderZoomThreshold),
         JS_DEFAULT_METHOD_ENTRY(setSeatRenderZoomThreshold, SetSeatRenderZoomThreshold),
+        JS_DEFAULT_METHOD_ENTRY(isDebugHUDEnabled, IsDebugHUDEnabled),
+        JS_DEFAULT_METHOD_ENTRY(setDebugHUDEnabled, SetDebugHUDEnabled),
         JS_DEFAULT_METHOD_ENTRY(release, Release),
         JS_DEFAULT_METHOD_ENTRY(handleTap, HandleTap),
         JS_DEFAULT_METHOD_ENTRY(handlePan, HandlePan),

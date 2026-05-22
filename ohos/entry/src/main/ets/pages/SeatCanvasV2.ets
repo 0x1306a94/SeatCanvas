@@ -20,6 +20,7 @@ export struct SeatCanvasV2 {
 
   aboutToAppear(): void {
     this.controller.seatSize = 24
+    this.controller.debugHUDEnabled = true
     this.controller.setDelegate(this.sampleModel.getDelegate());
     this.controller.canvasColor = 0xFFF8F8F8;
   }

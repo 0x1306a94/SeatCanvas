@@ -175,6 +175,17 @@ public class SeatCanvasView: UIView {
         }
     }
 
+    /// 是否绘制调试 HUD（FPS、缩放级别、座位统计等），默认关闭
+    @objc
+    public var debugHUDEnabled: Bool {
+        get {
+            renderer?.debugHUDEnabled ?? false
+        }
+        set {
+            renderer?.debugHUDEnabled = newValue
+        }
+    }
+
     /// 获取缩放级别
     @objc
     public func zoomLevel() -> ZoomLevel {

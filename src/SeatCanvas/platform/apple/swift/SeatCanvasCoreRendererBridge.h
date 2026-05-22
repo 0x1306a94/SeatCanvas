@@ -233,6 +233,12 @@ CGFloat SeatCanvasCoreRendererGetSeatRenderZoomThreshold(CPPObject *_Nonnull cpp
 ///   - zoomThreshold: 缩放阈值，当当前缩放比例大于等于该值时开始绘制座位
 void SeatCanvasCoreRendererSetSeatRenderZoomThreshold(CPPObject *_Nonnull cppObject, CGFloat zoomThreshold);
 
+/// 是否启用调试 HUD
+BOOL SeatCanvasCoreRendererIsDebugHUDEnabled(CPPObject *_Nonnull cppObject);
+
+/// 设置是否绘制调试 HUD
+void SeatCanvasCoreRendererSetDebugHUDEnabled(CPPObject *_Nonnull cppObject, BOOL enabled);
+
 /// 处理点击手势
 /// - Parameter cppObject: C++渲染器实例
 /// - Parameter location: 当前手势位置, viewport 坐标系 (像素单位)
