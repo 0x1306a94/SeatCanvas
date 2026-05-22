@@ -328,6 +328,22 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         }
 
     /**
+     * 是否绘制调试 HUD（FPS、缩放级别、座位统计等），默认关闭
+     */
+    var debugHUDEnabled: Boolean
+        get() {
+            if (nativeInitialized()) {
+                return nativeIsDebugHUDEnabled()
+            }
+            return false
+        }
+        set(value) {
+            if (nativeInitialized()) {
+                nativeSetDebugHUDEnabled(value)
+            }
+        }
+
+    /**
      * 获取当前缩放级别配置（seat/row/zone/venue）
      */
     fun zoomLevel(): ZoomLevel {
@@ -685,6 +701,8 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
     private external fun nativeSetSeatSize(seatSize: Float)
     private external fun nativeGetSeatRenderZoomThreshold(): Float
     private external fun nativeSetSeatRenderZoomThreshold(threshold: Float)
+    private external fun nativeIsDebugHUDEnabled(): Boolean
+    private external fun nativeSetDebugHUDEnabled(enabled: Boolean)
     private external fun nativeGetZoomLevel(): ZoomLevel
     private external fun nativeHandleTap(x: Float, y: Float)
     private external fun nativeHandlePan(state: Int, tx: Float, ty: Float, timestampMs: Double)

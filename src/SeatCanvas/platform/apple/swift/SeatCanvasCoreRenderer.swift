@@ -57,6 +57,21 @@ final class SeatCanvasCoreRenderer {
         }
     }
 
+    var debugHUDEnabled: Bool {
+        get {
+            guard let cppObject else {
+                return false
+            }
+            return kk.bridge.SeatCanvasCoreRendererIsDebugHUDEnabled(cppObject)
+        }
+        set {
+            guard let cppObject else {
+                return
+            }
+            kk.bridge.SeatCanvasCoreRendererSetDebugHUDEnabled(cppObject, newValue)
+        }
+    }
+
     var minimumZoomScale: CGFloat {
         guard let cppObject else {
             return 1.0

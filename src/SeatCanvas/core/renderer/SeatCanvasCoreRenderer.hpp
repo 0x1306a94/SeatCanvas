@@ -138,6 +138,10 @@ class SeatCanvasCoreRenderer {
     /// 获取当前帧率（每秒帧数）
     float getFPS() const;
 
+    /// 是否绘制调试 HUD（FPS、缩放级别、座位统计等）
+    bool isDebugHUDEnabled() const;
+    void setDebugHUDEnabled(bool enabled);
+
     /// MARK: 手势处理方法，由平台层调用
 
     /// 处理点击手势
@@ -376,6 +380,7 @@ class SeatCanvasCoreRenderer {
     tgfx::Color _backgroundColor = {tgfx::Color::White()};
     BaseMapColorState _baseMapColorState = {BaseMapColorState::Original};
     bool _autoChangeBaseMapColorState = {true};
+    bool _debugHUDEnabled = {false};
     bool _disableAutoDrawSeat = {false};
     bool _firstFrameSubmitted = {false};
     bool _invalidate = {true};

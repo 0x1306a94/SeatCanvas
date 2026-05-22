@@ -189,6 +189,17 @@ export class SeatCanvasViewController {
   }
 
   /**
+   * 是否绘制调试 HUD（FPS、缩放级别、座位统计等），默认关闭
+   */
+  get debugHUDEnabled(): boolean {
+    return this.jView.isDebugHUDEnabled();
+  }
+
+  set debugHUDEnabled(value: boolean) {
+    this.jView.setDebugHUDEnabled(value);
+  }
+
+  /**
    * 释放内部 C++ 资源， 调用后将不能在继续使用当前对象
    */
   release() {

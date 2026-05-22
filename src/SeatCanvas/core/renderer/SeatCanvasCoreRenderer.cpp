@@ -164,6 +164,18 @@ float SeatCanvasCoreRenderer::getFPS() const {
     return _frameMetrics->currentFPS();
 }
 
+bool SeatCanvasCoreRenderer::isDebugHUDEnabled() const {
+    return _debugHUDEnabled;
+}
+
+void SeatCanvasCoreRenderer::setDebugHUDEnabled(bool enabled) {
+    if (_debugHUDEnabled == enabled) {
+        return;
+    }
+    _debugHUDEnabled = enabled;
+    invalidateContent();
+}
+
 float SeatCanvasCoreRenderer::getMinimumZoomScale() const {
     return _zoomPanController->getMinimumZoomScale();
 }
@@ -613,7 +625,7 @@ bool SeatCanvasCoreRenderer::executeCustomRenderPass(tgfx::Context *context, con
 }
 
 void SeatCanvasCoreRenderer::drawDebugHUD(tgfx::Canvas *canvas) {
-    if (canvas == nullptr || !_textShaper || _frameMetrics->isFirstFrame()) {
+    if (!_debugHUDEnabled || canvas == nullptr || !_textShaper || _frameMetrics->isFirstFrame()) {
         return;
     }
 

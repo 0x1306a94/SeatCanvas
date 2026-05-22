@@ -377,6 +377,18 @@ Java_com_libseatcanvas_SeatCanvasView_nativeSetSeatRenderZoomThreshold(JNIEnv *e
     renderer->setSeatRenderZoomThreshold(static_cast<float>(threshold));
 }
 
+JNIEXPORT jboolean JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeIsDebugHUDEnabled(JNIEnv *env, jobject thiz) {
+    GetCPPObjectOrReturnValue(env, thiz, renderer, JNI_FALSE);
+    return renderer->isDebugHUDEnabled() ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT void JNICALL
+Java_com_libseatcanvas_SeatCanvasView_nativeSetDebugHUDEnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
+    GetCPPObjectOrReturn(env, thiz, renderer);
+    renderer->setDebugHUDEnabled(enabled == JNI_TRUE);
+}
+
 JNIEXPORT jobject JNICALL
 Java_com_libseatcanvas_SeatCanvasView_nativeGetZoomLevel(JNIEnv *env, jobject thiz) {
     GetCPPObjectOrReturnValue(env, thiz, renderer, nullptr);

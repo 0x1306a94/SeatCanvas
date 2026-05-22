@@ -35,6 +35,7 @@ class SecondFragment : Fragment() {
         val parseConfig = SVGBaseMapParseConfig(listOf("zoneId", "regioncode"))
 
         binding.seatCanvasView.seatSize = 24.0f
+        binding.seatCanvasView.debugHUDEnabled = true
         binding.seatCanvasView.canvasColor = ContextCompat.getColor(requireContext(), R.color.canvas_bg)
         sampleModel.attach(requireContext(), baseMapInfo, binding.seatCanvasView)
         binding.seatCanvasView.setDelegate(sampleModel.rendererDelegate)

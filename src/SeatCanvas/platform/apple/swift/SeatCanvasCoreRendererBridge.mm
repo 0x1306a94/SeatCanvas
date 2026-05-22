@@ -452,6 +452,16 @@ void SeatCanvasCoreRendererSetSeatRenderZoomThreshold(CPPObject *_Nonnull cppObj
     renderer->setSeatRenderZoomThreshold(static_cast<float>(zoomThreshold));
 }
 
+BOOL SeatCanvasCoreRendererIsDebugHUDEnabled(CPPObject *_Nonnull cppObject) {
+    GetCPPObjectOrReturnValue(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer, NO);
+    return renderer->isDebugHUDEnabled() ? YES : NO;
+}
+
+void SeatCanvasCoreRendererSetDebugHUDEnabled(CPPObject *_Nonnull cppObject, BOOL enabled) {
+    GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
+    renderer->setDebugHUDEnabled(enabled == YES);
+}
+
 void SeatCanvasCoreRendererHandTap(CPPObject *_Nonnull cppObject, CGPoint location) {
     GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
     renderer->handleTap({static_cast<float>(location.x), static_cast<float>(location.y)});
