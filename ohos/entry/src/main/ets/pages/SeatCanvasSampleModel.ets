@@ -2,7 +2,7 @@ import {
   SeatCanvasRendererDelegate,
   SeatCanvasViewController,
   SeatCanvasViewport,
-  SeatCanvasBaseMapLoadedEvent,
+  SeatCanvasZoomLevelConfigEvent,
   SeatData,
   SeatZoneColor
 } from 'libseatcanvas';
@@ -30,11 +30,14 @@ export class SeatCanvasSampleModel {
 
   constructor() {
     this.rendererDelegate = {
-      didLoadBaseMap: (event: SeatCanvasBaseMapLoadedEvent): void => {
-        this.onDidLoadBaseMap(event);
+      didLoadBaseMap: (): void => {
+        this.onDidLoadBaseMap();
       },
       didUnloadBaseMap: (): void => {
         this.onDidUnloadBaseMap();
+      },
+      didUpdateZoomLevelConfig: (event: SeatCanvasZoomLevelConfigEvent): void => {
+        this.onDidUpdateZoomLevelConfig(event);
       },
       didTapSeat: (zoneId: string, seatId: string): boolean => {
         return this.onDidTapSeat(zoneId, seatId);
@@ -146,14 +149,13 @@ export class SeatCanvasSampleModel {
     this.endViewportInteraction();
   }
 
-  private onDidLoadBaseMap(event: SeatCanvasBaseMapLoadedEvent): void {
+  private onDidLoadBaseMap(): void {
     const controller = this.controller?.deref();
     const baseMap = this.pendingBaseMap;
     const readRawFile = this.pendingReadRawFile;
     if (!controller || !baseMap || !readRawFile) {
       return;
     }
-    controller.seatRenderZoomThreshold = event.zoomLevels.venue;
     this.loadMockData(baseMap, controller, readRawFile);
     this.regenerateRandomAvailableSeats(true);
     this.applySeatStyle?.();
@@ -164,6 +166,13 @@ export class SeatCanvasSampleModel {
     this.stopAvailableSeatsTimer();
     this.availableSeats.clear();
     this.selectedSeatIds.clear();
+  }
+
+  private onDidUpdateZoomLevelConfig(event: SeatCanvasZoomLevelConfigEvent): void {
+    const controller = this.controller?.deref();
+    if (controller) {
+      controller.seatRenderZoomThreshold = event.zoomLevels.venue;
+    }
   }
 
   private beginViewportInteraction(): void {

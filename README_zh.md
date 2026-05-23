@@ -186,10 +186,10 @@ SeatCanvasSample.bundle/
 ## 座位数据、样式键与渲染代理
 
 - **字符串样式键**：座位样式 JSON 为若干条记录，每条含字符串 `key` 与 `config`（圆形或 SVG）。用 `SeatStyleConfigBuilder` 注册键名；键名须与 `SeatRenderStyleId.compose(pricecode, status, selected)` 返回值一致。未注册或空键则跳过该座位。
-- **推送式渲染状态**：不再通过 delegate 按帧解析样式。须先 `setDelegate`，再 `loadBaseMap`；在 `didLoadBaseMap` 中推送：`registerPricecodes` → `applySeatStyleJSONConfig` → 每 zone：`updateSeatDatas`/`updateSeats`（含 `pricecode`）→ `updateSeatStatusesForZone` → `setSelectedSeatIds`；点选时用 `updateSelectedSeatIds`。
-- **典型加载顺序**：`setDelegate` → `loadBaseMap` →（Core 就绪后触发 `didLoadBaseMap`）→ 可选 `seatRenderZoomThreshold` → push pricecodes、样式、座位几何、status、选中态。
-- **`didLoadBaseMap` 触发时机**：底图解析完成且 zoom level 计算就绪后触发。Android/OHOS 会延迟到 `PlatformView` attach 且 viewport 尺寸有效（避免占位尺寸）。若在 `loadBaseMap` 之后才设置 delegate，**不会**补发回调。
-- **`SeatCanvasBaseMapLoadedEvent`**：含底图尺寸、`zoomLevels`（seat/row/zone/venue）、min/max/current zoom、`visibleOriginalRect`（原始坐标）。可用 `event.zoomLevels.venue` 作为座位显示阈值，或不设置 `seatRenderZoomThreshold`（默认跟随 venue）。
+- **推送式渲染状态**：不再通过 delegate 按帧解析样式。须先 `setDelegate`，再 `loadBaseMap`；在 `didLoadBaseMap` 中推送：`registerPricecodes` → `applySeatStyleJSONConfig` → 每 zone：`updateSeatDatas`/`updateSeats`（含 `pricecode`）→ `updateSeatStatusesForZone` → `setSelectedSeatIds`；点选时用 `updateSelectedSeatIds`。在 `didUpdateZoomLevelConfig` 中设置 `seatRenderZoomThreshold`。
+- **典型加载顺序**：`setDelegate` → `loadBaseMap` →（Core 就绪后触发 `didLoadBaseMap`）→ push pricecodes、样式、座位几何、status、选中态 → 触发 `didUpdateZoomLevelConfig` → 设置 `seatRenderZoomThreshold`。
+- **`didLoadBaseMap` 触发时机**：底图解析完成后触发。若在 `loadBaseMap` 之后才设置 delegate，**不会**补发回调。`didUpdateZoomLevelConfig` 在 `didLoadBaseMap` 之后立即触发，并在设备旋转时再次触发。
+- **`SeatCanvasZoomLevelConfigEvent`**：含 `zoomLevels`（seat/row/zone/venue）、min/max/current zoom。在 `didUpdateZoomLevelConfig` 回调中设置 `seatRenderZoomThreshold`。
 - **`updateSeats` / `updateSeatDatas` 副作用**：会重置该 zone 的 status 为 0，并清除旧 seat 的 selected，随后必须 re-push status/selected。
 - **更新与清空**：调用视图或控制器上的 `clearSeatData` 可清空全部座位数据并重绘。
 - **圆形样式**：在支持的 Builder 上，`overlay` 与 `checkmark` 为可选，仅 `fill` 必填。
@@ -213,7 +213,7 @@ seatCanvasView.loadBaseMap(svgData)
 
 ```swift
 extension MyViewController: SeatCanvasViewDelegate {
-    func seatCanvasView(_ view: SeatCanvasView, didLoadBaseMap event: SeatCanvasBaseMapLoadedEvent) {
+    func seatCanvasViewDidLoadBaseMap(_ view: SeatCanvasView) {
         view.registerPricecodes(["1", "2"])
         view.applySeatStyleJSONConfig(styleJson)
         view.updateSeatDatas(zoneId: "37492", seats: seatDataArray)
@@ -267,7 +267,7 @@ seatCanvasView.loadBaseMap(svgData)
 
 ```kotlin
 val delegate = object : SeatCanvasRendererDelegate {
-    override fun didLoadBaseMap(event: SeatCanvasBaseMapLoadedEvent) {
+    override fun didLoadBaseMap() {
         seatCanvasView.registerPricecodes(arrayOf("1", "2"))
         seatCanvasView.applySeatStyleJSONConfig(styleJson)
         seatCanvasView.updateSeats("37492", seatDataArray)
@@ -368,7 +368,7 @@ controller.applySeatStyleJSONConfig(config);
 import { SeatCanvasRendererDelegate, SeatRenderStyleId } from 'libseatcanvas';
 
 let delegate: SeatCanvasRendererDelegate = {
-  didLoadBaseMap: (event) => {
+  didLoadBaseMap: () => {
     controller.registerPricecodes(['1', '2']);
     controller.applySeatStyleJSONConfig(styleJson);
     controller.updateSeats('37492', seatDataArray);

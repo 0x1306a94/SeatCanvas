@@ -179,8 +179,13 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         release()
     }
 
-    fun loadBaseMap(data: ByteArray?, format: BaseMapFormat, parseConfig: BaseMapParseConfig? = null) {
-        val result = nativeLoadBaseMapFromFormat(data, format.name, parseConfig?.serializeToByteArray())
+    fun loadBaseMap(
+        data: ByteArray?,
+        format: BaseMapFormat,
+        parseConfig: BaseMapParseConfig? = null
+    ) {
+        val result =
+            nativeLoadBaseMapFromFormat(data, format.name, parseConfig?.serializeToByteArray())
         nativeLoadBaseMap(result)
     }
 
@@ -429,41 +434,29 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         nativeHandleTap(x, y)
     }
 
-    private fun nativeOnDidLoadBaseMap(
-        baseMapWidth: Float,
-        baseMapHeight: Float,
+    private fun nativeOnDidLoadBaseMap() {
+        delegate?.didLoadBaseMap()
+    }
+
+    private fun nativeOnDidUnloadBaseMap() {
+        delegate?.didUnloadBaseMap()
+    }
+
+    private fun nativeOnDidUpdateZoomLevelConfig(
         seatZoom: Float,
         rowZoom: Float,
         zoneZoom: Float,
         venueZoom: Float,
         minimumZoomScale: Float,
         maximumZoomScale: Float,
-        zoomScale: Float,
-        visibleOriginalRectX: Float,
-        visibleOriginalRectY: Float,
-        visibleOriginalRectWidth: Float,
-        visibleOriginalRectHeight: Float
+        zoomScale: Float
     ) {
-        delegate?.didLoadBaseMap(
-            SeatCanvasBaseMapLoadedEvent(
-                baseMapWidth = baseMapWidth,
-                baseMapHeight = baseMapHeight,
-                zoomLevels = ZoomLevel(seatZoom, rowZoom, zoneZoom, venueZoom),
-                minimumZoomScale = minimumZoomScale,
-                maximumZoomScale = maximumZoomScale,
-                zoomScale = zoomScale,
-                visibleOriginalRect = Rect(
-                    visibleOriginalRectX,
-                    visibleOriginalRectY,
-                    visibleOriginalRectWidth,
-                    visibleOriginalRectHeight
-                )
-            )
+        delegate?.didUpdateZoomLevelConfig(
+            ZoomLevel(seatZoom, rowZoom, zoneZoom, venueZoom),
+            minimumZoomScale,
+            maximumZoomScale,
+            zoomScale
         )
-    }
-
-    private fun nativeOnDidUnloadBaseMap() {
-        delegate?.didUnloadBaseMap()
     }
 
     /**
@@ -682,8 +675,12 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
     }
 
 
+    private external fun nativeLoadBaseMapFromFormat(
+        data: ByteArray?,
+        formatName: String,
+        parseConfigJSON: ByteArray?
+    ): Long
 
-    private external fun nativeLoadBaseMapFromFormat(data: ByteArray?, formatName: String, parseConfigJSON: ByteArray?): Long
     private external fun nativeLoadBaseMap(ptr: Long): Boolean
     private external fun nativeSetCanvasColor(color: Int)
     private external fun nativeGetCanvasColor(): Int

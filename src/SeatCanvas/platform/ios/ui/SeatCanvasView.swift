@@ -421,6 +421,18 @@ extension SeatCanvasView {
 // MARK: - C++ 回调处理
 
 extension SeatCanvasView: SeatCanvasRendererDelegate {
+    func seatCanvasRendererDidLoadBaseMap() {
+        delegate?.seatCanvasViewDidLoadBaseMap?(self)
+    }
+
+    func seatCanvasRendererDidUnloadBaseMap() {
+        delegate?.seatCanvasViewDidUnloadBaseMap?(self)
+    }
+
+    func seatCanvasRendererDidUpdateZoomLevelConfig(zoomLevels: ZoomLevel, minimumZoomScale: CGFloat, maximumZoomScale: CGFloat, zoomScale: CGFloat) {
+        delegate?.seatCanvasView?(self, didUpdateZoomLevelConfig: zoomLevels, minimumZoomScale: minimumZoomScale, maximumZoomScale: maximumZoomScale, zoomScale: zoomScale)
+    }
+
     func seatCanvasRendererDidTapZone(zoneId: String) {
         delegate?.seatCanvasView(self, didTapZone: zoneId)
     }
@@ -459,13 +471,5 @@ extension SeatCanvasView: SeatCanvasRendererDelegate {
 
     func seatCanvasRendererDidEndScrollingAnimation(zoomScale: CGFloat, contentOffset: CGPoint, visibleOriginalRect: CGRect) {
         delegate?.seatCanvasViewDidEndScrollingAnimation?(self, zoomScale: zoomScale, contentOffset: contentOffset, visibleOriginalRect: visibleOriginalRect)
-    }
-
-    func seatCanvasRendererDidLoadBaseMap(event: SeatCanvasBaseMapLoadedEvent) {
-        delegate?.seatCanvasView?(self, didLoadBaseMap: event)
-    }
-
-    func seatCanvasRendererDidUnloadBaseMap() {
-        delegate?.seatCanvasViewDidUnloadBaseMap?(self)
     }
 }

@@ -589,7 +589,7 @@ Java_com_libseatcanvas_Font_00024Companion_nativeSetFallbackFontPaths(JNIEnv *en
     tgfx::TextLayer::SetFallbackTypefaces(std::move(fallbackTypefaces));
 }
 
-extern "C" JNIEXPORT jstring JNICALL Java_com_libseatcanvas_SeatRenderStyleId_nativeCompose(JNIEnv *env, jclass, jstring jpricecode,
+extern "C" JNIEXPORT jstring JNICALL Java_com_libseatcanvas_SeatRenderStyleId_nativeCompose(JNIEnv *env, jobject thiz, jstring jpricecode,
                                                                                             jint status, jboolean selected) {
     auto pricecode = kk::jni::SafeConvertToStdString(env, jpricecode);
     auto styleId = kk::renderer::composeSeatStyleId(pricecode, static_cast<uint32_t>(status), selected == JNI_TRUE);

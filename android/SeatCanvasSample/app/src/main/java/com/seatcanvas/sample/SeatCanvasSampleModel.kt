@@ -9,9 +9,9 @@ import com.google.gson.reflect.TypeToken
 import com.libseatcanvas.SeatCanvasRendererDelegate
 import com.libseatcanvas.SeatCanvasView
 import com.libseatcanvas.SeatCanvasViewport
-import com.libseatcanvas.SeatCanvasBaseMapLoadedEvent
 import com.libseatcanvas.SeatData
 import com.libseatcanvas.SeatZoneColor
+import com.libseatcanvas.ZoomLevel
 
 class SeatCanvasSampleModel {
     var prices: List<MockPriceData> = emptyList()
@@ -35,11 +35,10 @@ class SeatCanvasSampleModel {
     }
 
     val rendererDelegate: SeatCanvasRendererDelegate = object : SeatCanvasRendererDelegate {
-        override fun didLoadBaseMap(event: SeatCanvasBaseMapLoadedEvent) {
+        override fun didLoadBaseMap() {
             val context = appContext ?: return
             val info = baseMapInfo ?: return
             val view = seatCanvasView ?: return
-            view.seatRenderZoomThreshold = event.zoomLevels.venue
             loadMockData(context, info, view)
             view.applySeatStyleJSONConfig(
                 SeatStyleBuilder.buildSVGSeatStyleConfig(context, prices)
@@ -52,6 +51,15 @@ class SeatCanvasSampleModel {
             stopAvailableSeatsTimer()
             availableSeats.clear()
             selectedSeatIds.clear()
+        }
+
+        override fun didUpdateZoomLevelConfig(
+            zoomLevels: ZoomLevel,
+            minimumZoomScale: Float,
+            maximumZoomScale: Float,
+            zoomScale: Float
+        ) {
+            seatCanvasView?.seatRenderZoomThreshold = zoomLevels.venue
         }
 
         override fun didTapSeat(zoneId: String, seatId: String): Boolean {
@@ -119,7 +127,8 @@ class SeatCanvasSampleModel {
     }
 
     fun loadMockPrice(context: Context, baseMapInfo: BaseMapFileInfo): List<MockPriceData> {
-        val path = ResourceExtensions.priceDataPath(context, baseMapInfo.scope, baseMapInfo.filename)
+        val path =
+            ResourceExtensions.priceDataPath(context, baseMapInfo.scope, baseMapInfo.filename)
         val jsonString = readAssetFileToString(context, path) ?: return emptyList()
         return try {
             val gson = Gson()
@@ -131,7 +140,11 @@ class SeatCanvasSampleModel {
         }
     }
 
-    fun loadMockData(context: Context, baseMapInfo: BaseMapFileInfo, seatCanvasView: SeatCanvasView) {
+    fun loadMockData(
+        context: Context,
+        baseMapInfo: BaseMapFileInfo,
+        seatCanvasView: SeatCanvasView
+    ) {
         this.seatCanvasView = seatCanvasView
         prices = loadMockPrice(context, baseMapInfo)
         val zoneColors = mutableListOf<SeatZoneColor>()
@@ -171,7 +184,10 @@ class SeatCanvasSampleModel {
         seatCanvasView.setSelectedSeatIds(selectedSeatIds.toTypedArray())
     }
 
-    private fun loadSeatDatas(context: Context, baseMapInfo: BaseMapFileInfo): Map<String, List<MockSeatData>> {
+    private fun loadSeatDatas(
+        context: Context,
+        baseMapInfo: BaseMapFileInfo
+    ): Map<String, List<MockSeatData>> {
         val path = ResourceExtensions.seatDataPath(context, baseMapInfo.scope, baseMapInfo.filename)
         val jsonString = readAssetFileToString(context, path) ?: return emptyMap()
         return try {
@@ -215,7 +231,8 @@ class SeatCanvasSampleModel {
             }
             val ratio = 0.2 + Math.random() * 0.7
             val availableCount = maxOf(1, (seats.size * ratio).toInt())
-            val availableIds = seats.shuffled().take(availableCount).map { it.seatId }.toMutableSet()
+            val availableIds =
+                seats.shuffled().take(availableCount).map { it.seatId }.toMutableSet()
             availableSeats[zoneId] = availableIds
             view.updateSeatStatusesForZone(zoneId, buildStatusesForZone(zoneId, seats))
         }

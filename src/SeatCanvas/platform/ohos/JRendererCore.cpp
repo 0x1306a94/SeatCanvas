@@ -699,60 +699,6 @@ static napi_value HandlePinch(napi_env env, napi_callback_info info) {
     return nullptr;
 }
 
-static napi_value SetDidTapSeatCallback(napi_env env, napi_callback_info info) {
-    kk::js::NapiEnvHolder::setEnv(env);
-    napi_value jsView = nullptr;
-    size_t argc = 1;
-    napi_value args[1] = {0};
-    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
-    JRendererCore *view = nullptr;
-    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
-    if (view == nullptr) {
-        return nullptr;
-    }
-
-    auto delegate = view->getDelegate();
-    if (delegate == nullptr) {
-        return nullptr;
-    }
-
-    napi_value callback = nullptr;
-    if (argc > 0 && args[0] != nullptr) {
-        callback = args[0];
-    }
-
-    delegate->setDidTapSeatCallback(env, callback);
-
-    return nullptr;
-}
-
-static napi_value SetDidTapZoneCallback(napi_env env, napi_callback_info info) {
-    kk::js::NapiEnvHolder::setEnv(env);
-    napi_value jsView = nullptr;
-    size_t argc = 1;
-    napi_value args[1] = {0};
-    napi_get_cb_info(env, info, &argc, args, &jsView, nullptr);
-    JRendererCore *view = nullptr;
-    napi_unwrap(env, jsView, reinterpret_cast<void **>(&view));
-    if (view == nullptr) {
-        return nullptr;
-    }
-
-    auto delegate = view->getDelegate();
-    if (delegate == nullptr) {
-        return nullptr;
-    }
-
-    napi_value callback = nullptr;
-    if (argc > 0 && args[0] != nullptr) {
-        callback = args[0];
-    }
-
-    delegate->setDidTapZoneCallback(env, callback);
-
-    return nullptr;
-}
-
 static napi_value SetDelegateCallback(napi_env env, napi_callback_info info,
                                       void (OHOSSeatCanvasCoreRendererDelegate::*setter)(napi_env, napi_value)) {
     kk::js::NapiEnvHolder::setEnv(env);
@@ -778,6 +724,26 @@ static napi_value SetDelegateCallback(napi_env env, napi_callback_info info,
 
     (delegate.get()->*setter)(env, callback);
     return nullptr;
+}
+
+static napi_value SetDidLoadBaseMapCallback(napi_env env, napi_callback_info info) {
+    return SetDelegateCallback(env, info, &OHOSSeatCanvasCoreRendererDelegate::setDidLoadBaseMapCallback);
+}
+
+static napi_value SetDidUnloadBaseMapCallback(napi_env env, napi_callback_info info) {
+    return SetDelegateCallback(env, info, &OHOSSeatCanvasCoreRendererDelegate::setDidUnloadBaseMapCallback);
+}
+
+static napi_value SetDidUpdateZoomLevelConfigCallback(napi_env env, napi_callback_info info) {
+    return SetDelegateCallback(env, info, &OHOSSeatCanvasCoreRendererDelegate::setDidUpdateZoomLevelConfigCallback);
+}
+
+static napi_value SetDidTapSeatCallback(napi_env env, napi_callback_info info) {
+    return SetDelegateCallback(env, info, &OHOSSeatCanvasCoreRendererDelegate::setDidTapSeatCallback);
+}
+
+static napi_value SetDidTapZoneCallback(napi_env env, napi_callback_info info) {
+    return SetDelegateCallback(env, info, &OHOSSeatCanvasCoreRendererDelegate::setDidTapZoneCallback);
 }
 
 static napi_value SetViewportWillBeginDraggingCallback(napi_env env, napi_callback_info info) {
@@ -810,14 +776,6 @@ static napi_value SetViewportDidEndZoomingCallback(napi_env env, napi_callback_i
 
 static napi_value SetViewportDidEndScrollingAnimationCallback(napi_env env, napi_callback_info info) {
     return SetDelegateCallback(env, info, &OHOSSeatCanvasCoreRendererDelegate::setViewportDidEndScrollingAnimationCallback);
-}
-
-static napi_value SetDidLoadBaseMapCallback(napi_env env, napi_callback_info info) {
-    return SetDelegateCallback(env, info, &OHOSSeatCanvasCoreRendererDelegate::setDidLoadBaseMapCallback);
-}
-
-static napi_value SetDidUnloadBaseMapCallback(napi_env env, napi_callback_info info) {
-    return SetDelegateCallback(env, info, &OHOSSeatCanvasCoreRendererDelegate::setDidUnloadBaseMapCallback);
 }
 
 static napi_value ZoomToRect(napi_env env, napi_callback_info info) {
@@ -1264,6 +1222,9 @@ bool JRendererCore::Init(napi_env env, napi_value exports) {
         JS_DEFAULT_METHOD_ENTRY(handlePan, HandlePan),
         JS_DEFAULT_METHOD_ENTRY(handlePinch, HandlePinch),
         JS_DEFAULT_METHOD_ENTRY(zoomToRect, ZoomToRect),
+        JS_DEFAULT_METHOD_ENTRY(setDidLoadBaseMapCallback, SetDidLoadBaseMapCallback),
+        JS_DEFAULT_METHOD_ENTRY(setDidUnloadBaseMapCallback, SetDidUnloadBaseMapCallback),
+        JS_DEFAULT_METHOD_ENTRY(setDidUpdateZoomLevelConfigCallback, SetDidUpdateZoomLevelConfigCallback),
         JS_DEFAULT_METHOD_ENTRY(setDidTapSeatCallback, SetDidTapSeatCallback),
         JS_DEFAULT_METHOD_ENTRY(setDidTapZoneCallback, SetDidTapZoneCallback),
         JS_DEFAULT_METHOD_ENTRY(setViewportWillBeginDraggingCallback, SetViewportWillBeginDraggingCallback),
@@ -1274,8 +1235,6 @@ bool JRendererCore::Init(napi_env env, napi_value exports) {
         JS_DEFAULT_METHOD_ENTRY(setViewportDidZoomCallback, SetViewportDidZoomCallback),
         JS_DEFAULT_METHOD_ENTRY(setViewportDidEndZoomingCallback, SetViewportDidEndZoomingCallback),
         JS_DEFAULT_METHOD_ENTRY(setViewportDidEndScrollingAnimationCallback, SetViewportDidEndScrollingAnimationCallback),
-        JS_DEFAULT_METHOD_ENTRY(setDidLoadBaseMapCallback, SetDidLoadBaseMapCallback),
-        JS_DEFAULT_METHOD_ENTRY(setDidUnloadBaseMapCallback, SetDidUnloadBaseMapCallback),
         JS_DEFAULT_METHOD_ENTRY(updateSeatZoneAlternateColors, UpdateSeatZoneAlternateColors),
         JS_DEFAULT_METHOD_ENTRY(updateMiniMapZoneAlternateColors, UpdateMiniMapZoneAlternateColors),
         JS_DEFAULT_METHOD_ENTRY(updateSeats, UpdateSeats),

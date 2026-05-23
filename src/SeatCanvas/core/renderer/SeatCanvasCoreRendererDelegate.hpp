@@ -13,34 +13,26 @@
 
 namespace kk::renderer {
 struct SeatCanvasViewportEvent;
-struct SeatCanvasBaseMapLoadedEvent;
+struct SeatCanvasZoomLevelConfigEvent;
 
 class SeatCanvasCoreRendererDelegate {
   public:
     virtual ~SeatCanvasCoreRendererDelegate() = default;
-    virtual void didLoadBaseMap(uint32_t, const SeatCanvasBaseMapLoadedEvent &) = 0;
+    virtual void didLoadBaseMap(uint32_t) = 0;
     virtual void didUnloadBaseMap(uint32_t) = 0;
+    virtual void didUpdateZoomLevelConfig(uint32_t, const SeatCanvasZoomLevelConfigEvent &) = 0;
+
     virtual void didTapZone(uint32_t coreID, const std::string &zoneId) = 0;
     virtual bool didTapSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId) = 0;
 
-    virtual void viewportWillBeginDragging(uint32_t, const SeatCanvasViewportEvent &) {
-    }
-    virtual void viewportDidScroll(uint32_t, const SeatCanvasViewportEvent &) {
-    }
-    virtual void viewportDidEndDragging(uint32_t, const SeatCanvasViewportEvent &, bool) {
-    }
-    virtual void viewportDidEndDecelerating(uint32_t, const SeatCanvasViewportEvent &) {
-    }
-
-    virtual void viewportWillBeginZooming(uint32_t, const SeatCanvasViewportEvent &) {
-    }
-    virtual void viewportDidZoom(uint32_t, const SeatCanvasViewportEvent &) {
-    }
-    virtual void viewportDidEndZooming(uint32_t, const SeatCanvasViewportEvent &) {
-    }
-
-    virtual void viewportDidEndScrollingAnimation(uint32_t, const SeatCanvasViewportEvent &) {
-    }
+    virtual void viewportWillBeginDragging(uint32_t, const SeatCanvasViewportEvent &) = 0;
+    virtual void viewportDidScroll(uint32_t, const SeatCanvasViewportEvent &) = 0;
+    virtual void viewportDidEndDragging(uint32_t, const SeatCanvasViewportEvent &, bool) = 0;
+    virtual void viewportDidEndDecelerating(uint32_t, const SeatCanvasViewportEvent &) = 0;
+    virtual void viewportWillBeginZooming(uint32_t, const SeatCanvasViewportEvent &) = 0;
+    virtual void viewportDidZoom(uint32_t, const SeatCanvasViewportEvent &) = 0;
+    virtual void viewportDidEndZooming(uint32_t, const SeatCanvasViewportEvent &) = 0;
+    virtual void viewportDidEndScrollingAnimation(uint32_t, const SeatCanvasViewportEvent &) = 0;
 };
 };  // namespace kk::renderer
 

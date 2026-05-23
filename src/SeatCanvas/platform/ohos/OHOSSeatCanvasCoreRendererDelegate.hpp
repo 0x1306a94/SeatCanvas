@@ -20,8 +20,9 @@ class OHOSSeatCanvasCoreRendererDelegate : public kk::renderer::SeatCanvasCoreRe
   public:
     OHOSSeatCanvasCoreRendererDelegate();
     virtual ~OHOSSeatCanvasCoreRendererDelegate();
-    void didLoadBaseMap(uint32_t coreID, const kk::renderer::SeatCanvasBaseMapLoadedEvent &event) override;
+    void didLoadBaseMap(uint32_t coreID) override;
     void didUnloadBaseMap(uint32_t coreID) override;
+    void didUpdateZoomLevelConfig(uint32_t coreID, const kk::renderer::SeatCanvasZoomLevelConfigEvent &event) override;
     void didTapZone(uint32_t coreID, const std::string &zoneId) override;
     bool didTapSeat(uint32_t coreID, const std::string &zoneId, const std::string &seatId) override;
     void viewportWillBeginDragging(uint32_t coreID, const kk::renderer::SeatCanvasViewportEvent &event) override;
@@ -35,6 +36,7 @@ class OHOSSeatCanvasCoreRendererDelegate : public kk::renderer::SeatCanvasCoreRe
 
     void setDidLoadBaseMapCallback(napi_env env, napi_value callback);
     void setDidUnloadBaseMapCallback(napi_env env, napi_value callback);
+    void setDidUpdateZoomLevelConfigCallback(napi_env env, napi_value callback);
     void setDidTapZoneCallback(napi_env env, napi_value callback);
     void setDidTapSeatCallback(napi_env env, napi_value callback);
     void setViewportWillBeginDraggingCallback(napi_env env, napi_value callback);
@@ -49,7 +51,7 @@ class OHOSSeatCanvasCoreRendererDelegate : public kk::renderer::SeatCanvasCoreRe
   private:
     void setCallback(napi_env env, napi_value callback, napi_ref &ref);
     void clearCallback(napi_env env, napi_ref &ref);
-    napi_value makeBaseMapLoadedEventValue(napi_env env, const kk::renderer::SeatCanvasBaseMapLoadedEvent &event);
+    napi_value makeZoomLevelConfigEventValue(napi_env env, const kk::renderer::SeatCanvasZoomLevelConfigEvent &event);
     napi_value makeViewportValue(napi_env env, const kk::renderer::SeatCanvasViewportEvent &event);
     void callViewportCallback(napi_ref ref, const kk::renderer::SeatCanvasViewportEvent &event);
     void callViewportCallback(napi_ref ref, const kk::renderer::SeatCanvasViewportEvent &event, bool willDecelerate);
@@ -67,6 +69,7 @@ class OHOSSeatCanvasCoreRendererDelegate : public kk::renderer::SeatCanvasCoreRe
     napi_ref _viewportDidEndScrollingAnimation = nullptr;
     napi_ref _didLoadBaseMap = nullptr;
     napi_ref _didUnloadBaseMap = nullptr;
+    napi_ref _didUpdateZoomLevelConfig = nullptr;
 };
 
 };  // namespace kk::js

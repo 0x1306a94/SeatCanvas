@@ -31,6 +31,7 @@
 setDelegate() before loadBaseMap()
 → loadBaseMap() / setBaseMapConfig()
 → didLoadBaseMap: registerPricecodes → applySeatStyleJSONConfig → setSeatData/updateSeats per zone → updateSeatStatusesForZone → setSelectedSeatIds
+→ didUpdateZoomLevelConfig: seatRenderZoomThreshold → continued
 → didUnloadBaseMap: stop polling, clear cached seat state
 ```
 

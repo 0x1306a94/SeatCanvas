@@ -21,13 +21,11 @@ struct SeatCanvasViewportEvent {
     tgfx::Rect visibleOriginalRect = {};
 };
 
-struct SeatCanvasBaseMapLoadedEvent {
-    tgfx::Size baseMapSize = {};
+struct SeatCanvasZoomLevelConfigEvent {
     kk::ZoomLevelConfig zoomLevels = {};
     float minimumZoomScale = 1.0f;
     float maximumZoomScale = 1.0f;
     float zoomScale = 1.0f;
-    tgfx::Rect visibleOriginalRect = {};
 };
 };  // namespace kk::renderer
 

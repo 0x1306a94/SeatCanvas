@@ -12,11 +12,20 @@ import Foundation
 @MainActor
 @objc(KKSeatCanvasViewDelegate)
 public protocol SeatCanvasViewDelegate: AnyObject {
-    /// 底图加载完成；此时 ZoomLevelConfig 与初始缩放已就绪，可设置 seatRenderZoomThreshold 并 push 座位数据。
-    @objc optional func seatCanvasView(_ view: SeatCanvasView, didLoadBaseMap event: SeatCanvasBaseMapLoadedEvent)
+    /// 底图加载完成；push 座位数据和样式配置。
+    @objc optional func seatCanvasViewDidLoadBaseMap(_ view: SeatCanvasView)
 
     /// 底图已卸载。
     @objc optional func seatCanvasViewDidUnloadBaseMap(_ view: SeatCanvasView)
+
+    /// 缩放级别配置已更新（底图加载完成或设备旋转后触发）；在此设置 seatRenderZoomThreshold 以同步旋转后的阈值。
+    /// - Parameters:
+    ///   - view: SeatCanvasView 实例
+    ///   - zoomLevels: 缩放等级
+    ///   - minimumZoomScale: 最小缩放比例
+    ///   - maximumZoomScale: 最大缩放比例
+    ///   - zoomScale: 当前缩放比
+    @objc optional func seatCanvasView(_ view: SeatCanvasView, didUpdateZoomLevelConfig zoomLevels: ZoomLevel, minimumZoomScale: CGFloat, maximumZoomScale: CGFloat, zoomScale: CGFloat)
 
     /// 点击某个座位，业务层处理状态变更。
     /// - Parameters:
