@@ -4,7 +4,7 @@ export { BaseMapFormat } from './src/main/ets/utils/BaseMapFormat';
 
 export { SeatCanvasRendererDelegate, SeatCanvasViewport } from './src/main/ets/controller/SeatCanvasRendererDelegate';
 
-export { SeatCanvasBaseMapLoadedEvent } from './src/main/ets/controller/SeatCanvasBaseMapLoadedEvent';
+export { SeatCanvasZoomLevelConfigEvent } from './src/main/ets/controller/SeatCanvasZoomLevelConfigEvent';
 
 export { BaseMapParseConfig, SVGBaseMapParseConfig } from './src/main/ets/controller/BaseMapParseConfig';
 

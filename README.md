@@ -186,10 +186,10 @@ Seat data (`seatdata/*.json`) format (geometry + pricecode; status/selection are
 ## Seat Data, Style Keys, and Renderer Delegate
 
 - **String style keys**: Seat style JSON is a list of entries, each with a string `key` and a `config` (circle or SVG). Register keys with `SeatStyleConfigBuilder`; keys must match `SeatRenderStyleId.compose(pricecode, status, selected)`. Unknown or empty keys skip drawing that seat.
-- **Push-based render state**: Styles are not resolved per frame via delegate. Call `setDelegate` **before** `loadBaseMap()`. Push data in `didLoadBaseMap`: `registerPricecodes` → `applySeatStyleJSONConfig` → per zone: `updateSeatDatas`/`updateSeats` (with `pricecode`) → `updateSeatStatusesForZone` → `setSelectedSeatIds`; use `updateSelectedSeatIds` on tap.
-- **Typical load order**: `setDelegate` → `loadBaseMap` → (core fires `didLoadBaseMap` when ready) → optional `seatRenderZoomThreshold` → push pricecodes, styles, seat geometry, statuses, selection.
-- **`didLoadBaseMap` timing**: Fired after the basemap is parsed and viewport zoom levels are computed. On Android/OHOS, the callback is deferred until `PlatformView` is attached with valid bounds (avoids placeholder viewport sizes). It is **not** replayed if the delegate is set after `loadBaseMap()`.
-- **`SeatCanvasBaseMapLoadedEvent`**: Includes basemap size, `zoomLevels` (seat/row/zone/venue), min/max/current zoom, and `visibleOriginalRect` (original coordinates). Use `event.zoomLevels.venue` or leave `seatRenderZoomThreshold` unset (defaults to venue) for seat visibility threshold.
+- **Push-based render state**: Styles are not resolved per frame via delegate. Call `setDelegate` **before** `loadBaseMap()`. Push data in `didLoadBaseMap`: `registerPricecodes` → `applySeatStyleJSONConfig` → per zone: `updateSeatDatas`/`updateSeats` (with `pricecode`) → `updateSeatStatusesForZone` → `setSelectedSeatIds`; use `updateSelectedSeatIds` on tap. Set `seatRenderZoomThreshold` in `didUpdateZoomLevelConfig`.
+- **Typical load order**: `setDelegate` → `loadBaseMap` → (core fires `didLoadBaseMap` when ready) → push pricecodes, styles, seat geometry, statuses, selection → `didUpdateZoomLevelConfig` fires → set `seatRenderZoomThreshold`.
+- **`didLoadBaseMap` timing**: Fired after the basemap is parsed. It is **not** replayed if the delegate is set after `loadBaseMap()`. `didUpdateZoomLevelConfig` fires immediately after `didLoadBaseMap` and on device rotation.
+- **`SeatCanvasZoomLevelConfigEvent`**: Carries `zoomLevels` (seat/row/zone/venue), min/max/current zoom. Set `seatRenderZoomThreshold` in `didUpdateZoomLevelConfig` callback.
 - **`updateSeats` / `updateSeatDatas` side effect**: Resets that zone's statuses to 0 and clears selected state for removed seats; you must re-push status/selected afterward.
 - **Updating and clearing**: Call `clearSeatData` on the view or controller to remove all seat data and refresh rendering.
 - **Circle style**: For builders that support it, `overlay` and `checkmark` are optional; only `fill` is required.
@@ -213,7 +213,7 @@ Implement `SeatCanvasViewDelegate` and push styles/seats in `didLoadBaseMap`:
 
 ```swift
 extension MyViewController: SeatCanvasViewDelegate {
-    func seatCanvasView(_ view: SeatCanvasView, didLoadBaseMap event: SeatCanvasBaseMapLoadedEvent) {
+    func seatCanvasViewDidLoadBaseMap(_ view: SeatCanvasView) {
         view.registerPricecodes(["1", "2"])
         view.applySeatStyleJSONConfig(styleJson)
         view.updateSeatDatas(zoneId: "37492", seats: seatDataArray)
@@ -267,7 +267,7 @@ seatCanvasView.loadBaseMap(svgData)
 
 ```kotlin
 val delegate = object : SeatCanvasRendererDelegate {
-    override fun didLoadBaseMap(event: SeatCanvasBaseMapLoadedEvent) {
+    override fun didLoadBaseMap() {
         seatCanvasView.registerPricecodes(arrayOf("1", "2"))
         seatCanvasView.applySeatStyleJSONConfig(styleJson)
         seatCanvasView.updateSeats("37492", seatDataArray)
@@ -368,7 +368,7 @@ controller.applySeatStyleJSONConfig(config);
 import { SeatCanvasRendererDelegate, SeatRenderStyleId } from 'libseatcanvas';
 
 let delegate: SeatCanvasRendererDelegate = {
-  didLoadBaseMap: (event) => {
+  didLoadBaseMap: () => {
     controller.registerPricecodes(['1', '2']);
     controller.applySeatStyleJSONConfig(styleJson);
     controller.updateSeats('37492', seatDataArray);

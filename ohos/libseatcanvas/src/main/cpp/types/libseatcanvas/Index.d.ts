@@ -75,14 +75,11 @@ export declare namespace seatcanvas {
     visibleOriginalRect: Rect;
   }
 
-  export interface SeatCanvasBaseMapLoadedEvent {
-    baseMapWidth: number;
-    baseMapHeight: number;
+  export interface SeatCanvasZoomLevelConfigEvent {
     zoomLevels: ZoomLevel;
     minimumZoomScale: number;
     maximumZoomScale: number;
     zoomScale: number;
-    visibleOriginalRect: Rect;
   }
 
   export class JRendererCore {
@@ -227,6 +224,12 @@ export declare namespace seatcanvas {
      */
     zoomToRect(bounds: Rect, animated: boolean, padding: number, duration: number);
 
+    setDidLoadBaseMapCallback(callback: (() => void) | null);
+
+    setDidUnloadBaseMapCallback(callback: (() => void) | null);
+
+    setDidUpdateZoomLevelConfigCallback(callback: ((event: SeatCanvasZoomLevelConfigEvent) => void) | null);
+
     /**
      * 座位点击；返回 true 表示需要重绘。
      */
@@ -249,10 +252,6 @@ export declare namespace seatcanvas {
     setViewportDidEndZoomingCallback(callback: ((viewport: SeatCanvasViewport) => void) | null);
 
     setViewportDidEndScrollingAnimationCallback(callback: ((viewport: SeatCanvasViewport) => void) | null);
-
-    setDidLoadBaseMapCallback(callback: ((event: SeatCanvasBaseMapLoadedEvent) => void) | null);
-
-    setDidUnloadBaseMapCallback(callback: (() => void) | null);
 
     updateSeatZoneAlternateColors(colors: SeatZoneColor[]);
 

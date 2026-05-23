@@ -1,5 +1,5 @@
 import { seatcanvas } from 'libseatcanvas.so';
-import { SeatCanvasBaseMapLoadedEvent } from './SeatCanvasBaseMapLoadedEvent';
+import { SeatCanvasZoomLevelConfigEvent } from './SeatCanvasZoomLevelConfigEvent';
 
 export interface SeatCanvasViewport {
   zoomScale: number;
@@ -13,14 +13,19 @@ export interface SeatCanvasViewport {
  */
 export interface SeatCanvasRendererDelegate {
   /**
-   * 底图加载完成；此时 ZoomLevelConfig 与初始缩放已就绪，可设置 seatRenderZoomThreshold 并 push 座位数据。
+   * 底图加载完成；push 座位数据和样式配置。
    */
-  didLoadBaseMap?: (event: SeatCanvasBaseMapLoadedEvent) => void;
+  didLoadBaseMap?: () => void;
 
   /**
    * 底图已卸载。
    */
   didUnloadBaseMap?: () => void;
+
+  /**
+   * 缩放级别配置已更新（底图加载完成或设备旋转后触发）；可在此设置 seatRenderZoomThreshold。
+   */
+  didUpdateZoomLevelConfig?: (event: SeatCanvasZoomLevelConfigEvent) => void;
 
   /**
    * 点击座位；状态变化且需要重绘时返回 true。
@@ -71,6 +76,5 @@ export interface SeatCanvasRendererDelegate {
    * 程序触发的滚动或缩放动画结束。
    */
   didEndScrollingAnimation?: (viewport: SeatCanvasViewport) => void;
-
 
 }

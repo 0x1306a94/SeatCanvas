@@ -156,9 +156,10 @@ bool SeatCanvasCoreRenderer::updateSize() {
         _zoomPanController->setBounds(tgfx::Size::Make(size));
         _viewportController->updateContentSize();
         invalidateContent();
-    }
-    if (_pendingDidLoadBaseMap) {
-        dispatchBaseMapLifecycleCallback();
+
+        if (!_useBaseMapConfig.expired()) {
+            dispatchZoomLevelConfigUpdate();
+        }
     }
     return sizeChanged;
 }
@@ -807,7 +808,19 @@ void SeatCanvasCoreRenderer::handleBaseMapChanged() {
     _viewportController->updateContentScale(_viewportController->getMaxWidth());
     syncBoundsFromPlatformView();
     _viewportController->updateContentSize();
-    dispatchBaseMapLifecycleCallback();
+
+    if (!_delegate) {
+        return;
+    }
+
+    auto config = _useBaseMapConfig.lock();
+    if (!config) {
+        _delegate->didUnloadBaseMap(_coreID);
+        return;
+    }
+
+    _delegate->didLoadBaseMap(_coreID);
+    dispatchZoomLevelConfigUpdate();
 }
 
 bool SeatCanvasCoreRenderer::syncBoundsFromPlatformView() {
@@ -824,38 +837,6 @@ bool SeatCanvasCoreRenderer::syncBoundsFromPlatformView() {
     _state->updateScreen(size.width, size.height, density);
     _zoomPanController->setBounds(tgfx::Size::Make(size));
     return true;
-}
-
-void SeatCanvasCoreRenderer::dispatchBaseMapLifecycleCallback() {
-    if (!_delegate) {
-        return;
-    }
-
-    auto config = _useBaseMapConfig.lock();
-    if (!config) {
-        _pendingDidLoadBaseMap = false;
-        _delegate->didUnloadBaseMap(_coreID);
-        return;
-    }
-
-    if (!isBoundsReadyForBaseMapCallback()) {
-        _pendingDidLoadBaseMap = true;
-        return;
-    }
-
-    syncBoundsFromPlatformView();
-    _viewportController->updateContentSize();
-    _pendingDidLoadBaseMap = false;
-    _delegate->didLoadBaseMap(_coreID, makeBaseMapLoadedEvent());
-}
-
-bool SeatCanvasCoreRenderer::isBoundsReadyForBaseMapCallback() const {
-    if (_platformView == nullptr) {
-        return false;
-    }
-
-    auto bounds = _state->getBoundsSize();
-    return !bounds.isEmpty();
 }
 
 void SeatCanvasCoreRenderer::setBaseMapLayer(const tgfx::Size &baseMapSize) {
@@ -896,17 +877,16 @@ SeatCanvasViewportEvent SeatCanvasCoreRenderer::makeViewportEvent() const {
     return MakeViewportEvent(_state.get());
 }
 
-SeatCanvasBaseMapLoadedEvent SeatCanvasCoreRenderer::makeBaseMapLoadedEvent() const {
-    SeatCanvasBaseMapLoadedEvent event = {};
-    if (auto config = _useBaseMapConfig.lock()) {
-        event.baseMapSize = config->baseMapSize();
+void SeatCanvasCoreRenderer::dispatchZoomLevelConfigUpdate() {
+    if (_delegate == nullptr) {
+        return;
     }
+    SeatCanvasZoomLevelConfigEvent event = {};
     event.zoomLevels = _zoomLevelConfig;
     event.minimumZoomScale = getMinimumZoomScale();
     event.maximumZoomScale = getMaximumZoomScale();
     event.zoomScale = getZoomScale();
-    event.visibleOriginalRect = getVisibleOriginalRect();
-    return event;
+    _delegate->didUpdateZoomLevelConfig(_coreID, event);
 }
 
 bool SeatCanvasCoreRenderer::shouldAutoDrawSeat() const {

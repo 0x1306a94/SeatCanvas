@@ -4,7 +4,7 @@ import { display } from '@kit.ArkUI';
 import { SeatCanvasInit } from '../utils/SeatCanvasInit';
 import { BaseMapFormat } from '../utils/BaseMapFormat';
 import { SeatCanvasRendererDelegate, SeatCanvasViewport } from './SeatCanvasRendererDelegate';
-import { SeatCanvasBaseMapLoadedEvent } from './SeatCanvasBaseMapLoadedEvent';
+import { SeatCanvasZoomLevelConfigEvent } from './SeatCanvasZoomLevelConfigEvent';
 import { BaseMapParseConfig } from './BaseMapParseConfig';
 import { SeatData, SeatStatusUpdate } from './SeatData';
 import { SeatZoneColor } from './SeatZoneColor';
@@ -42,12 +42,20 @@ export class SeatCanvasViewController {
   setDelegate(delegate: SeatCanvasRendererDelegate | null) {
     if (delegate) {
       this.delegate = new WeakRef(delegate);
+
+      this.jView.setDidLoadBaseMapCallback(delegate.didLoadBaseMap ? this.onDidLoadBaseMap : null);
+      this.jView.setDidUnloadBaseMapCallback(delegate.didUnloadBaseMap ? this.onDidUnloadBaseMap : null);
+      this.jView.setDidUpdateZoomLevelConfigCallback(delegate.didUpdateZoomLevelConfig ?
+        this.onDidUpdateZoomLevelConfig :
+        null);
+
       this.jView.setDidTapSeatCallback(this.onDidTapSeat);
       if (delegate.didTapZone) {
         this.jView.setDidTapZoneCallback(this.onDidTapZone);
       } else {
         this.jView.setDidTapZoneCallback(null);
       }
+
       this.jView.setViewportWillBeginDraggingCallback(delegate.willBeginDragging ? this.onViewportWillBeginDragging :
         null);
       this.jView.setViewportDidScrollCallback(delegate.didScroll ? this.onViewportDidScroll : null);
@@ -60,12 +68,16 @@ export class SeatCanvasViewController {
       this.jView.setViewportDidEndZoomingCallback(delegate.didEndZooming ? this.onViewportDidEndZooming : null);
       this.jView.setViewportDidEndScrollingAnimationCallback(delegate.didEndScrollingAnimation ?
         this.onViewportDidEndScrollingAnimation : null);
-      this.jView.setDidLoadBaseMapCallback(delegate.didLoadBaseMap ? this.onDidLoadBaseMap : null);
-      this.jView.setDidUnloadBaseMapCallback(delegate.didUnloadBaseMap ? this.onDidUnloadBaseMap : null);
     } else {
       this.delegate = null;
+
+      this.jView.setDidLoadBaseMapCallback(null);
+      this.jView.setDidUnloadBaseMapCallback(null);
+      this.jView.setDidUpdateZoomLevelConfigCallback(null);
+
       this.jView.setDidTapSeatCallback(null);
       this.jView.setDidTapZoneCallback(null);
+
       this.jView.setViewportWillBeginDraggingCallback(null);
       this.jView.setViewportDidScrollCallback(null);
       this.jView.setViewportDidEndDraggingCallback(null);
@@ -74,8 +86,6 @@ export class SeatCanvasViewController {
       this.jView.setViewportDidZoomCallback(null);
       this.jView.setViewportDidEndZoomingCallback(null);
       this.jView.setViewportDidEndScrollingAnimationCallback(null);
-      this.jView.setDidLoadBaseMapCallback(null);
-      this.jView.setDidUnloadBaseMapCallback(null);
     }
   }
 
@@ -313,6 +323,24 @@ export class SeatCanvasViewController {
     this.jView.clearSeatData();
   }
 
+  readonly onDidLoadBaseMap = () => {
+    const delegate = this.delegate?.deref();
+    if (delegate && delegate.didLoadBaseMap) {
+      delegate.didLoadBaseMap();
+    }
+  }
+  readonly onDidUnloadBaseMap = () => {
+    const delegate = this.delegate?.deref();
+    if (delegate && delegate.didUnloadBaseMap) {
+      delegate.didUnloadBaseMap();
+    }
+  }
+  readonly onDidUpdateZoomLevelConfig = (event: SeatCanvasZoomLevelConfigEvent) => {
+    const delegate = this.delegate?.deref();
+    if (delegate && delegate.didUpdateZoomLevelConfig) {
+      delegate.didUpdateZoomLevelConfig(event);
+    }
+  }
   readonly onDidTapSeat = (zoneId: string, seatId: string): boolean => {
     const delegate = this.delegate?.deref();
     if (delegate && delegate.didTapSeat) {
@@ -372,18 +400,6 @@ export class SeatCanvasViewController {
     const delegate = this.delegate?.deref();
     if (delegate && delegate.didEndScrollingAnimation) {
       delegate.didEndScrollingAnimation(viewport);
-    }
-  }
-  readonly onDidLoadBaseMap = (event: SeatCanvasBaseMapLoadedEvent) => {
-    const delegate = this.delegate?.deref();
-    if (delegate && delegate.didLoadBaseMap) {
-      delegate.didLoadBaseMap(event);
-    }
-  }
-  readonly onDidUnloadBaseMap = () => {
-    const delegate = this.delegate?.deref();
-    if (delegate && delegate.didUnloadBaseMap) {
-      delegate.didUnloadBaseMap();
     }
   }
 }

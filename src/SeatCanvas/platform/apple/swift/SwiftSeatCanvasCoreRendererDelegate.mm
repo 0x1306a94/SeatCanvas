@@ -22,25 +22,23 @@ SwiftSeatCanvasCoreRendererDelegate::~SwiftSeatCanvasCoreRendererDelegate() {
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
 }
 
-void SwiftSeatCanvasCoreRendererDelegate::didLoadBaseMap(uint32_t coreID, const kk::renderer::SeatCanvasBaseMapLoadedEvent &event) {
-    ::switf_bridge_didLoadBaseMap(coreID,
-                                  event.baseMapSize.width,
-                                  event.baseMapSize.height,
-                                  event.zoomLevels.seat,
-                                  event.zoomLevels.row,
-                                  event.zoomLevels.zone,
-                                  event.zoomLevels.venue,
-                                  event.minimumZoomScale,
-                                  event.maximumZoomScale,
-                                  event.zoomScale,
-                                  event.visibleOriginalRect.x(),
-                                  event.visibleOriginalRect.y(),
-                                  event.visibleOriginalRect.width(),
-                                  event.visibleOriginalRect.height());
+void SwiftSeatCanvasCoreRendererDelegate::didLoadBaseMap(uint32_t coreID) {
+    ::switf_bridge_didLoadBaseMap(coreID);
 }
 
 void SwiftSeatCanvasCoreRendererDelegate::didUnloadBaseMap(uint32_t coreID) {
     ::switf_bridge_didUnloadBaseMap(coreID);
+}
+
+void SwiftSeatCanvasCoreRendererDelegate::didUpdateZoomLevelConfig(uint32_t coreID, const kk::renderer::SeatCanvasZoomLevelConfigEvent &event) {
+    ::switf_bridge_didUpdateZoomLevelConfig(coreID,
+                                            event.zoomLevels.seat,
+                                            event.zoomLevels.row,
+                                            event.zoomLevels.zone,
+                                            event.zoomLevels.venue,
+                                            event.minimumZoomScale,
+                                            event.maximumZoomScale,
+                                            event.zoomScale);
 }
 
 void SwiftSeatCanvasCoreRendererDelegate::didTapZone(uint32_t coreID, const std::string &zoneId) {

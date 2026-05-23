@@ -10,6 +10,10 @@ import Foundation
 
 @MainActor
 protocol SeatCanvasRendererDelegate: AnyObject {
+    func seatCanvasRendererDidLoadBaseMap()
+    func seatCanvasRendererDidUnloadBaseMap()
+    func seatCanvasRendererDidUpdateZoomLevelConfig(zoomLevels: ZoomLevel, minimumZoomScale: CGFloat, maximumZoomScale: CGFloat, zoomScale: CGFloat)
+
     func seatCanvasRendererDidTapZone(zoneId: String)
     func seatCanvasRendererDidTapSeat(zoneId: String, seatId: String) -> Bool
 
@@ -21,6 +25,4 @@ protocol SeatCanvasRendererDelegate: AnyObject {
     func seatCanvasRendererDidZoom(zoomScale: CGFloat, contentOffset: CGPoint, visibleOriginalRect: CGRect)
     func seatCanvasRendererDidEndZooming(zoomScale: CGFloat, contentOffset: CGPoint, visibleOriginalRect: CGRect)
     func seatCanvasRendererDidEndScrollingAnimation(zoomScale: CGFloat, contentOffset: CGPoint, visibleOriginalRect: CGRect)
-    func seatCanvasRendererDidLoadBaseMap(event: SeatCanvasBaseMapLoadedEvent)
-    func seatCanvasRendererDidUnloadBaseMap()
 }

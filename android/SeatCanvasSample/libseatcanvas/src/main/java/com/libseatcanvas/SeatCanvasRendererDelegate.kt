@@ -4,16 +4,27 @@ package com.libseatcanvas
  * 座位渲染器代理。点击与视口事件由核心渲染器驱动；座位样式通过推送 API 更新。
  */
 interface SeatCanvasRendererDelegate {
-     /**
-     * 底图加载完成；此时 ZoomLevelConfig 与初始缩放已就绪，可设置 seatRenderZoomThreshold 并 push 座位数据。
+    /**
+     * 底图加载完成；push 座位数据和样式配置。
      */
-    fun didLoadBaseMap(event: SeatCanvasBaseMapLoadedEvent) {}
+    fun didLoadBaseMap() {}
 
     /**
      * 底图已卸载（loadBaseMap(null) 或切换底图前）。
      */
     fun didUnloadBaseMap() {}
-    
+
+    /**
+     * 缩放级别配置已更新（底图加载完成或设备旋转后触发）；可在此设置 seatRenderZoomThreshold。
+     */
+    fun didUpdateZoomLevelConfig(
+        zoomLevels: ZoomLevel,
+        minimumZoomScale: Float,
+        maximumZoomScale: Float,
+        zoomScale: Float
+    ) {
+    }
+
     /**
      * 点击座位；若业务状态发生变化且需要刷新视图，返回 true。
      */
@@ -72,6 +83,4 @@ interface SeatCanvasRendererDelegate {
      * @param viewport 当前视图状态。
      */
     fun didEndScrollingAnimation(viewport: SeatCanvasViewport) {}
-
-   
 }

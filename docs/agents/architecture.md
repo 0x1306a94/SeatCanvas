@@ -89,10 +89,11 @@ Seat rendering visibility is controlled by `ZoomLevelConfig` (per-scale threshol
 
 **Basemap lifecycle**
 
-- `didLoadBaseMap(coreID, event)` — basemap is loaded; `ZoomLevelConfig`, min/max/current zoom, and `visibleOriginalRect` are ready. Push seat styles and seat data here (or immediately after) so the first seat draw uses the correct threshold and viewport.
+- `didLoadBaseMap(coreID)` — basemap is loaded. Push seat styles and seat data here (or immediately after).
 - `didUnloadBaseMap(coreID)` — basemap was cleared or replaced. Stop polling, clear cached seat availability/selection, etc.
+- `didUpdateZoomLevelConfig(coreID, event)` — zoom level config changed (initial load or device rotation). Set `seatRenderZoomThreshold` here to keep the threshold synchronized after rotation.
 
-**Important**: `setDelegate()` must be called **before** `loadBaseMap()`. Callbacks are fired from `handleBaseMapChanged()` only; they are **not** replayed when the delegate is set later. `didLoadBaseMap` is deferred until `PlatformView` is attached and viewport bounds are valid (avoids placeholder 1280×720 zoom levels on Android).
+**Important**: `setDelegate()` must be called **before** `loadBaseMap()`. Callbacks are fired from `handleBaseMapChanged()` only; they are **not** replayed when the delegate is set later.
 
 **Interaction**
 
@@ -108,7 +109,7 @@ Seat styles are **not** resolved via delegate. The app pushes render state with:
 
 Style keys registered via `setStyleKeyToConfigFromJSON` must match `SeatRenderStyleId.compose(pricecode, status, selected)` (C++ `composeSeatStyleId`). Unregistered keys skip drawing that seat.
 
-**Typical load order**: `setDelegate` → `loadBaseMap` → in `didLoadBaseMap`: `seatRenderZoomThreshold` (optional) → `registerPricecodes` → `applySeatStyleJSONConfig` / `setStyleKeyToConfigFromJSON` → per zone: `setSeatData` → `updateSeatStatusesForZone` → `setSelectedSeatIds`
+**Typical load order**: `setDelegate` → `loadBaseMap` → in `didLoadBaseMap`: `registerPricecodes` → `applySeatStyleJSONConfig` / `setStyleKeyToConfigFromJSON` → per zone: `setSeatData` → `updateSeatStatusesForZone` → `setSelectedSeatIds` → in `didUpdateZoomLevelConfig`: `seatRenderZoomThreshold`
 
 ## Render Pipeline
 

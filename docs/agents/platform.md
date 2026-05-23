@@ -12,12 +12,13 @@
 
 **Style key helper**: `SeatRenderStyleId.compose(pricecode:status:selected:)` (same format as C++ `composeSeatStyleId`)
 
-**Basemap lifecycle**: Call `setDelegate` **before** `loadBaseMap`. In `didLoadBaseMap`, apply styles and push seat data; in `didUnloadBaseMap`, stop timers and clear cached seat state. Callbacks are not replayed if the delegate is set after loading.
+**Basemap lifecycle**: Call `setDelegate` **before** `loadBaseMap`. In `didLoadBaseMap`, apply styles and push seat data; in `didUpdateZoomLevelConfig`, set `seatRenderZoomThreshold`; in `didUnloadBaseMap`, stop timers and clear cached seat state. Callbacks are not replayed if the delegate is set after loading.
 
 ```swift
 seatCanvasView.delegate = self
 seatCanvasView.loadBaseMap(svgData, format: .svg)
-// In didLoadBaseMap: seatRenderZoomThreshold → registerPricecodes → applySeatStyleJSONConfig → setSeatData / updateSeatStatuses*
+// In didLoadBaseMap: registerPricecodes → applySeatStyleJSONConfig → setSeatData / updateSeatStatuses*
+// In didUpdateZoomLevelConfig: seatRenderZoomThreshold = zoomLevels.venue
 ```
 
 ## Android
@@ -31,7 +32,7 @@ seatCanvasView.loadBaseMap(svgData, format: .svg)
 
 **Style key helper**: `SeatRenderStyleId.compose(pricecode, status, selected)` (same format as C++ `composeSeatStyleId`)
 
-**Basemap lifecycle**: Call `setDelegate` **before** `loadBaseMap`. Push styles and seat data in `didLoadBaseMap`; clear state in `didUnloadBaseMap`.
+**Basemap lifecycle**: Call `setDelegate` **before** `loadBaseMap`. Push styles and seat data in `didLoadBaseMap`; set `seatRenderZoomThreshold` in `didUpdateZoomLevelConfig`; clear state in `didUnloadBaseMap`.
 
 ```kotlin
 seatCanvasView.setDelegate(delegate)
@@ -49,7 +50,7 @@ seatCanvasView.loadBaseMap(svgData, BaseMapFormat.SVG)
 
 **Style key helper**: `SeatRenderStyleId.compose(pricecode, status, selected)` (same format as C++ `composeSeatStyleId`)
 
-**Basemap lifecycle**: Call `setDelegate` **before** `loadBaseMap`. Push styles and seat data in `didLoadBaseMap`; clear state in `didUnloadBaseMap`.
+**Basemap lifecycle**: Call `setDelegate` **before** `loadBaseMap`. Push styles and seat data in `didLoadBaseMap`; set `seatRenderZoomThreshold` in `didUpdateZoomLevelConfig`; clear state in `didUnloadBaseMap`.
 
 ```typescript
 controller.setDelegate(delegate)

@@ -274,11 +274,6 @@ class SeatCanvasCoreRenderer : public ViewportControllerCallback {
     /// 从 PlatformView 同步 viewport 尺寸到 state（不触发 content size 重算）
     bool syncBoundsFromPlatformView();
 
-    /// PlatformView 已就绪且 bounds 有效时派发 didLoadBaseMap，否则标记 pending
-    void dispatchBaseMapLifecycleCallback();
-
-    bool isBoundsReadyForBaseMapCallback() const;
-
     /// 设置底图
     /// @param layer 底图
     /// @param baseMapSize 底图原始大小
@@ -291,7 +286,8 @@ class SeatCanvasCoreRenderer : public ViewportControllerCallback {
     /// 内部方法，更新ZoomPanController状态并通知App
     void updateZoomPanControllerState(bool notifyViewport = true);
     SeatCanvasViewportEvent makeViewportEvent() const;
-    SeatCanvasBaseMapLoadedEvent makeBaseMapLoadedEvent() const;
+
+    void dispatchZoomLevelConfigUpdate();
 
     bool scheduleAnimator();
     void showMinimapWithoutAnimation();
@@ -356,8 +352,6 @@ class SeatCanvasCoreRenderer : public ViewportControllerCallback {
     kk::ZoomLevelConfig _zoomLevelConfig = {};
     float _seatRenderZoomThreshold = {0.0f};
     uint32_t _minimapAnimationId = {0};
-    bool _pendingDidLoadBaseMap = {false};
-
     std::unordered_map<std::string, tgfx::Color> _zoneColorMap = {};
     std::unordered_map<std::string, tgfx::Color> _minimapZoneColorMap = {};
     std::unique_ptr<SeatDataManager> _seatDataManager = {nullptr};
