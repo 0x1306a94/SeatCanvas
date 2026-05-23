@@ -12,6 +12,7 @@
 #include <string>
 
 #include "core/renderer/SeatCanvasCoreRendererDelegate.hpp"
+#include "core/renderer/SeatCanvasCoreRendererEvent.hpp"
 
 namespace kk::js {
 

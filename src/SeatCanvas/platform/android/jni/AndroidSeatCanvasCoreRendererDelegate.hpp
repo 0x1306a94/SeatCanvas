@@ -10,6 +10,7 @@
 
 #include "JNIHelper.hpp"
 #include "core/renderer/SeatCanvasCoreRendererDelegate.hpp"
+#include "core/renderer/SeatCanvasCoreRendererEvent.hpp"
 
 namespace kk::renderer {
 class AndroidSeatCanvasCoreRendererDelegate : public SeatCanvasCoreRendererDelegate {

@@ -19,6 +19,17 @@ struct ZoomLevelConfig {
     /// 全场/概览级视角（默认作为彩虹图与座位渲染切换的阈值）
     float venue{1.0f};
 };
+
+inline bool isSmallVenue(const ZoomLevelConfig &config) {
+    return config.venue < 1.0f;
+}
+
+inline float showBackZoomThreshold(const ZoomLevelConfig &config) {
+    if (isSmallVenue(config)) {
+        return config.zone;
+    }
+    return config.venue;
+}
 };  // namespace kk
 
 #endif /* ZoomLevelConfig_hpp */
