@@ -11,27 +11,9 @@
 #include <cstdint>
 #include <string>
 
-#include <tgfx/core/Point.h>
-#include <tgfx/core/Rect.h>
-#include <tgfx/core/Size.h>
-
-#include "core/ZoomLevelConfig.hpp"
-
 namespace kk::renderer {
-struct SeatCanvasViewportEvent {
-    float zoomScale = 1.0f;
-    tgfx::Point contentOffset = {};
-    tgfx::Rect visibleOriginalRect = {};
-};
-
-struct SeatCanvasBaseMapLoadedEvent {
-    tgfx::Size baseMapSize = {};
-    kk::ZoomLevelConfig zoomLevels = {};
-    float minimumZoomScale = 1.0f;
-    float maximumZoomScale = 1.0f;
-    float zoomScale = 1.0f;
-    tgfx::Rect visibleOriginalRect = {};
-};
+struct SeatCanvasViewportEvent;
+struct SeatCanvasBaseMapLoadedEvent;
 
 class SeatCanvasCoreRendererDelegate {
   public:

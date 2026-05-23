@@ -9,6 +9,7 @@
 #define SwiftSeatCanvasCoreRendererDelegate_hpp
 
 #import "core/renderer/SeatCanvasCoreRendererDelegate.hpp"
+#import "core/renderer/SeatCanvasCoreRendererEvent.hpp"
 
 namespace kk::bridge {
 class SwiftSeatCanvasCoreRendererDelegate : public kk::renderer::SeatCanvasCoreRendererDelegate {

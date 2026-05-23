@@ -13,6 +13,8 @@
 #include <tgfx/core/Rect.h>
 #include <tgfx/core/Size.h>
 
+#include "core/renderer/SeatCanvasCoreRendererEvent.hpp"
+
 namespace kk::renderer {
 class SeatCanvasCoreRendererState {
   public:
@@ -68,6 +70,29 @@ class SeatCanvasCoreRendererState {
     tgfx::Size originSize = {};
     tgfx::Point contentOffset = {};
 };
+
+inline tgfx::Point ConvertScreenToContent(const tgfx::Point &location, const tgfx::Point &contentOffset, float scale) {
+    auto x = (location.x - contentOffset.x) / scale;
+    auto y = (location.y - contentOffset.y) / scale;
+    return tgfx::Point::Make(x, y);
+}
+
+inline tgfx::Point ConvertContentToScreen(const tgfx::Point &location, const tgfx::Point &contentOffset, float scale) {
+    auto x = location.x * scale + contentOffset.x;
+    auto y = location.y * scale + contentOffset.y;
+    return tgfx::Point::Make(x, y);
+}
+
+inline SeatCanvasViewportEvent MakeViewportEvent(const SeatCanvasCoreRendererState *state) {
+    SeatCanvasViewportEvent event = {};
+    if (state) {
+        event.zoomScale = state->getZoomScale();
+        event.contentOffset = state->getContentOffset();
+        event.visibleOriginalRect = state->getVisibleOriginalRect();
+    }
+    return event;
+}
+
 };  // namespace kk::renderer
 
 #endif /* SeatCanvasCoreRendererState_hpp */

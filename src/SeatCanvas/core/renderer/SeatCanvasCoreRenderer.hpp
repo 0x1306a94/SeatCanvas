@@ -19,7 +19,6 @@
 #include <tgfx/core/Color.h>
 #include <tgfx/core/Point.h>
 #include <tgfx/core/Rect.h>
-#include <tgfx/gpu/RenderPass.h>
 
 #include "core/BaseMapColorState.h"
 #include "core/SeatData.hpp"
@@ -27,11 +26,12 @@
 #include "core/ZoomScaleConfig.hpp"
 #include "core/gesture/GestureState.hpp"
 #include "core/renderer/SeatCanvasCoreRendererDelegate.hpp"
+#include "core/renderer/SeatCanvasCoreRendererEvent.hpp"
+#include "core/renderer/ViewportControllerCallback.hpp"
 #include "core/style/SeatRenderStyleKey.hpp"
 #include "core/style/SeatStyleConfig.hpp"
 
 namespace tgfx {
-class Recording;
 class TextShaper;
 class Context;
 class Canvas;
@@ -70,9 +70,11 @@ class CustomBaseMapPass;
 class CustomSeatPass;
 class SeatStyleAtlasManager;
 class SeatCanvasCoreRendererState;
+class SeatDataManager;
+class ViewportController;
 class BaseMapMeshBuilder;
 struct ZoneMeshInfo;
-class SeatCanvasCoreRenderer {
+class SeatCanvasCoreRenderer : public ViewportControllerCallback {
   public:
     explicit SeatCanvasCoreRenderer(
         std::unique_ptr<PlatformView> platformView,
@@ -83,7 +85,7 @@ class SeatCanvasCoreRenderer {
 
     uint32_t coreID() const;
 
-    const SeatCanvasCoreRendererState *state();
+    const SeatCanvasCoreRendererState *state() const;
 
     void setDelegate(std::shared_ptr<SeatCanvasCoreRendererDelegate> delegate);
 
@@ -286,36 +288,26 @@ class SeatCanvasCoreRenderer {
     /// @param layer minimap
     void setMiniMapLayer(std::shared_ptr<kk::layer::BaseMapRootLayer> layer);
 
-    /// 为区域创建虚拟的 BaseMapLayer
-    /// @param zoneId 区域ID
-    std::shared_ptr<kk::layer::BaseMapRootLayer> buildVirtualBaseMapLayerForZone(const std::string &zoneId);
-
-    /// 内部方法，根据原始尺寸更新内容缩放比例（用于规范化内容尺寸）
-    void updateContentScale();
-
-    /// 内部方法，更新内容尺寸
-    void updateContentSize();
-
-    /// 内部方法，更新最大最小缩放比例
-    void updateMaxMinZoomScalesForCurrentBounds();
-
     /// 内部方法，更新ZoomPanController状态并通知App
     void updateZoomPanControllerState(bool notifyViewport = true);
     SeatCanvasViewportEvent makeViewportEvent() const;
     SeatCanvasBaseMapLoadedEvent makeBaseMapLoadedEvent() const;
-    void notifyViewportDidEndDeceleratingIfNeeded();
-    void notifyViewportDidEndScrollingAnimation();
-    void beginViewportScrollingAnimation();
 
     bool scheduleAnimator();
     void showMinimapWithoutAnimation();
     void hideMinimapWithAnimation();
     void hideMinimapWithoutAnimation();
-    void animateMinimapToAlpha(float targetAlpha, double durationMs);
 
     void prepareSeatIfNeeded();
 
-    void handleZoomBack();
+    // ---- ViewportControllerCallback 实现 ----
+    void onInvalidateContent() override;
+    void onApplyBaseMapColorState(kk::BaseMapColorState state) override;
+    void onHideMinimapWithoutAnimation() override;
+    void onSetOverlayBackVisible(bool visible) override;
+    void onSetOverlayBackAlpha(float alpha) override;
+    bool onIsOverlayBackVisible() const override;
+    void onUpdateZoomPanControllerState(bool notify) override;
 
     /// 处理座位选择（点击座位时触发）
     /// @param location 点击位置（viewport 坐标系，像素单位）
@@ -325,30 +317,10 @@ class SeatCanvasCoreRenderer {
     /// @param location 点击位置（viewport 坐标系，像素单位）
     void handleAutoZoomOnTap(const tgfx::Point &location);
 
-    /// 根据位置执行渐进式缩放
-    /// @param location 缩放目标位置（viewport 坐标系，像素单位）
-    void scrollViewWithLocation(const tgfx::Point &location);
-
-    void scrollViewWithZone(const std::shared_ptr<ZoneMeshInfo> &zoneInfo);
-
-    void zoomToPoint(const tgfx::Point &location, float scale, bool animated = true, float padding = 0.0f, double durationMs = 300.0);
-
     void applyBaseMapColorState(kk::BaseMapColorState toState);
 
     void applySavedSeatZoneAlternateColors(std::shared_ptr<BaseMapMeshBuilder> meshBuilder);
     void applySavedMiniMapZoneAlternateColors(std::shared_ptr<BaseMapMeshBuilder> meshBuilder);
-
-    /// atlas 生成后重建 {pricecodeIndex, status, selected} → uvIndex 查表
-    void rebuildStyleKeyLookup();
-
-    struct SeatLocation {
-        std::string zoneId = {};
-        size_t index = 0;
-    };
-
-    struct ZoneSeatRuntimeState {
-        std::vector<uint32_t> statuses = {};
-    };
 
     void drawDebugHUD(tgfx::Canvas *canvas);
 
@@ -371,38 +343,24 @@ class SeatCanvasCoreRenderer {
     std::unique_ptr<kk::drawers::SeatOverlayLayerTree> _overlayLayer;
     std::unique_ptr<kk::animation::Animator> _animator;
     std::unique_ptr<RenderFrameMetrics> _frameMetrics;
+    std::unique_ptr<ViewportController> _viewportController = {nullptr};
     std::shared_ptr<tgfx::TextShaper> _textShaper = {nullptr};
-    std::unique_ptr<tgfx::Recording> _lastRecording = {nullptr};
     std::shared_ptr<kk::DisplayLink> _displayLink = {nullptr};
     std::shared_ptr<kk::BaseMapConfig> _baseMapConfig = {nullptr};
     std::weak_ptr<kk::BaseMapConfig> _useBaseMapConfig;
 
     tgfx::Color _backgroundColor = {tgfx::Color::White()};
     BaseMapColorState _baseMapColorState = {BaseMapColorState::Original};
-    bool _autoChangeBaseMapColorState = {true};
     bool _debugHUDEnabled = {false};
-    bool _disableAutoDrawSeat = {false};
-    bool _firstFrameSubmitted = {false};
     bool _invalidate = {true};
-    float _maxWidth = {1000.f};
-    float _svgModelScale = {1.0f};
     kk::ZoomLevelConfig _zoomLevelConfig = {};
     float _seatRenderZoomThreshold = {0.0f};
     uint32_t _minimapAnimationId = {0};
-    bool _panAnimationActive = {false};
-    bool _scrollingAnimationActive = {false};
     bool _pendingDidLoadBaseMap = {false};
 
     std::unordered_map<std::string, tgfx::Color> _zoneColorMap = {};
     std::unordered_map<std::string, tgfx::Color> _minimapZoneColorMap = {};
-    std::unordered_map<std::string, std::vector<kk::SeatData>> _seatDataMap = {};
-    std::unordered_map<std::string, ZoneSeatRuntimeState> _seatStateByZone = {};
-    std::unordered_map<std::string, SeatLocation> _seatIndexById = {};
-    std::unordered_set<std::string> _selectedSeatIds = {};
-    std::vector<std::string> _pricecodes = {};
-    std::unordered_map<std::string, uint16_t> _pricecodeToIndex = {};
-    std::unordered_map<SeatRenderStyleKey, int32_t, SeatRenderStyleKeyHash> _uvIndexByStyleKey = {};
-    std::unordered_map<std::string, std::shared_ptr<SeatStyleConfig>> _registeredStyleIdToConfig = {};
+    std::unique_ptr<SeatDataManager> _seatDataManager = {nullptr};
     float _seatSize = {36.0f};
     size_t _renderedSeatZoneCount = {0};
     size_t _renderedSeatCount = {0};
