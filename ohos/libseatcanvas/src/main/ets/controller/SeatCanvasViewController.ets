@@ -301,9 +301,9 @@ export class SeatCanvasViewController {
     this.jView.updateSeatStatuses(updates);
   }
 
-  /** 批量更新某个 zone 内全部座位 status（数组下标与 updateSeats 顺序一致） */
-  updateSeatStatusesForZone(zoneId: string, statuses: number[]) {
-    this.jView.updateSeatStatusesForZone(zoneId, statuses);
+  /** 批量更新某个 zone 内全部座位 status（raw uint32 ArrayBuffer，数组下标与 updateSeats 顺序一致） */
+  updateSeatStatusesForZone(zoneId: string, statusData: ArrayBuffer) {
+    this.jView.updateSeatStatusesForZone(zoneId, statusData);
   }
 
   /** 全量替换选中座位 */

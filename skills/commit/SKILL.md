@@ -11,7 +11,7 @@ If on the default branch, creates a new branch first.
 
 ## Instructions
 
-- **NEVER** commit directly on the default branch (main/master) — always
+- **NEVER** commit directly on the default branch (main/master/develop) — always
   create a new branch first.
 - **NEVER** push. This skill only creates local commits.
 - All user-facing text must use the language the user has been using in the

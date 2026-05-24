@@ -188,8 +188,9 @@ class SeatCanvasViewController: UIViewController {
         seatCanvasView.registerPricecodes(prices.map(\.code))
 
         seatsMap.removeAll(keepingCapacity: true)
-        seatZoneMap = loadSeatDatas()
         selectedSeatIds.removeAll(keepingCapacity: true)
+
+        seatZoneMap = loadSeatDatas()
         for zoneSeat in seatZoneMap {
             for seat in zoneSeat.value {
                 seatsMap[seat.seatId] = seat
@@ -208,7 +209,7 @@ class SeatCanvasViewController: UIViewController {
             seatCanvasView.updateSeatDatas(zoneId: zoneSeat.key, seats: seatDatas)
             seatCanvasView.updateSeatStatusesForZone(
                 zoneId: zoneSeat.key,
-                statuses: buildStatusesForZone(zoneId: zoneSeat.key, seats: zoneSeat.value)
+                statusData: buildStatusesForZone(zoneId: zoneSeat.key, seats: zoneSeat.value)
             )
         }
         seatCanvasView.setSelectedSeatIds(Array(selectedSeatIds))
@@ -219,10 +220,13 @@ class SeatCanvasViewController: UIViewController {
         static let available: UInt32 = 1
     }
 
-    private func buildStatusesForZone(zoneId: String, seats: [MockSeatData]) -> [NSNumber] {
-        seats.map { seat in
-            NSNumber(value: seatAvailable(zoneId: zoneId, seatId: seat.seatId) ? SeatStatus.available : SeatStatus.unavailable)
+    private func buildStatusesForZone(zoneId: String, seats: [MockSeatData]) -> Data {
+        var data = Data(capacity: seats.count * MemoryLayout<UInt32>.size)
+        for seat in seats {
+            var status: UInt32 = seatAvailable(zoneId: zoneId, seatId: seat.seatId) ? SeatStatus.available : SeatStatus.unavailable
+            data.append(Data(bytes: &status, count: MemoryLayout<UInt32>.size))
         }
+        return data
     }
 
     private func pushSelectedSeatIds(previousSelected: Set<String>) {
@@ -351,7 +355,7 @@ class SeatCanvasViewController: UIViewController {
             availableSeats[zoneId] = availableIds
             seatCanvasView.updateSeatStatusesForZone(
                 zoneId: zoneId,
-                statuses: buildStatusesForZone(zoneId: zoneId, seats: seats)
+                statusData: buildStatusesForZone(zoneId: zoneId, seats: seats)
             )
         }
         pruneSelectedSeatsForAvailability()

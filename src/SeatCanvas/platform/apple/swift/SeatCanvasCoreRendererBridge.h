@@ -104,9 +104,9 @@ uint16_t SeatCanvasCoreRendererPricecodeIndexForCode(CPPObject *_Nonnull cppObje
 void SeatCanvasCoreRendererUpdateSeatStatuses(CPPObject *_Nonnull cppObject, NSArray<NSString *> *_Nonnull seatIds,
                                               NSArray<NSNumber *> *_Nonnull statuses);
 
-/// 批量更新某个 zone 内全部座位 status
+/// 批量更新某个 zone 内全部座位 status（raw uint32 binary data）
 void SeatCanvasCoreRendererUpdateSeatStatusesForZone(CPPObject *_Nonnull cppObject, NSString *_Nonnull zoneId,
-                                                     NSArray<NSNumber *> *_Nonnull statuses);
+                                                     NSData *_Nonnull statusData);
 
 /// 全量替换选中座位
 void SeatCanvasCoreRendererSetSelectedSeatIds(CPPObject *_Nonnull cppObject, NSArray<NSString *> *_Nonnull seatIds);

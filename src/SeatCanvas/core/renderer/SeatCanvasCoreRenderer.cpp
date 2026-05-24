@@ -1318,8 +1318,8 @@ void SeatCanvasCoreRenderer::updateSeatStatuses(const std::vector<kk::SeatStatus
     }
 }
 
-void SeatCanvasCoreRenderer::updateSeatStatusesForZone(const std::string &zoneId, const std::vector<uint32_t> &statuses) {
-    if (_seatDataManager->updateSeatStatusesForZone(zoneId, statuses)) {
+void SeatCanvasCoreRenderer::updateSeatStatusesForZone(const std::string &zoneId, const uint32_t *statuses, size_t count) {
+    if (_seatDataManager->updateSeatStatusesForZone(zoneId, statuses, count)) {
         _customSeatPass->clearSeats();
         invalidateContent();
     }

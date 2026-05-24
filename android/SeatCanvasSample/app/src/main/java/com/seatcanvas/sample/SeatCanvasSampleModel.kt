@@ -161,6 +161,7 @@ class SeatCanvasSampleModel {
 
         seatsMap.clear()
         seatZoneMap = loadSeatDatas(context, baseMapInfo)
+
         selectedSeatIds.clear()
         for ((zoneId, seats) in seatZoneMap) {
             for (mockSeat in seats) {
@@ -179,8 +180,12 @@ class SeatCanvasSampleModel {
                 )
             }.toTypedArray()
             seatCanvasView.updateSeats(zoneId, seatDataArray)
-            seatCanvasView.updateSeatStatusesForZone(zoneId, buildStatusesForZone(zoneId, seats))
+            seatCanvasView.updateSeatStatusesForZone(
+                zoneId,
+                buildStatusesForZone(zoneId, seats)
+            )
         }
+
         seatCanvasView.setSelectedSeatIds(selectedSeatIds.toTypedArray())
     }
 

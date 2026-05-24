@@ -265,8 +265,8 @@ export declare namespace seatcanvas {
     /** 批量更新单个座位 status */
     updateSeatStatuses(updates: SeatStatusUpdate[]);
 
-    /** 批量更新某个 zone 内全部座位 status（数组下标与 updateSeats 顺序一致） */
-    updateSeatStatusesForZone(zoneId: string, statuses: number[]);
+    /** 批量更新某个 zone 内全部座位 status（raw uint32 ArrayBuffer，数组下标与 updateSeats 顺序一致） */
+    updateSeatStatusesForZone(zoneId: string, statusData: ArrayBuffer): void;
 
     /** 全量替换选中座位 */
     setSelectedSeatIds(seatIds: string[]);
