@@ -118,8 +118,8 @@ bool SeatDataManager::updateSeatStatuses(const std::vector<kk::SeatStatusUpdate>
     return changed;
 }
 
-bool SeatDataManager::updateSeatStatusesForZone(const std::string &zoneId, const std::vector<uint32_t> &statuses) {
-    if (zoneId.empty()) {
+bool SeatDataManager::updateSeatStatusesForZone(const std::string &zoneId, const uint32_t *statuses, size_t count) {
+    if (zoneId.empty() || statuses == nullptr || count == 0) {
         return false;
     }
 
@@ -128,11 +128,11 @@ bool SeatDataManager::updateSeatStatusesForZone(const std::string &zoneId, const
     if (dataIter == _seatDataMap.end() || stateIter == _seatStateByZone.end()) {
         return false;
     }
-    if (statuses.size() != dataIter->second.size()) {
+    if (count != dataIter->second.size()) {
         return false;
     }
 
-    stateIter->second.statuses = statuses;
+    stateIter->second.statuses.assign(statuses, statuses + count);
     return true;
 }
 

@@ -5,6 +5,8 @@
 //  Created by KK on 2026/1/18.
 //
 
+#import <cassert>
+
 #import "SeatCanvasCoreRendererBridge.h"
 
 #import "ColorCast.h"
@@ -286,14 +288,12 @@ void SeatCanvasCoreRendererUpdateSeatStatuses(CPPObject *_Nonnull cppObject, NSA
 }
 
 void SeatCanvasCoreRendererUpdateSeatStatusesForZone(CPPObject *_Nonnull cppObject, NSString *_Nonnull zoneId,
-                                                     NSArray<NSNumber *> *_Nonnull statuses) {
+                                                     NSData *_Nonnull statusData) {
     GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
-    std::vector<uint32_t> cppStatuses = {};
-    cppStatuses.reserve(statuses.count);
-    for (NSNumber *status in statuses) {
-        cppStatuses.push_back(status.unsignedIntValue);
-    }
-    renderer->updateSeatStatusesForZone(std::string(zoneId.UTF8String), cppStatuses);
+    assert(statusData.length % sizeof(uint32_t) == 0);
+    auto count = statusData.length / sizeof(uint32_t);
+    renderer->updateSeatStatusesForZone(std::string(zoneId.UTF8String),
+                                        static_cast<const uint32_t *>(statusData.bytes), count);
 }
 
 void SeatCanvasCoreRendererSetSelectedSeatIds(CPPObject *_Nonnull cppObject, NSArray<NSString *> *_Nonnull seatIds) {

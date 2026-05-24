@@ -11,6 +11,7 @@ import { ResourceExtensions } from './ResourceExtensions';
 import { MockPriceData, parseMockPriceDataList } from './MockPriceData';
 import { MockSeatData } from './MockSeatData';
 import { SeatStatus } from './SeatStyleBuilder';
+import { systemDateTime } from '@kit.BasicServicesKit';
 
 export class SeatCanvasSampleModel {
   prices: MockPriceData[] = [];
@@ -231,8 +232,9 @@ export class SeatCanvasSampleModel {
     controller.registerPricecodes(this.prices.map((price: MockPriceData): string => price.code));
 
     this.seatsMap.clear();
-    this.seatZoneMap = this.loadSeatDatas(baseMap, readRawFile);
     this.selectedSeatIds.clear();
+
+    this.seatZoneMap = this.loadSeatDatas(baseMap, readRawFile);
     for (const zoneId of Object.keys(this.seatZoneMap)) {
       const seats = this.seatZoneMap[zoneId];
       for (const mockSeat of seats) {
@@ -326,11 +328,14 @@ export class SeatCanvasSampleModel {
     }
   }
 
-  private buildStatusesForZone(zoneId: string, seats: MockSeatData[]): number[] {
+  private buildStatusesForZone(zoneId: string, seats: MockSeatData[]): ArrayBuffer {
     const availableIds = this.availableSeats.get(zoneId);
-    return seats.map((seat: MockSeatData): number => {
-      return availableIds?.has(seat.seatId) ? SeatStatus.AVAILABLE : SeatStatus.UNAVAILABLE;
-    });
+    const buffer = new ArrayBuffer(seats.length * 4);
+    const view = new Uint32Array(buffer);
+    for (let i = 0; i < seats.length; i++) {
+      view[i] = availableIds?.has(seats[i].seatId) ? SeatStatus.AVAILABLE : SeatStatus.UNAVAILABLE;
+    }
+    return buffer;
   }
 
   private pushSelectedSeatIds(previousSelected: Set<string>): void {

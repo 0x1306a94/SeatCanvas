@@ -255,7 +255,7 @@ class SeatCanvasCoreRenderer : public ViewportControllerCallback {
     void updateSeatStatuses(const std::vector<kk::SeatStatusUpdate> &updates);
 
     /// 批量更新某个 zone 内全部座位 status（数组下标与 setSeatData 顺序一致）
-    void updateSeatStatusesForZone(const std::string &zoneId, const std::vector<uint32_t> &statuses);
+    void updateSeatStatusesForZone(const std::string &zoneId, const uint32_t *statuses, size_t count);
 
     /// 全量替换选中座位
     void setSelectedSeatIds(const std::vector<std::string> &seatIds);

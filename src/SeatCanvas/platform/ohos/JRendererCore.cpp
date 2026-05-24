@@ -1083,28 +1083,21 @@ static napi_value UpdateSeatStatusesForZone(napi_env env, napi_callback_info inf
         return nullptr;
     }
 
-    bool isArray = false;
-    napi_is_array(env, args[1], &isArray);
-    if (!isArray) {
+    bool isArrayBuffer = false;
+    napi_is_arraybuffer(env, args[1], &isArrayBuffer);
+    if (!isArrayBuffer) {
         return nullptr;
     }
 
-    uint32_t length = 0;
-    napi_get_array_length(env, args[1], &length);
-    std::vector<uint32_t> statuses = {};
-    statuses.reserve(length);
-    for (uint32_t index = 0; index < length; ++index) {
-        napi_value element = nullptr;
-        napi_get_element(env, args[1], index, &element);
-        if (element == nullptr) {
-            continue;
-        }
-        double value = 0.0;
-        napi_get_value_double(env, element, &value);
-        statuses.push_back(static_cast<uint32_t>(value));
+    void *data = nullptr;
+    size_t byteLength = 0;
+    napi_get_arraybuffer_info(env, args[1], &data, &byteLength);
+    if (data == nullptr || byteLength == 0) {
+        return nullptr;
     }
 
-    renderer->updateSeatStatusesForZone(zoneId, statuses);
+    renderer->updateSeatStatusesForZone(zoneId, static_cast<const uint32_t *>(data),
+                                        byteLength / sizeof(uint32_t));
     return nullptr;
 }
 

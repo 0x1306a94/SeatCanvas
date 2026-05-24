@@ -296,12 +296,11 @@ extension SeatCanvasCoreRenderer {
         kk.bridge.SeatCanvasCoreRendererUpdateSeatStatuses(cppObject, seatIds, statusNumbers)
     }
 
-    func updateSeatStatusesForZone(zoneId: String, statuses: [UInt32]) {
+    func updateSeatStatusesForZone(zoneId: String, statusData: Data) {
         guard let cppObject else {
             return
         }
-        let statusNumbers = statuses.map { NSNumber(value: $0) }
-        kk.bridge.SeatCanvasCoreRendererUpdateSeatStatusesForZone(cppObject, zoneId, statusNumbers)
+        kk.bridge.SeatCanvasCoreRendererUpdateSeatStatusesForZone(cppObject, zoneId, statusData)
     }
 
     func setSelectedSeatIds(_ seatIds: [String]) {

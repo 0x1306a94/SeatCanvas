@@ -133,11 +133,10 @@ public class SeatCanvasView: UIView {
         renderer?.updateSeatStatuses(seatIds: seatIds, statuses: values)
     }
 
-    /// 批量更新某个 zone 内全部座位 status（数组下标与 updateSeatDatas 顺序一致）
+    /// 批量更新某个 zone 内全部座位 status（raw uint32 binary data，数组下标与 updateSeatDatas 顺序一致）
     @objc
-    public func updateSeatStatusesForZone(zoneId: String, statuses: [NSNumber]) {
-        let values = statuses.map { $0.uint32Value }
-        renderer?.updateSeatStatusesForZone(zoneId: zoneId, statuses: values)
+    public func updateSeatStatusesForZone(zoneId: String, statusData: Data) {
+        renderer?.updateSeatStatusesForZone(zoneId: zoneId, statusData: statusData)
     }
 
     /// 全量替换选中座位

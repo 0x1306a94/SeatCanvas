@@ -302,18 +302,15 @@ Java_com_libseatcanvas_SeatCanvasView_nativeUpdateSeatStatusesForZone(JNIEnv *en
     if (zoneId.empty() || jstatuses == nullptr) {
         return;
     }
+    static_assert(sizeof(jint) == sizeof(uint32_t), "jint and uint32_t size mismatch");
     jsize length = env->GetArrayLength(jstatuses);
     auto statusData = env->GetIntArrayElements(jstatuses, nullptr);
     if (statusData == nullptr) {
         return;
     }
-    std::vector<uint32_t> statuses = {};
-    statuses.reserve(static_cast<size_t>(length));
-    for (jsize index = 0; index < length; ++index) {
-        statuses.push_back(static_cast<uint32_t>(statusData[index]));
-    }
+    renderer->updateSeatStatusesForZone(zoneId, reinterpret_cast<const uint32_t *>(statusData),
+                                        static_cast<size_t>(length));
     env->ReleaseIntArrayElements(jstatuses, statusData, JNI_ABORT);
-    renderer->updateSeatStatusesForZone(zoneId, statuses);
 }
 
 static std::vector<std::string> ReadStringArray(JNIEnv *env, jobjectArray array) {
