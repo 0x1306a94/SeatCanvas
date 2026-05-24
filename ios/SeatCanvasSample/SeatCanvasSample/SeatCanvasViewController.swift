@@ -380,7 +380,7 @@ class SeatCanvasViewController: UIViewController {
 }
 
 extension SeatCanvasViewController: SeatCanvasViewDelegate {
-    /// 底图加载完成；push 座位数据和样式配置。
+    /// 底图加载完成；push 座位数据和样式配置
     func seatCanvasViewDidLoadBaseMap(_ view: SeatCanvasView) {
         loadMockData()
         regenerateRandomAvailableSeats(fullRefresh: true)
@@ -396,7 +396,7 @@ extension SeatCanvasViewController: SeatCanvasViewDelegate {
         selectedSeatIds.removeAll()
     }
 
-    /// 缩放级别配置已更新（底图加载完成或设备旋转后触发）；在此设置 seatRenderZoomThreshold 以同步旋转后的阈值。
+    /// 缩放级别配置已更新（底图加载完成或设备旋转后触发）；在此设置 seatRenderZoomThreshold 以同步旋转后的阈值
     /// - Parameters:
     ///   - view: SeatCanvasView 实例
     ///   - zoomLevels: 缩放等级
@@ -407,12 +407,12 @@ extension SeatCanvasViewController: SeatCanvasViewDelegate {
         view.seatRenderZoomThreshold = zoomLevels.venue
     }
 
-    /// 点击某个座位，业务层处理状态变更。
+    /// 点击某个座位，业务层处理状态变更
     /// - Parameters:
     ///   - view: SeatCanvasView 实例
     ///   - zoneId: 区域ID
     ///   - seatId: 座位ID
-    /// - Returns: 是否发生了状态变化。true 则触发重绘。
+    /// - Returns: 是否发生了状态变化. true 则触发重绘
     func seatCanvasView(_: SeatCanvasView, didTapSeat zoneId: String, seatId: String) -> Bool {
         let previousSelected = selectedSeatIds
         var changed = false

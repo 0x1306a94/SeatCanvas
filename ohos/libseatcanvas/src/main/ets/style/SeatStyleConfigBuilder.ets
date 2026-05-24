@@ -3,13 +3,13 @@ import { CircleSeatStyleConfig } from './CircleSeatStyleConfig';
 import { SVGSeatStyleConfig } from './SVGSeatStyleConfig';
 
 /**
- * 构建与核心层一致的样式 JSON：顶层为数组，元素含 `key` 与 `config`。
+ * 构建与核心层一致的样式 JSON：顶层为数组，元素含 `key` 与 `config`
  */
 export class SeatStyleConfigBuilder {
   private configs: Map<string, SeatStyleConfig> = new Map();
 
   /**
-   * 注册圆形样式。
+   * 注册圆形样式
    * @param styleId 样式键（与 SeatRenderStyleId.compose 返回值一致）
    * @param fill 填充色（#AARRGGBB 或 #RRGGBB）
    * @param overlay 遮罩色，仅选中态需要时传入
@@ -24,7 +24,7 @@ export class SeatStyleConfigBuilder {
   }
 
   /**
-   * 注册 SVG 样式。
+   * 注册 SVG 样式
    */
   addSVGStyle(styleId: string, content: string): SeatStyleConfigBuilder {
     if (!styleId || styleId.length === 0) {

@@ -1,7 +1,7 @@
 package com.libseatcanvas
 
 /**
- * 单个座位的几何与标识数据；可变状态通过 status / selected API 推送。
+ * 单个座位的几何与标识数据；可变状态通过 status / selected API 推送
  * @param seatId 座位 ID
  * @param x 原始坐标系中的 X
  * @param y 原始坐标系中的 Y

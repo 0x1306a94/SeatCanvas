@@ -32,6 +32,13 @@ public final class SeatStyleConfigBuilder: NSObject {
         super.init()
     }
 
+    /// 添加圆形样式
+    /// - Parameters:
+    ///   - styleId: 样式ID（使用[SeatRenderStyleId.compose] 创建）
+    ///   - fill: 填充颜色
+    ///   - overlay: 选中时的覆盖颜色
+    ///   - checkmark: 选中时的勾选颜色
+    /// - Returns: SeatStyleConfigBuilder
     @objc @discardableResult
     public func addCircleStyle(
         styleId: String,
@@ -47,6 +54,13 @@ public final class SeatStyleConfigBuilder: NSObject {
         return self
     }
 
+    /// 添加圆形样式
+    /// - Parameters:
+    ///   - styleId: 样式ID（使用[SeatRenderStyleId.compose] 创建）
+    ///   - fill: 填充颜色
+    ///   - overlay: 选中时的覆盖颜色
+    ///   - checkmark: 选中时的勾选颜色
+    /// - Returns: SeatStyleConfigBuilder
     @discardableResult
     public func addCircleStyle(
         styleId: String,
@@ -62,6 +76,11 @@ public final class SeatStyleConfigBuilder: NSObject {
         return self
     }
 
+    /// 添加SVG样式
+    /// - Parameters:
+    ///   - styleId: 样式ID（使用[SeatRenderStyleId.compose] 创建）
+    ///   - content: svg内容
+    /// - Returns: SeatStyleConfigBuilder
     @objc @discardableResult
     public func addSVGStyle(
         styleId: String,
@@ -75,6 +94,8 @@ public final class SeatStyleConfigBuilder: NSObject {
         return self
     }
 
+    /// 序列化为json数据
+    /// - Returns: json data
     @objc
     public func toJSONData() -> Data? {
         let entries = configs.compactMap { key, config -> StyleConfigEntry? in
@@ -90,6 +111,8 @@ public final class SeatStyleConfigBuilder: NSObject {
         }
     }
 
+    /// 序列化为json字符串
+    /// - Returns: json 字符串
     @objc
     public func toJSONString() -> String? {
         guard let data = toJSONData() else {
@@ -98,6 +121,7 @@ public final class SeatStyleConfigBuilder: NSObject {
         return String(data: data, encoding: .utf8)
     }
 
+    /// 清除
     @objc public func clear() {
         configs.removeAll()
     }

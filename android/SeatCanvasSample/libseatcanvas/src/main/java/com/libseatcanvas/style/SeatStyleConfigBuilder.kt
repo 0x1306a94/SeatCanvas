@@ -5,14 +5,14 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * 构建座位样式 JSON，格式与核心层解析协议一致：顶层为数组，元素含字符串键 `key` 与对象 `config`。
+ * 构建座位样式 JSON，格式与核心层解析协议一致：顶层为数组，元素含字符串键 `key` 与对象 `config`
  */
 class SeatStyleConfigBuilder {
     private val configs = mutableMapOf<String, SeatStyleConfig>()
 
     /**
-     * 注册圆形样式。
-     * @param styleId 样式键（与 [SeatRenderStyleId.compose] 返回值一致）
+     * 注册圆形样式
+     * @param styleId 样式ID（使用[SeatRenderStyleId.compose] 创建）
      * @param fill 填充色
      * @param overlay 遮罩色，仅选中态需要时可传
      * @param checkmark 对勾色，仅选中态需要时可传
@@ -31,8 +31,8 @@ class SeatStyleConfigBuilder {
     }
 
     /**
-     * 注册 SVG 样式。
-     * @param styleId 样式键
+     * 注册 SVG 样式
+     * @param styleId 样式ID（使用[SeatRenderStyleId.compose] 创建）
      * @param content SVG 字符串内容
      */
     fun addSVGStyle(styleId: String, content: String): SeatStyleConfigBuilder {
@@ -43,7 +43,7 @@ class SeatStyleConfigBuilder {
         return this
     }
 
-    /** 序列化为 UTF-8 JSON 字节，失败返回 null。 */
+    /** 序列化为 UTF-8 JSON 字节，失败返回 null */
     fun toJSONData(): ByteArray? {
         return try {
             val jsonString = toJSONString()
@@ -53,7 +53,7 @@ class SeatStyleConfigBuilder {
         }
     }
 
-    /** 序列化为 JSON 字符串，失败返回 null。 */
+    /** 序列化为 JSON 字符串，失败返回 null */
     fun toJSONString(): String? {
         return try {
             val jsonArray = JSONArray()
@@ -81,7 +81,7 @@ class SeatStyleConfigBuilder {
         }
     }
 
-    /** 清空已注册的样式。 */
+    /** 清空已注册的样式 */
     fun clear() {
         configs.clear()
     }

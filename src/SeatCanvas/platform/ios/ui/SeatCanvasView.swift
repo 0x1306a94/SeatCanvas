@@ -27,6 +27,8 @@ public class SeatCanvasView: UIView {
     var panGestureRecognizer: UIPanGestureRecognizer!
     var pinchGestureRecognizer: UIPinchGestureRecognizer!
 
+    /// 画布背景色
+    @objc
     public var canvasColor: UIColor? {
         set {
             renderer?.backgroundColor = newValue
@@ -45,6 +47,67 @@ public class SeatCanvasView: UIView {
         get {
             renderer?.backgroundColor ?? .clear
         }
+    }
+
+    /// 座位大小
+    @objc
+    public var seatSize: CGFloat {
+        get {
+            renderer?.seatSize ?? 36.0
+        }
+        set {
+            renderer?.seatSize = newValue
+        }
+    }
+
+    /// 座位渲染阈值（控制从彩虹图切换到绘制座位的缩放级别）
+    /// 默认等同于内部计算得到的 ZoomLevelConfig.venue
+    @objc
+    public var seatRenderZoomThreshold: CGFloat {
+        get {
+            renderer?.seatRenderZoomThreshold ?? 0.0
+        }
+        set {
+            renderer?.seatRenderZoomThreshold = newValue
+        }
+    }
+
+    /// 是否绘制调试 HUD（FPS、缩放级别、座位统计等），默认关闭
+    @objc
+    public var debugHUDEnabled: Bool {
+        get {
+            renderer?.debugHUDEnabled ?? false
+        }
+        set {
+            renderer?.debugHUDEnabled = newValue
+        }
+    }
+
+    /// 获取缩放级别
+    @objc
+    public var zoomLevel: ZoomLevel {
+        guard let renderer else {
+            return ZoomLevel.defalut
+        }
+        return renderer.zoomLevel
+    }
+
+    /// 最小缩放级别
+    @objc
+    public var minimumZoomScale: CGFloat {
+        renderer?.minimumZoomScale ?? 1.0
+    }
+
+    /// 当前缩放级别
+    @objc
+    public var zoomScale: CGFloat {
+        renderer?.zoomScale ?? 1.0
+    }
+
+    /// 最大缩放级别
+    @objc
+    public var maximumZoomScale: CGFloat {
+        renderer?.maximumZoomScale ?? 1.0
     }
 
     override public init(frame: CGRect) {
@@ -149,67 +212,6 @@ public class SeatCanvasView: UIView {
     @objc
     public func updateSelectedSeatIds(added: [String], removed: [String]) {
         renderer?.updateSelectedSeatIds(added: added, removed: removed)
-    }
-
-    /// 座位大小
-    @objc
-    public var seatSize: CGFloat {
-        get {
-            renderer?.seatSize ?? 36.0
-        }
-        set {
-            renderer?.seatSize = newValue
-        }
-    }
-
-    /// 座位渲染阈值（控制从彩虹图切换到绘制座位的缩放级别）
-    /// 默认等同于内部计算得到的 ZoomLevelConfig.venue
-    @objc
-    public var seatRenderZoomThreshold: CGFloat {
-        get {
-            renderer?.seatRenderZoomThreshold ?? 0.0
-        }
-        set {
-            renderer?.seatRenderZoomThreshold = newValue
-        }
-    }
-
-    /// 是否绘制调试 HUD（FPS、缩放级别、座位统计等），默认关闭
-    @objc
-    public var debugHUDEnabled: Bool {
-        get {
-            renderer?.debugHUDEnabled ?? false
-        }
-        set {
-            renderer?.debugHUDEnabled = newValue
-        }
-    }
-
-    /// 获取缩放级别
-    @objc
-    public func zoomLevel() -> ZoomLevel {
-        guard let renderer else {
-            return ZoomLevel.defalut
-        }
-        return renderer.zoomLevel
-    }
-
-    /// 最小缩放级别
-    @objc
-    public var minimumZoomScale: CGFloat {
-        renderer?.minimumZoomScale ?? 1.0
-    }
-
-    /// 当前缩放级别
-    @objc
-    public var zoomScale: CGFloat {
-        renderer?.zoomScale ?? 1.0
-    }
-
-    /// 最大缩放级别
-    @objc
-    public var maximumZoomScale: CGFloat {
-        renderer?.maximumZoomScale ?? 1.0
     }
 
     /// 获取当前显示范围（原始坐标系）

@@ -49,12 +49,8 @@ export class SeatCanvasViewController {
         this.onDidUpdateZoomLevelConfig :
         null);
 
-      this.jView.setDidTapSeatCallback(this.onDidTapSeat);
-      if (delegate.didTapZone) {
-        this.jView.setDidTapZoneCallback(this.onDidTapZone);
-      } else {
-        this.jView.setDidTapZoneCallback(null);
-      }
+      this.jView.setDidTapSeatCallback(delegate.didTapSeat ? this.onDidTapSeat : null);
+      this.jView.setDidTapZoneCallback(delegate.didTapZone ? this.onDidTapZone : null);
 
       this.jView.setViewportWillBeginDraggingCallback(delegate.willBeginDragging ? this.onViewportWillBeginDragging :
         null);
@@ -125,7 +121,7 @@ export class SeatCanvasViewController {
   }
 
   /**
-   * 画布背景色（ColorInt，AARRGGBB）。如 0xFFFFFFFF、0xfff5f5f5 等。
+   * 画布背景色（ColorInt，AARRGGBB）。如 0xFFFFFFFF、0xfff5f5f5 等
    */
   get canvasColor(): number {
     return this.jView.getCanvasColor();
@@ -144,6 +140,36 @@ export class SeatCanvasViewController {
 
   set seatSize(value: number) {
     this.jView.setSeatSize(value);
+  }
+
+  /**
+   * 座位渲染阈值（控制从彩虹图切换到绘制座位的缩放级别）
+   * 默认等同于内部计算得到的 ZoomLevelConfig.venue
+   */
+  get seatRenderZoomThreshold(): number {
+    return this.jView.getSeatRenderZoomThreshold();
+  }
+
+  set seatRenderZoomThreshold(value: number) {
+    this.jView.setSeatRenderZoomThreshold(value);
+  }
+
+  /**
+   * 是否绘制调试 HUD（FPS、缩放级别、座位统计等），默认关闭
+   */
+  get debugHUDEnabled(): boolean {
+    return this.jView.isDebugHUDEnabled();
+  }
+
+  set debugHUDEnabled(value: boolean) {
+    this.jView.setDebugHUDEnabled(value);
+  }
+
+  /**
+   * 获取当前缩放级别信息
+   */
+  get zoomLevel(): ZoomLevel {
+    return this.jView.zoomLevel()
   }
 
   /**
@@ -180,33 +206,6 @@ export class SeatCanvasViewController {
    */
   zoneIdsInOriginalRect(rect: seatcanvas.Rect): string[] {
     return this.jView.getZoneIdsInOriginalRect(rect);
-  }
-
-  get zoomLevel(): ZoomLevel {
-    return this.jView.zoomLevel()
-  }
-
-  /**
-   * 座位渲染阈值（控制从彩虹图切换到绘制座位的缩放级别）
-   * 默认等同于内部计算得到的 ZoomLevelConfig.venue
-   */
-  get seatRenderZoomThreshold(): number {
-    return this.jView.getSeatRenderZoomThreshold();
-  }
-
-  set seatRenderZoomThreshold(value: number) {
-    this.jView.setSeatRenderZoomThreshold(value);
-  }
-
-  /**
-   * 是否绘制调试 HUD（FPS、缩放级别、座位统计等），默认关闭
-   */
-  get debugHUDEnabled(): boolean {
-    return this.jView.isDebugHUDEnabled();
-  }
-
-  set debugHUDEnabled(value: boolean) {
-    this.jView.setDebugHUDEnabled(value);
   }
 
   /**
@@ -283,7 +282,7 @@ export class SeatCanvasViewController {
 
   /**
    * 更新指定区域下的座位数据。
-   * 会重置该 zone 的 status 为 0，并清除旧 seat 的 selected；随后需 re-push status/selected。
+   * 会重置该 zone 的 status 为 0，并清除旧 seat 的 selected；随后需 re-push status/selected
    * @param zoneId 区域 ID
    * @param seats 座位数据列表
    */
@@ -291,27 +290,37 @@ export class SeatCanvasViewController {
     this.jView.updateSeats(zoneId, seats);
   }
 
-  /** 注册价档表（load 前调用一次） */
+  /**
+   * 注册价档表（load 前调用一次）
+   */
   registerPricecodes(pricecodes: string[]) {
     this.jView.registerPricecodes(pricecodes);
   }
 
-  /** 批量更新单个座位 status */
+  /**
+   * 批量更新单个座位 status
+   */
   updateSeatStatuses(updates: SeatStatusUpdate[]) {
     this.jView.updateSeatStatuses(updates);
   }
 
-  /** 批量更新某个 zone 内全部座位 status（raw uint32 ArrayBuffer，数组下标与 updateSeats 顺序一致） */
+  /**
+   * 批量更新某个 zone 内全部座位 status（raw uint32 ArrayBuffer，数组下标与 updateSeats 顺序一致）
+   */
   updateSeatStatusesForZone(zoneId: string, statusData: ArrayBuffer) {
     this.jView.updateSeatStatusesForZone(zoneId, statusData);
   }
 
-  /** 全量替换选中座位 */
+  /**
+   * 全量替换选中座位
+   */
   setSelectedSeatIds(seatIds: string[]) {
     this.jView.setSelectedSeatIds(seatIds);
   }
 
-  /** 增量更新选中座位 */
+  /**
+   * 增量更新选中座位
+   */
   updateSelectedSeatIds(added: string[], removed: string[]) {
     this.jView.updateSelectedSeatIds(added, removed);
   }

@@ -12,13 +12,13 @@ import Foundation
 @MainActor
 @objc(KKSeatCanvasViewDelegate)
 public protocol SeatCanvasViewDelegate: AnyObject {
-    /// 底图加载完成；push 座位数据和样式配置。
+    /// 底图加载完成；push 座位数据和样式配置
     @objc optional func seatCanvasViewDidLoadBaseMap(_ view: SeatCanvasView)
 
-    /// 底图已卸载。
+    /// 底图已卸载
     @objc optional func seatCanvasViewDidUnloadBaseMap(_ view: SeatCanvasView)
 
-    /// 缩放级别配置已更新（底图加载完成或设备旋转后触发）；在此设置 seatRenderZoomThreshold 以同步旋转后的阈值。
+    /// 缩放级别配置已更新（底图加载完成或设备旋转后触发）；在此设置 seatRenderZoomThreshold 以同步旋转后的阈值
     /// - Parameters:
     ///   - view: SeatCanvasView 实例
     ///   - zoomLevels: 缩放等级
@@ -27,12 +27,12 @@ public protocol SeatCanvasViewDelegate: AnyObject {
     ///   - zoomScale: 当前缩放比
     @objc optional func seatCanvasView(_ view: SeatCanvasView, didUpdateZoomLevelConfig zoomLevels: ZoomLevel, minimumZoomScale: CGFloat, maximumZoomScale: CGFloat, zoomScale: CGFloat)
 
-    /// 点击某个座位，业务层处理状态变更。
+    /// 点击某个座位，业务层处理状态变更
     /// - Parameters:
     ///   - view: SeatCanvasView 实例
     ///   - zoneId: 区域ID
     ///   - seatId: 座位ID
-    /// - Returns: 是否发生了状态变化。true 则触发重绘。
+    /// - Returns: 是否发生了状态变化 true 则触发重绘
     func seatCanvasView(_ view: SeatCanvasView, didTapSeat zoneId: String, seatId: String) -> Bool
 
     /// 点击某个区域

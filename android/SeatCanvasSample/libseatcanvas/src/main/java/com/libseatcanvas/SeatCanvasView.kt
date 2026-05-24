@@ -65,6 +65,120 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
     private var delegate: SeatCanvasRendererDelegate? = null
 
     /**
+     * 画布背景色（ColorInt，AARRGGBB）
+     * 如 Color.WHITE、Color.parseColor("#RRGGBB") 等
+     */
+    var canvasColor: Int
+        @ColorInt get() {
+            if (nativeInitialized()) {
+                return nativeGetCanvasColor()
+            } else {
+                return android.graphics.Color.WHITE
+            }
+        }
+        set(@ColorInt value) {
+            if (nativeInitialized()) {
+                nativeSetCanvasColor(value)
+            }
+        }
+
+    /**
+     * 座位大小
+     */
+    var seatSize: Float
+        get() {
+            if (nativeInitialized()) {
+                return nativeGetSeatSize()
+            } else {
+                return 36.0f
+            }
+        }
+        set(value) {
+            if (nativeInitialized()) {
+                nativeSetSeatSize(value)
+            }
+        }
+
+    /**
+     * 座位渲染阈值（控制从彩虹图切换到绘制座位的缩放级别）
+     * 默认等同于内部计算得到的 ZoomLevelConfig.venue
+     */
+    var seatRenderZoomThreshold: Float
+        get() {
+            if (nativeInitialized()) {
+                return nativeGetSeatRenderZoomThreshold()
+            } else {
+                return 0f
+            }
+        }
+        set(value) {
+            if (nativeInitialized()) {
+                nativeSetSeatRenderZoomThreshold(value)
+            }
+        }
+
+    /**
+     * 是否绘制调试 HUD（FPS、缩放级别、座位统计等），默认关闭
+     */
+    var debugHUDEnabled: Boolean
+        get() {
+            if (nativeInitialized()) {
+                return nativeIsDebugHUDEnabled()
+            }
+            return false
+        }
+        set(value) {
+            if (nativeInitialized()) {
+                nativeSetDebugHUDEnabled(value)
+            }
+        }
+
+    /**
+     * 获取当前缩放级别配置（seat/row/zone/venue）
+     */
+    val zoomLevel: ZoomLevel
+        get() {
+            if (!nativeInitialized()) {
+                return ZoomLevel(1f, 1f, 1f, 1f)
+            }
+            return nativeGetZoomLevel()
+        }
+
+
+    /**
+     * 当前内容允许的最小缩放比例
+     */
+    val minimumZoomScale: Float
+        get() {
+            if (nativeInitialized()) {
+                return nativeGetMinimumZoomScale()
+            }
+            return 1f
+        }
+
+    /**
+     * 当前缩放级别
+     */
+    val zoomScale: Float
+        get() {
+            if (nativeInitialized()) {
+                return nativeGetZoomScale()
+            }
+            return 1f
+        }
+
+    /**
+     * 当前内容允许的最大缩放比例
+     */
+    val maximumZoomScale: Float
+        get() {
+            if (nativeInitialized()) {
+                return nativeGetMaximumZoomScale()
+            }
+            return 1f
+        }
+
+    /**
      * 设置座位渲染器代理（样式 ID、座位点击、区域点击等回调）。
      * @param delegate 代理，可为 null 表示不接收回调
      */
@@ -179,6 +293,12 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         release()
     }
 
+    /**
+     * 加载底图
+     * @param data 底图数据
+     * @param format 底图格式
+     * @param parseConfig 解析配置
+     */
     fun loadBaseMap(
         data: ByteArray?,
         format: BaseMapFormat,
@@ -204,24 +324,10 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         nativeSetSeatStyleJSONConfig(data, data.size)
     }
 
+
     /**
-     * 画布背景色（ColorInt，AARRGGBB）。如 Color.WHITE、Color.parseColor("#RRGGBB") 等。
+     * 更新区域颜色
      */
-    var canvasColor: Int
-        @ColorInt get() {
-            if (nativeInitialized()) {
-                return nativeGetCanvasColor()
-            } else {
-                return android.graphics.Color.WHITE
-            }
-        }
-        set(@ColorInt value) {
-            if (nativeInitialized()) {
-                nativeSetCanvasColor(value)
-            }
-        }
-
-
     fun updateSeatZoneAlternateColors(zones: Array<SeatZoneColor>) {
         if (!nativeInitialized()) {
             return
@@ -229,6 +335,9 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         nativeUpdateSeatZoneAlternateColors(zones)
     }
 
+    /**
+     * 更新小底图区域颜色
+     */
     fun updateMiniMapZoneAlternateColors(zones: Array<SeatZoneColor>) {
         if (!nativeInitialized()) {
             return
@@ -237,8 +346,8 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
     }
 
     /**
-     * 更新指定 zone 的座位几何数据。
-     * 会重置该 zone 的 status 为 0，并清除旧 seat 的 selected；随后需 re-push status/selected。
+     * 更新指定 zone 的座位几何数据
+     * 会重置该 zone 的 status 为 0，并清除旧 seat 的 selected；随后需 re-push status/selected
      */
     fun updateSeats(zoneId: String, seats: Array<SeatData>) {
         if (!nativeInitialized()) {
@@ -247,7 +356,9 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         nativeUpdateSeats(zoneId, seats)
     }
 
-    /** 注册价档表（load 前调用一次） */
+    /**
+     * 注册价档表（load 前调用一次）
+     */
     fun registerPricecodes(pricecodes: Array<String>) {
         if (!nativeInitialized()) {
             return
@@ -255,7 +366,9 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         nativeRegisterPricecodes(pricecodes)
     }
 
-    /** 批量更新单个座位 status */
+    /**
+     * 批量更新单个座位 status
+     */
     fun updateSeatStatuses(updates: Array<SeatStatusUpdate>) {
         if (!nativeInitialized()) {
             return
@@ -263,7 +376,9 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         nativeUpdateSeatStatuses(updates)
     }
 
-    /** 批量更新某个 zone 内全部座位 status（数组下标与 updateSeats 顺序一致） */
+    /**
+     * 批量更新某个 zone 内全部座位 status（数组下标与 updateSeats 顺序一致）
+     */
     fun updateSeatStatusesForZone(zoneId: String, statuses: IntArray) {
         if (!nativeInitialized()) {
             return
@@ -271,7 +386,9 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         nativeUpdateSeatStatusesForZone(zoneId, statuses)
     }
 
-    /** 全量替换选中座位 */
+    /**
+     * 全量替换选中座位
+     */
     fun setSelectedSeatIds(seatIds: Array<String>) {
         if (!nativeInitialized()) {
             return
@@ -279,7 +396,9 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         nativeSetSelectedSeatIds(seatIds)
     }
 
-    /** 增量更新选中座位 */
+    /**
+     * 增量更新选中座位
+     */
     fun updateSelectedSeatIds(added: Array<String>, removed: Array<String>) {
         if (!nativeInitialized()) {
             return
@@ -296,100 +415,6 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
         }
         nativeClearSeatData()
     }
-
-    /**
-     * 座位大小
-     */
-    var seatSize: Float
-        get() {
-            if (nativeInitialized()) {
-                return nativeGetSeatSize()
-            } else {
-                return 36.0f
-            }
-        }
-        set(value) {
-            if (nativeInitialized()) {
-                nativeSetSeatSize(value)
-            }
-        }
-
-    /**
-     * 座位渲染阈值（控制从彩虹图切换到绘制座位的缩放级别）
-     * 默认等同于内部计算得到的 ZoomLevelConfig.venue
-     */
-    var seatRenderZoomThreshold: Float
-        get() {
-            if (nativeInitialized()) {
-                return nativeGetSeatRenderZoomThreshold()
-            } else {
-                return 0f
-            }
-        }
-        set(value) {
-            if (nativeInitialized()) {
-                nativeSetSeatRenderZoomThreshold(value)
-            }
-        }
-
-    /**
-     * 是否绘制调试 HUD（FPS、缩放级别、座位统计等），默认关闭
-     */
-    var debugHUDEnabled: Boolean
-        get() {
-            if (nativeInitialized()) {
-                return nativeIsDebugHUDEnabled()
-            }
-            return false
-        }
-        set(value) {
-            if (nativeInitialized()) {
-                nativeSetDebugHUDEnabled(value)
-            }
-        }
-
-    /**
-     * 获取当前缩放级别配置（seat/row/zone/venue）
-     */
-    fun zoomLevel(): ZoomLevel {
-        if (!nativeInitialized()) {
-            return ZoomLevel(1f, 1f, 1f, 1f)
-        }
-        return nativeGetZoomLevel()
-    }
-
-    /**
-     * 当前内容允许的最小缩放比例
-     */
-    val minimumZoomScale: Float
-        get() {
-            if (nativeInitialized()) {
-                return nativeGetMinimumZoomScale()
-            }
-            return 1f
-        }
-
-    /**
-     * 当前缩放级别
-     */
-    val zoomScale: Float
-        get() {
-            if (nativeInitialized()) {
-                return nativeGetZoomScale()
-            }
-            return 1f
-        }
-
-    /**
-     * 当前内容允许的最大缩放比例
-     */
-    val maximumZoomScale: Float
-        get() {
-            if (nativeInitialized()) {
-                return nativeGetMaximumZoomScale()
-            }
-            return 1f
-        }
 
     /**
      * 获取当前显示范围（原始坐标系）
@@ -468,7 +493,7 @@ class SeatCanvasView : TextureView, TextureView.SurfaceTextureListener {
     }
 
     /**
-     * 由 native 层调用：处理座位点击；返回 true 表示状态已变且需要重绘。
+     * 由 native 层调用：处理座位点击；返回 true 表示状态已变且需要重绘
      */
     private fun nativeOnDidTapSeat(zoneId: String, seatId: String): Boolean {
         return delegate?.didTapSeat(zoneId, seatId) ?: false

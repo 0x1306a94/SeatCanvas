@@ -53,10 +53,10 @@ export declare namespace seatcanvas {
 
   export class JSeatRenderStyleId {
     /**
-     * 生成与 C++ 渲染器相同格式的座位样式 ID。
-     * @param pricecode 价档 code；空字符串表示无价档槽位。
-     * @param status 业务自定义座位状态。
-     * @param selected 是否选中。
+     * 生成与 C++ 渲染器相同格式的座位样式 ID
+     * @param pricecode 价档 code；空字符串表示无价档槽位
+     * @param status 业务自定义座位状态
+     * @param selected 是否选中
      */
     static compose(pricecode: string, status: number, selected: boolean): string;
   }
@@ -231,7 +231,7 @@ export declare namespace seatcanvas {
     setDidUpdateZoomLevelConfigCallback(callback: ((event: SeatCanvasZoomLevelConfigEvent) => void) | null);
 
     /**
-     * 座位点击；返回 true 表示需要重绘。
+     * 座位点击；返回 true 表示需要重绘
      */
     setDidTapSeatCallback(callback: ((zoneId: string, seatId: string) => boolean) | null);
 
@@ -259,19 +259,29 @@ export declare namespace seatcanvas {
 
     updateSeats(zoneId: string, seats: SeatData[]);
 
-    /** 注册价档表（load 前调用一次） */
+    /**
+     * 注册价档表（load 前调用一次）
+     */
     registerPricecodes(pricecodes: string[]);
 
-    /** 批量更新单个座位 status */
+    /**
+     * 批量更新单个座位 status
+     */
     updateSeatStatuses(updates: SeatStatusUpdate[]);
 
-    /** 批量更新某个 zone 内全部座位 status（raw uint32 ArrayBuffer，数组下标与 updateSeats 顺序一致） */
+    /**
+     * 批量更新某个 zone 内全部座位 status（raw uint32 ArrayBuffer，数组下标与 updateSeats 顺序一致）
+     */
     updateSeatStatusesForZone(zoneId: string, statusData: ArrayBuffer): void;
 
-    /** 全量替换选中座位 */
+    /**
+     * 全量替换选中座位
+     */
     setSelectedSeatIds(seatIds: string[]);
 
-    /** 增量更新选中座位 */
+    /**
+     * 增量更新选中座位
+     */
     updateSelectedSeatIds(added: string[], removed: string[]);
 
     /**
