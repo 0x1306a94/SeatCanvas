@@ -18,7 +18,7 @@ public class SeatCanvasView: UIView {
     var isSmallVenue = false
     var minimapImage: UIImage?
 
-    nonisolated(unsafe) var renderer: SeatCanvasCoreRenderer?
+    var renderer: SeatCanvasCoreRenderer?
 
     @objc
     public weak var delegate: SeatCanvasViewDelegate?
@@ -228,15 +228,13 @@ public class SeatCanvasView: UIView {
         renderer?.zoneIds(inOriginalRect: rect) ?? []
     }
 
-    deinit {
+    isolated deinit {
         NotificationCenter.default.removeObserver(self, name: UIApplication.didEnterBackgroundNotification, object: nil)
         NotificationCenter.default.removeObserver(self, name: UIApplication.willEnterForegroundNotification, object: nil)
 
         let coreID = self.renderer?.coreID ?? 0
         if coreID != 0 {
-            Task { @MainActor in
-                SeatCanvasRendererDelegateRegistry.shared.unregister(coreID: coreID)
-            }
+            SeatCanvasRendererDelegateRegistry.shared.unregister(coreID: coreID)
         }
 
         #if DEBUG
