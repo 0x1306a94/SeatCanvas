@@ -11,8 +11,8 @@ internal import SeatCanvas_Private
 
 @MainActor
 final class SeatCanvasCoreRenderer {
-    private(set) nonisolated(unsafe) var cppObject: UnsafeMutablePointer<kk.bridge.CPPObject>?
-    private(set) nonisolated(unsafe) var coreID: UInt32 = 0
+    private(set) var cppObject: UnsafeMutablePointer<kk.bridge.CPPObject>?
+    private(set) var coreID: UInt32 = 0
     init(metalView: MTKView?) {
         let cppObject = kk.bridge.CreateSeatCanvasCoreRenderer(metalView)
         coreID = kk.bridge.SeatCanvasCoreRendererGetCoreID(cppObject)
@@ -102,7 +102,7 @@ final class SeatCanvasCoreRenderer {
         return ZoomLevel(seat: result.seat, row: result.row, zone: result.zone, venue: result.venue)
     }
 
-    deinit {
+    isolated deinit {
         guard var cppObject = self.cppObject else {
             return
         }
