@@ -7,7 +7,7 @@
     "common": [
       {
         "url": "${GITHUB_BASE_URL}/libpag/tgfx.git",
-        "commit": "af8b25c7ac73aab509a4a703eb9749621860b357",
+        "commit": "3dbde16efa78d7714385bbb1a569a3108f9e1784",
         "dir": "third_party/tgfx"
       }
     ],
