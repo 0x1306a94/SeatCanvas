@@ -31,7 +31,7 @@ in int inTextureCoordIndex;
 layout(std140) uniform VertexUniformBlock {
     mat3 uMVP;
     vec2 uSeatHalfSize;
-    vec4 uTextureCoordRects[40];
+    vec4 uTextureCoordRects[100];
 };
 
 out vec2 vTexCoord;
@@ -81,7 +81,7 @@ CustomSeatPass::CustomSeatPass() {
 
     mvpUniform = {"uMVP", UniformFormat::Float3x3};
     seatHalfSizeUniform = {"uSeatHalfSize", UniformFormat::Float2};
-    textureCoordRectsUniform = {"uTextureCoordRects", UniformFormat::Float4, 40};
+    textureCoordRectsUniform = {"uTextureCoordRects", UniformFormat::Float4, 100};
     uniformData.reset(new UniformData({mvpUniform, seatHalfSizeUniform, textureCoordRectsUniform}));
 }
 
