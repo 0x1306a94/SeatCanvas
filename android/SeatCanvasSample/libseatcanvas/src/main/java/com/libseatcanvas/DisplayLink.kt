@@ -1,13 +1,10 @@
 package com.libseatcanvas
 
 import android.animation.ValueAnimator
-import android.os.Handler
-import android.os.Looper
 
 class DisplayLink private constructor() : ValueAnimator.AnimatorUpdateListener {
 
     private var animator: ValueAnimator = ValueAnimator.ofFloat(0f, 1f)
-    private val handler = Handler(Looper.getMainLooper())
     private var nativeContext: Long = 0
 
     init {
@@ -26,15 +23,11 @@ class DisplayLink private constructor() : ValueAnimator.AnimatorUpdateListener {
     }
 
     fun start() {
-        handler.post {
-            animator.start()
-        }
+        animator.start()
     }
 
     fun stop() {
-        handler.post {
-            animator.cancel()
-        }
+        animator.cancel()
     }
 
     override fun onAnimationUpdate(animation: ValueAnimator) {

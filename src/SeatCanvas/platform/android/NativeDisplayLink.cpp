@@ -52,6 +52,9 @@ NativeDisplayLink::~NativeDisplayLink() {
 }
 
 void NativeDisplayLink::start() {
+    if (started) {
+        return;
+    }
 
     kk::jni::JNIEnvironment environment;
     auto env = environment.current();
@@ -63,6 +66,9 @@ void NativeDisplayLink::start() {
 }
 
 void NativeDisplayLink::stop() {
+    if (!started) {
+        return;
+    }
 
     kk::jni::JNIEnvironment environment;
     auto env = environment.current();
