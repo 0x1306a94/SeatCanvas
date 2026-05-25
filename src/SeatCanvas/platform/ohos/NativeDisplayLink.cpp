@@ -83,6 +83,10 @@ void NativeDisplayLink::start() {
 }
 
 void NativeDisplayLink::stop() {
+    if (!started) {
+        return;
+    }
+
     started = false;
     VSyncCallbacks.erase(id);
     if (displaySoloist) {
@@ -91,7 +95,7 @@ void NativeDisplayLink::stop() {
 }
 
 void NativeDisplayLink::update() {
-    if (started) {
+    if (callback && started) {
         callback();
     }
 }

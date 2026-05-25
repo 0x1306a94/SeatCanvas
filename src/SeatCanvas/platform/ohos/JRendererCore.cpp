@@ -595,7 +595,7 @@ static napi_value Release(napi_env env, napi_callback_info info) {
     if (view == nullptr) {
         return nullptr;
     }
-    //    view->release();
+    view->stop();
     return nullptr;
 }
 
@@ -1258,7 +1258,6 @@ JRendererCore::JRendererCore(const std::string &id)
 JRendererCore::~JRendererCore() {
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
     // delegate 会在析构时自动清理 threadsafe function
-    //    release();
 }
 
 void JRendererCore::onSurfaceCreated(OH_NativeXComponent *component, NativeWindow *window) {
@@ -1277,9 +1276,6 @@ void JRendererCore::onSurfaceSizeChanged() {
 
 void JRendererCore::onSurfaceDestroyed() {
     renderer->replacePlatformView(nullptr);
-}
-
-void JRendererCore::release() {
 }
 
 void JRendererCore::start() {

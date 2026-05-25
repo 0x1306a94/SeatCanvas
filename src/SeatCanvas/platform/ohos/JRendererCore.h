@@ -40,8 +40,6 @@ class JRendererCore : public XComponentListener {
     void onSurfaceDestroyed() override;
     void onSurfaceSizeChanged() override;
 
-    void release();
-
     void start();
     void stop();
 
