@@ -667,4 +667,4 @@ SeatCanvas 的架构设计体现了移动端 GPU 渲染的几个关键原则：
 
 ---
 
-*本文基于 SeatCanvas 仓库 `develop` 分支代码（截止 2026-05-25）。*
+*本文基于 [SeatCanvas](https://github.com/0x1306a94/seatcanvas) 仓库 `develop` 分支代码（截止 2026-05-25）。*
