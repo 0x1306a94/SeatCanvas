@@ -595,7 +595,6 @@ static napi_value Release(napi_env env, napi_callback_info info) {
     if (view == nullptr) {
         return nullptr;
     }
-    view->stop();
     return nullptr;
 }
 
@@ -1179,6 +1178,7 @@ napi_value JRendererCore::Constructor(napi_env env, napi_callback_info info) {
         env, jsView, cView.get(),
         [](napi_env, void *finalize_data, void *) {
             JRendererCore *view = static_cast<JRendererCore *>(finalize_data);
+            view->stop();
             XComponentHandler::RemoveListener(view->id);
             ViewMap.erase(view->id);
         },
@@ -1261,6 +1261,9 @@ JRendererCore::~JRendererCore() {
 }
 
 void JRendererCore::onSurfaceCreated(OH_NativeXComponent *component, NativeWindow *window) {
+    if (!renderer) {
+        return;
+    }
     if (component == nullptr || window == nullptr) {
         renderer->replacePlatformView(nullptr);
         return;
@@ -1271,22 +1274,37 @@ void JRendererCore::onSurfaceCreated(OH_NativeXComponent *component, NativeWindo
 }
 
 void JRendererCore::onSurfaceSizeChanged() {
+    if (!renderer) {
+        return;
+    }
     renderer->updateSize();
 }
 
 void JRendererCore::onSurfaceDestroyed() {
+    if (!renderer) {
+        return;
+    }
     renderer->replacePlatformView(nullptr);
 }
 
 void JRendererCore::start() {
+    if (!renderer) {
+        return;
+    }
     renderer->start();
 }
 
 void JRendererCore::stop() {
+    if (!renderer) {
+        return;
+    }
     renderer->stop();
 }
 
 void JRendererCore::setBackgroundColor(const tgfx::Color &color) {
+    if (!renderer) {
+        return;
+    }
     renderer->setBackgroundColor(color);
 }
 };  // namespace kk::js
