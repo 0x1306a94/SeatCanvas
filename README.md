@@ -4,7 +4,7 @@ SeatCanvas is a cross-platform seat map rendering library supporting iOS, Androi
 
 ## Core Features
 
-- **Cross-Platform Support**: iOS, Android, OHOS
+- **Cross-Platform Support**: iOS, Android, OHOS, Web
 - **High-Performance Rendering**: GPU-accelerated rendering based on the tgfx graphics library
 - **SVG Basemap Support**: Supports venue basemaps in SVG format
 - **Gesture Interaction**: Supports tap, pan, zoom gestures with iOS-style inertial scrolling and elastic bounce-back animations
@@ -16,6 +16,7 @@ SeatCanvas is a cross-platform seat map rendering library supporting iOS, Androi
 - iOS 15.0+
 - Android (via JNI)
 - OHOS (HarmonyOS)
+- Web (Emscripten + WebAssembly)
 
 ## Dependency Management
 
@@ -43,6 +44,7 @@ depctl
 
 Main dependencies:
 - **tgfx**: Graphics rendering library (includes SVG parsing and layer support)
+- **emsdk**: Emscripten SDK (Web/WASM builds; activated by `web/script/setup.emsdk.js` — `emsdk install latest` / `activate latest`)
 - **json**: JSON parsing library (nlohmann/json, introduced via tgfx)
 
 Dependency configuration is located in the `DEPS` file, using the same dependency management format as the tgfx project.
@@ -65,12 +67,14 @@ The project uses the CMake build system, supporting:
 - iOS (Xcode)
 - Android (Gradle + CMake)
 - OHOS (DevEco Studio + CMake)
+- Web (Emscripten + CMake)
 
 ### Build Requirements
 
 - CMake 3.22 or higher
 - C++17 standard
 - Platform-specific build tools (Xcode, Android NDK, DevEco Studio)
+- **Web**: Node.js, npm, Ninja; run `./sync_deps.sh` first — do not install Emscripten via Homebrew; `npm run build:wasm` uses `third_party/emsdk` automatically
 
 ### VS Code CMake Configuration Example
 
@@ -108,6 +112,11 @@ SeatCanvas/
 │   │   ├── animation/           # Animation system
 │   │   └── drawers/             # Drawers
 │   └── platform/            # Platform-specific implementations
+│       ├── ios/
+│       ├── android/
+│       ├── ohos/
+│       └── web/
+├── web/                     # Web platform (TypeScript + Emscripten)
 ├── ios/                     # iOS samples and resources
 ├── android/                 # Android samples and resources
 ├── ohos/                    # OHOS samples and resources
@@ -391,6 +400,84 @@ controller.clearSeatData();
 
 // Style registration keys must match:
 SeatRenderStyleId.compose('1', 1, false);
+```
+
+### Web
+
+Live demo: [preview.seatcanvas-demo.pages.dev](https://preview.seatcanvas-demo.pages.dev)
+
+#### Quick Start
+
+From the repository root, sync dependencies (includes `third_party/emsdk`):
+
+```bash
+./sync_deps.sh
+```
+
+Then build and run the demo:
+
+```bash
+cd web
+npm install
+npm run build:wasm   # runs setup.emsdk + emcmake (first run may download the SDK)
+npm start            # → http://localhost:8081
+```
+
+Optional: `npm run setup:emsdk` — install/activate Emscripten only, without compiling WASM.
+
+#### Build Commands
+
+```bash
+npm run build:wasm         # Build WASM (C++ → Emscripten)
+npm run build:wasm:debug   # Build WASM (debug, separate build directory)
+npm run build:lib          # Build JS library (ESM + CJS) + type declarations
+npm run build:demo         # Build demo page
+npm run build:deploy       # Build deployable static site
+npm run build              # Full build (wasm + lib + demo)
+```
+
+#### Usage
+
+```typescript
+import { SeatCanvasApp, SeatCanvasInit, SeatCanvasFont } from 'libseatcanvas';
+
+// 1. Initialize WASM module
+const module = await SeatCanvasInit({
+    locateFile: (file: string) => '/wasm/' + file,
+});
+
+// 2. Register fallback fonts before creating renderer
+SeatCanvasFont.registerFallbackFontNames();
+
+// 3. Create app and initialize renderer
+const app = new SeatCanvasApp('#seat-canvas');
+app.init(module);
+
+// 4. Setup delegate callbacks
+const delegate = app.getDelegate()!;
+delegate.setDidLoadBaseMapCallback(() => {
+    const renderer = app.getRenderer()!;
+    renderer.registerPricecodes(['1', '2']);
+    renderer.applySeatStyleJSONConfig(styleJson);
+    renderer.setSeatData('37492', seats);
+    renderer.updateSeatStatusesForZone('37492', statuses);
+    renderer.setSelectedSeatIds(selectedSeatIds);
+});
+
+delegate.setDidTapSeatCallback((zoneId, seatId) => {
+    // Handle seat selection
+    return true;
+});
+
+delegate.setDidUpdateZoomLevelConfigCallback((event) => {
+    renderer.setSeatRenderZoomThreshold(event.zoomLevels.venue);
+});
+
+// 5. Start render loop
+app.start();
+
+// 6. Load basemap
+app.loadBaseMapFromSVG(svgData);
 ```
 
 ### Demo Video

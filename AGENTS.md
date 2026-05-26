@@ -9,7 +9,9 @@
 
 **Key Files**
 - Core renderer: `src/SeatCanvas/core/renderer/SeatCanvasCoreRenderer.{hpp,cpp}`
-- Platform views: `src/SeatCanvas/platform/{ios,android,ohos}/`
+- Platform views: `src/SeatCanvas/platform/{ios,android,ohos,web}/`
+- Web binding: `src/SeatCanvas/platform/web/WebRendererCore.{hpp,cpp}`
+- Web TypeScript: `web/src/SeatCanvas.ts`
 - Style system: `src/SeatCanvas/core/style/`
 - Gesture handling: `src/SeatCanvas/core/gesture/ElasticZoomPanController.{hpp,cpp}`
 - Render passes: `src/SeatCanvas/core/renderer/pass/`
@@ -25,7 +27,7 @@
 
 ## Project Overview
 
-SeatCanvas is a cross-platform seat map rendering library (iOS, Android, OHOS). It provides GPU-accelerated seat map rendering, interactive gesture handling, and customizable style configuration.
+SeatCanvas is a cross-platform seat map rendering library (iOS, Android, OHOS, Web). It provides GPU-accelerated seat map rendering, interactive gesture handling, and customizable style configuration.
 
 ## Directory Structure
 
@@ -44,7 +46,9 @@ SeatCanvas/
 │   │   ├── ios/
 │   │   ├── android/
 │   │   ├── ohos/
+│   │   ├── web/                 # Emscripten + embind bindings
 │   │   └── apple/swift/         # Swift bridging (iOS)
+├── web/                         # Web platform (TypeScript + demo)
 ├── ios/                         # iOS sample app
 ├── android/                     # Android sample app
 ├── ohos/                        # OHOS sample app
@@ -60,7 +64,7 @@ SeatCanvas/
 |-------|------|
 | Build commands, dependencies, formatting | @./docs/agents/build.md |
 | Architecture, core components, render pipeline, APIs | @./docs/agents/architecture.md |
-| Platform integration (iOS / Android / OHOS) | @./docs/agents/platform.md |
+| Platform integration (iOS / Android / OHOS / Web) | @./docs/agents/platform.md |
 | C++ coding standards, naming, commit format | @./docs/agents/coding-standards.md |
 | Adding features, common tasks | @./docs/agents/development-guide.md |
 | Layer version implementation | @./docs/layer_version_implementation.md |

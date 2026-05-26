@@ -60,3 +60,4 @@ resources/SeatCanvasSample.bundle/customized/
 __pycache__/
 .codegraph/
 .cursor/rules/codegraph.mdc
+web/build

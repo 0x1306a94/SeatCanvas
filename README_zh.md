@@ -4,7 +4,7 @@ SeatCanvas 是一个跨平台的座位图渲染库，支持 iOS、Android 和 OH
 
 ## 核心特性
 
-- **跨平台支持**: iOS、Android、OHOS
+- **跨平台支持**: iOS、Android、OHOS、Web
 - **高性能渲染**: 基于 tgfx 图形库的 GPU 加速渲染
 - **SVG 底图支持**: 支持 SVG 格式的场馆底图
 - **手势交互**: 支持点击、平移、缩放等手势操作，采用 iOS 风格的惯性滚动和弹性回弹动画
@@ -16,6 +16,7 @@ SeatCanvas 是一个跨平台的座位图渲染库，支持 iOS、Android 和 OH
 - iOS 15.0+
 - Android (通过 JNI)
 - OHOS (鸿蒙系统)
+- Web (Emscripten + WebAssembly)
 
 ## 依赖管理
 
@@ -43,6 +44,7 @@ depctl
 
 主要依赖项：
 - **tgfx**: 图形渲染库（包含 SVG 解析和图层支持）
+- **emsdk**: Emscripten SDK（Web/WASM 构建；由 `web/script/setup.emsdk.js` 激活 — `emsdk install latest` / `activate latest`）
 - **json**: JSON 解析库（nlohmann/json，通过 tgfx 引入）
 
 依赖配置位于 `DEPS` 文件中，使用 tgfx 项目相同的依赖管理格式。
@@ -65,12 +67,14 @@ depctl
 - iOS (Xcode)
 - Android (Gradle + CMake)
 - OHOS (DevEco Studio + CMake)
+- Web (Emscripten + CMake)
 
 ### 构建要求
 
 - CMake 3.22 或更高版本
 - C++17 标准
 - 平台特定的构建工具（Xcode、Android NDK、DevEco Studio）
+- **Web**：Node.js、npm、Ninja；先执行 `./sync_deps.sh` — 勿用 Homebrew 安装 Emscripten；`npm run build:wasm` 会自动使用 `third_party/emsdk`
 
 ### VS Code CMake 配置示例
 
@@ -108,6 +112,11 @@ SeatCanvas/
 │   │   ├── animation/           # 动画系统
 │   │   └── drawers/             # 绘制器
 │   └── platform/            # 平台特定实现
+│       ├── ios/
+│       ├── android/
+│       ├── ohos/
+│       └── web/
+├── web/                     # Web 平台（TypeScript + Emscripten）
 ├── ios/                     # iOS 示例和资源
 ├── android/                 # Android 示例和资源
 ├── ohos/                    # OHOS 示例和资源
@@ -391,6 +400,84 @@ controller.clearSeatData();
 
 // 样式注册键须与以下格式一致：
 SeatRenderStyleId.compose('1', 1, false);
+```
+
+### Web
+
+在线演示: [preview.seatcanvas-demo.pages.dev](https://preview.seatcanvas-demo.pages.dev)
+
+#### 快速开始
+
+在仓库根目录同步依赖（含 `third_party/emsdk`）：
+
+```bash
+./sync_deps.sh
+```
+
+再构建并启动演示：
+
+```bash
+cd web
+npm install
+npm run build:wasm   # 执行 setup.emsdk + emcmake（首次可能下载 SDK）
+npm start            # → http://localhost:8081
+```
+
+可选：`npm run setup:emsdk` — 仅安装/激活 Emscripten，不编译 WASM。
+
+#### 构建命令
+
+```bash
+npm run build:wasm         # 构建 WASM（C++ → Emscripten）
+npm run build:wasm:debug   # 构建 WASM（debug 模式，使用独立构建目录）
+npm run build:lib          # 构建 JS 库（ESM + CJS）+ 类型声明
+npm run build:demo         # 构建演示页面
+npm run build:deploy       # 构建可部署的静态站点
+npm run build              # 完整构建（wasm + lib + demo）
+```
+
+#### 使用示例
+
+```typescript
+import { SeatCanvasApp, SeatCanvasInit, SeatCanvasFont } from 'libseatcanvas';
+
+// 1. 初始化 WASM 模块
+const module = await SeatCanvasInit({
+    locateFile: (file: string) => '/wasm/' + file,
+});
+
+// 2. 在创建渲染器之前注册回退字体
+SeatCanvasFont.registerFallbackFontNames();
+
+// 3. 创建应用并初始化渲染器
+const app = new SeatCanvasApp('#seat-canvas');
+app.init(module);
+
+// 4. 设置 delegate 回调
+const delegate = app.getDelegate()!;
+delegate.setDidLoadBaseMapCallback(() => {
+    const renderer = app.getRenderer()!;
+    renderer.registerPricecodes(['1', '2']);
+    renderer.applySeatStyleJSONConfig(styleJson);
+    renderer.setSeatData('37492', seats);
+    renderer.updateSeatStatusesForZone('37492', statuses);
+    renderer.setSelectedSeatIds(selectedSeatIds);
+});
+
+delegate.setDidTapSeatCallback((zoneId, seatId) => {
+    // 处理座位选择
+    return true;
+});
+
+delegate.setDidUpdateZoomLevelConfigCallback((event) => {
+    renderer.setSeatRenderZoomThreshold(event.zoomLevels.venue);
+});
+
+// 5. 启动渲染循环
+app.start();
+
+// 6. 加载底图
+app.loadBaseMapFromSVG(svgData);
 ```
 
 ## 许可证

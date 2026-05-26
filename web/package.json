@@ -1,0 +1,44 @@
+{
+  "name": "libseatcanvas",
+  "version": "1.0.0",
+  "description": "SeatCanvas Web Platform",
+  "main": "lib/libseatcanvas.cjs.js",
+  "module": "lib/libseatcanvas.esm.js",
+  "browser": "lib/libseatcanvas.esm.js",
+  "typings": "types/web/src/SeatCanvas.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types/web/src/SeatCanvas.d.ts",
+      "import": "./lib/libseatcanvas.esm.js",
+      "require": "./lib/libseatcanvas.cjs.js",
+      "default": "./lib/libseatcanvas.esm.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "clean": "rimraf lib/ types/ demo/wasm/ demo/index.js build_debug/ deploy/",
+    "copy-resources": "node script/copy-resources.js",
+    "setup:emsdk": "node script/setup.emsdk.js",
+    "build:wasm": "npm run copy-resources && node script/cmake.js",
+    "build:wasm:debug": "npm run copy-resources && node script/cmake.js --debug",
+    "build:lib": "npm run build:wasm && node script/build-lib.mjs && tsc -p tsconfig.type.json",
+    "build:demo": "npm run build:wasm && node script/build-demo.mjs",
+    "build:demo:debug": "npm run build:wasm:debug && node script/build-demo.mjs",
+    "build:deploy": "npm run build:demo && node script/build-deploy.mjs",
+    "build": "npm run build:wasm && node script/build-lib.mjs && tsc -p tsconfig.type.json && node script/build-demo.mjs",
+    "prestart": "npm run build:demo:debug",
+    "start": "node server.js"
+  },
+  "files": [
+    "lib",
+    "types",
+    "src"
+  ],
+  "devDependencies": {
+    "@types/emscripten": "~1.39.6",
+    "esbuild": "^0.15.18",
+    "express": "^4.21.1",
+    "rimraf": "~5.0.10",
+    "typescript": "~5.0.3"
+  }
+}

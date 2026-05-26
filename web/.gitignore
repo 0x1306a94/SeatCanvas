@@ -1,0 +1,15 @@
+node_modules/
+lib/
+types/
+deploy/
+*.js.map
+demo/*.js
+demo/wasm/
+demo/wasm-mt/
+demo/sample_resources/
+src/wasm/
+src/wasm-mt/
+*.wasm
+.wrangler/
+build/
+build_*/
