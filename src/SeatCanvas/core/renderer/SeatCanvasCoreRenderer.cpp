@@ -18,7 +18,9 @@
 #include "core/Log.hpp"
 #include <tgfx/core/Canvas.h>
 #include <tgfx/core/Data.h>
+#include <tgfx/core/Paint.h>
 #include <tgfx/core/Path.h>
+#include <tgfx/core/Picture.h>
 #include <tgfx/core/Stream.h>
 #include <tgfx/core/Surface.h>
 #include <tgfx/gpu/CommandEncoder.h>
@@ -57,6 +59,10 @@
 #include "core/utils/TimeProfiler.hpp"
 #include "core/utils/UnitConverter.hpp"
 
+#ifndef SEAT_CANVAS_USE_ZONE_NAME_PICTURE
+#define SEAT_CANVAS_USE_ZONE_NAME_PICTURE 1
+#endif
+
 namespace kk::renderer {
 SeatCanvasCoreRenderer::SeatCanvasCoreRenderer(
     std::unique_ptr<PlatformView> platformView,
@@ -70,7 +76,9 @@ SeatCanvasCoreRenderer::SeatCanvasCoreRenderer(
     , _customBaseMapPass(std::make_unique<CustomBaseMapPass>())
     , _customSeatPass(std::make_unique<CustomSeatPass>())
     , _seatAtlasManager(nullptr)
+#if !SEAT_CANVAS_USE_ZONE_NAME_PICTURE
     , _seatZoneNameLayer(std::make_unique<kk::drawers::SeatZoneNameLayerTree>())
+#endif
     , _overlayLayer(std::make_unique<kk::drawers::SeatOverlayLayerTree>())
     , _animator(std::make_unique<kk::animation::Animator>())
     , _frameMetrics(std::make_unique<RenderFrameMetrics>()) {
@@ -487,15 +495,20 @@ void SeatCanvasCoreRenderer::draw(bool force) {
 
     auto statePtr = _state.get();
 
+#if !SEAT_CANVAS_USE_ZONE_NAME_PICTURE
     PROFILE_STAGE_START(group, prepareZoneName, "Prepare Zone Name");
     _seatZoneNameLayer->prepare(canvas, statePtr, force);
     PROFILE_STAGE_END(group, prepareZoneName);
+#endif
 
     PROFILE_STAGE_START(group, prepareMini, "Prepare Overlay");
     _overlayLayer->prepare(canvas, statePtr, force);
     PROFILE_STAGE_END(group, prepareMini);
 
-    bool hasContentChanged = _seatZoneNameLayer->hasContentChanged() || _overlayLayer->hasContentChanged();
+    bool hasContentChanged = _overlayLayer->hasContentChanged();
+#if !SEAT_CANVAS_USE_ZONE_NAME_PICTURE
+    hasContentChanged = hasContentChanged || _seatZoneNameLayer->hasContentChanged();
+#endif
     auto skipCurrentFrame = (!hasContentChanged && !force && !_invalidate);
     if (skipCurrentFrame) {
         PROFILE_GROUP_DISABLE_AUTO_LOG(group)
@@ -520,7 +533,11 @@ void SeatCanvasCoreRenderer::draw(bool force) {
     }
 
     PROFILE_STAGE_START(group, canvasZoneName, "Canvas Zone Name");
+#if SEAT_CANVAS_USE_ZONE_NAME_PICTURE
+    drawZoneNamePicture(canvas, statePtr);
+#else
     _seatZoneNameLayer->draw(canvas, statePtr);
+#endif
     PROFILE_STAGE_END(group, canvasZoneName);
 
     if (shouldAutoDrawSeat() && _customSeatPass->hasData()) {
@@ -695,6 +712,25 @@ void SeatCanvasCoreRenderer::drawDebugHUD(tgfx::Canvas *canvas) {
     }
 }
 
+void SeatCanvasCoreRenderer::drawZoneNamePicture(tgfx::Canvas *canvas, const SeatCanvasCoreRendererState *state) {
+    if (canvas == nullptr || state == nullptr || _zoneNamePicture == nullptr) {
+        return;
+    }
+
+    auto matrix = state->getMVMatrix();
+    tgfx::AutoCanvasRestore restore(canvas);
+    canvas->setMatrix(matrix);
+
+    if (_baseMapColorState == kk::BaseMapColorState::Rainbow) {
+        canvas->drawPicture(_zoneNamePicture, nullptr, nullptr);
+        return;
+    }
+
+    tgfx::Paint paint = {};
+    paint.setAlpha(0.35f);
+    canvas->drawPicture(_zoneNamePicture, nullptr, &paint);
+}
+
 tgfx::Rect SeatCanvasCoreRenderer::getVisibleOriginalRect() const {
     return _state->getVisibleOriginalRect();
 }
@@ -790,7 +826,11 @@ void SeatCanvasCoreRenderer::updateUseBaseMapConfig(std::shared_ptr<kk::BaseMapC
     if (config == nullptr) {
         setBaseMapLayer(tgfx::Size::MakeEmpty());
         setMiniMapLayer(nullptr);
+#if SEAT_CANVAS_USE_ZONE_NAME_PICTURE
+        _zoneNamePicture = nullptr;
+#else
         _seatZoneNameLayer->setTextRootLayer(nullptr, {});
+#endif
         _useBaseMapConfig.reset();
 
         applyBaseMapColorState(kk::BaseMapColorState::Original);
@@ -800,7 +840,11 @@ void SeatCanvasCoreRenderer::updateUseBaseMapConfig(std::shared_ptr<kk::BaseMapC
         _customSeatPass->clearSeats();
     } else {
         setBaseMapLayer(config->baseMapSize());
+#if SEAT_CANVAS_USE_ZONE_NAME_PICTURE
+        _zoneNamePicture = config->textPicture();
+#else
         _seatZoneNameLayer->setTextRootLayer(config->textLayer(), config->baseMapSize());
+#endif
         setMiniMapLayer(config->minimapLayer());
         _useBaseMapConfig = config;
 
@@ -1194,8 +1238,8 @@ void SeatCanvasCoreRenderer::applyBaseMapColorState(BaseMapColorState toState) {
         return;
     }
 
+#if !SEAT_CANVAS_USE_ZONE_NAME_PICTURE
     auto textLayer = config->textLayer();
-    // 设置文本图层透明度
     if (toState == kk::BaseMapColorState::Original) {
         if (textLayer) {
             textLayer->setAlpha(0.35f);
@@ -1205,6 +1249,7 @@ void SeatCanvasCoreRenderer::applyBaseMapColorState(BaseMapColorState toState) {
             textLayer->setAlpha(1.0f);
         }
     }
+#endif
 
     _customBaseMapPass->updateColorState(toState);
     _baseMapColorState = toState;

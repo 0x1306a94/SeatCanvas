@@ -16,7 +16,8 @@
 
 namespace tgfx {
 class Layer;
-};
+class Picture;
+};  // namespace tgfx
 
 namespace kk::layer {
 class BaseMapRootLayer;
@@ -31,11 +32,13 @@ class BaseMapConfig {
   public:
     explicit BaseMapConfig(std::shared_ptr<kk::renderer::BaseMapMeshBuilder> meshBuilder,
                            std::shared_ptr<tgfx::Layer> textLayer,
+                           std::shared_ptr<tgfx::Picture> textPicture,
                            std::shared_ptr<kk::layer::BaseMapRootLayer> minimapLayer,
                            std::unordered_map<std::string, std::shared_ptr<tgfx::Layer>> miniLayerMap,
                            const tgfx::Size &baseMapSize);
     ~BaseMapConfig() = default;
     std::shared_ptr<tgfx::Layer> textLayer() const;
+    std::shared_ptr<tgfx::Picture> textPicture() const;
     std::shared_ptr<kk::layer::BaseMapRootLayer> minimapLayer() const;
     const std::unordered_map<std::string, std::shared_ptr<tgfx::Layer>> &miniLayerMap() const;
     const tgfx::Size &baseMapSize() const;
@@ -44,6 +47,7 @@ class BaseMapConfig {
 
   private:
     std::shared_ptr<tgfx::Layer> _textLayer;
+    std::shared_ptr<tgfx::Picture> _textPicture;
     std::shared_ptr<kk::layer::BaseMapRootLayer> _minimapLayer;
     std::unordered_map<std::string, std::shared_ptr<tgfx::Layer>> _miniLayerMap = {};
     std::shared_ptr<kk::renderer::BaseMapMeshBuilder> _meshBuilder;

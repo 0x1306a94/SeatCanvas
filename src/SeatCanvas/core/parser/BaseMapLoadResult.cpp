@@ -17,6 +17,7 @@ BaseMapLoadResult::BaseMapLoadResult(std::unique_ptr<BaseMapParseResult> parseRe
     }
 
     textLayer = std::move(parseResult->textLayer);
+    textPicture = std::move(parseResult->textPicture);
     baseMapSize = parseResult->size;
     miniLayer = std::move(parseResult->miniLayer);
     miniLayerMap = std::move(parseResult->miniLayerMap);
@@ -24,7 +25,7 @@ BaseMapLoadResult::BaseMapLoadResult(std::unique_ptr<BaseMapParseResult> parseRe
 }
 
 std::shared_ptr<kk::BaseMapConfig> BaseMapLoadResult::makeBaseMapConfig() {
-    return std::make_shared<kk::BaseMapConfig>(meshBuilder, textLayer, miniLayer, std::move(miniLayerMap), baseMapSize);
+    return std::make_shared<kk::BaseMapConfig>(meshBuilder, textLayer, textPicture, miniLayer, std::move(miniLayerMap), baseMapSize);
 }
 
 }  // namespace kk::parser

@@ -18,7 +18,8 @@
 
 namespace tgfx {
 class Layer;
-};
+class Picture;
+};  // namespace tgfx
 
 namespace kk {
 class BaseMapConfig;
@@ -36,6 +37,7 @@ namespace kk::parser {
 
 struct BaseMapLoadResult {
     std::shared_ptr<tgfx::Layer> textLayer = {nullptr};
+    std::shared_ptr<tgfx::Picture> textPicture = {nullptr};
     tgfx::Size baseMapSize = {};
     std::shared_ptr<kk::layer::BaseMapRootLayer> miniLayer = {nullptr};
     std::unordered_map<std::string, std::shared_ptr<tgfx::Layer>> miniLayerMap = {};

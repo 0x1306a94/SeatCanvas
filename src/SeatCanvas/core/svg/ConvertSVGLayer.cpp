@@ -12,7 +12,10 @@
 #include "core/layers/SeatTextLayer.hpp"
 #include "core/layers/SeatZoneLayer.hpp"
 
+#include <tgfx/core/Canvas.h>
+#include <tgfx/core/Paint.h>
 #include <tgfx/core/Path.h>
+#include <tgfx/core/PictureRecorder.h>
 #include <tgfx/core/Rect.h>
 #include <tgfx/layers/Layer.h>
 #include <tgfx/layers/ShapeLayer.h>
@@ -33,11 +36,20 @@ namespace kk::svg {
 
 static std::shared_ptr<tgfx::Layer> buildTextLayerTreeFromNode(tgfx::SVGNode *node,
                                                                const tgfx::SVGLengthContext &lengthContext);
+static bool recordTextPictureFromNode(tgfx::SVGNode *node,
+                                      tgfx::Canvas *canvas,
+                                      const tgfx::SVGLengthContext &lengthContext);
 
 struct TextRun {
     std::string text;
     float offsetX = 0.0f;
     float offsetY = 0.0f;
+};
+
+struct TextPictureStyle {
+    std::optional<tgfx::Paint> fillPaint = {std::nullopt};
+    std::optional<tgfx::Paint> strokePaint = {std::nullopt};
+    tgfx::TextAlign textAlign = {tgfx::TextAlign::Start};
 };
 
 static std::shared_ptr<tgfx::Typeface> resolveTypeface(const tgfx::SVGText *node, const tgfx::SVGLengthContext &lengthContext) {
@@ -300,6 +312,106 @@ static void applyTextLayerStyle(kk::layer::SeatTextLayer *textLayer, tgfx::SVGTe
     }
 }
 
+static TextPictureStyle resolveTextPictureStyle(tgfx::SVGText *node) {
+    TextPictureStyle style = {};
+
+    auto hasStroke = false;
+    tgfx::Paint strokePaint = {};
+    if (const auto &attribute = node->getStroke().get(); attribute && attribute->type() == tgfx::SVGPaint::Type::Color) {
+        strokePaint.setColor(attribute->color().color());
+        strokePaint.setStyle(tgfx::PaintStyle::Stroke);
+        hasStroke = true;
+    }
+
+    if (const auto &attribute = node->getStrokeWidth().get(); attribute && hasStroke) {
+        auto width = attribute.value().value();
+        hasStroke = !(width == 0.0f);
+        strokePaint.setStrokeWidth(width);
+    }
+
+    if (hasStroke) {
+        if (const auto &attribute = node->getStrokeLineCap().get(); attribute) {
+            switch (attribute.value()) {
+                case tgfx::SVGLineCap::Butt:
+                    strokePaint.setLineCap(tgfx::LineCap::Butt);
+                    break;
+                case tgfx::SVGLineCap::Round:
+                    strokePaint.setLineCap(tgfx::LineCap::Round);
+                    break;
+                case tgfx::SVGLineCap::Square:
+                    strokePaint.setLineCap(tgfx::LineCap::Square);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if (const auto &attribute = node->getStrokeLineJoin().get(); attribute) {
+            switch (attribute.value().type()) {
+                case tgfx::SVGLineJoin::Type::Miter:
+                    strokePaint.setLineJoin(tgfx::LineJoin::Miter);
+                    break;
+                case tgfx::SVGLineJoin::Type::Round:
+                    strokePaint.setLineJoin(tgfx::LineJoin::Round);
+                    break;
+                case tgfx::SVGLineJoin::Type::Bevel:
+                    strokePaint.setLineJoin(tgfx::LineJoin::Bevel);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if (const auto &attribute = node->getStrokeMiterLimit().get(); attribute) {
+            strokePaint.setMiterLimit(attribute.value());
+        }
+        style.strokePaint = strokePaint;
+    }
+
+    if (const auto &attribute = node->getFill().get(); attribute && attribute->type() == tgfx::SVGPaint::Type::Color) {
+        tgfx::Paint fillPaint = {};
+        fillPaint.setColor(attribute->color().color());
+        style.fillPaint = fillPaint;
+    } else if (!hasStroke) {
+        tgfx::Paint fillPaint = {};
+        fillPaint.setColor(tgfx::Color::Black());
+        style.fillPaint = fillPaint;
+    }
+
+    if (const auto &attribute = node->getTextAnchor().get(); attribute) {
+        auto type = attribute.value().type();
+        switch (type) {
+            case tgfx::SVGTextAnchor::Type::Start:
+                style.textAlign = tgfx::TextAlign::Start;
+                break;
+            case tgfx::SVGTextAnchor::Type::Middle:
+                style.textAlign = tgfx::TextAlign::Center;
+                break;
+            case tgfx::SVGTextAnchor::Type::End:
+                style.textAlign = tgfx::TextAlign::End;
+                break;
+            default:
+                break;
+        }
+    }
+
+    return style;
+}
+
+static float getTextAlignmentFactor(tgfx::TextAlign align) {
+    switch (align) {
+        case tgfx::TextAlign::Start:
+            return 0.0f;
+        case tgfx::TextAlign::Center:
+            return -0.5f;
+        case tgfx::TextAlign::End:
+            return -1.0f;
+        case tgfx::TextAlign::Justify:
+            return 0.0f;
+    }
+    return 0.0f;
+}
+
 // ========== 公开函数实现 ==========
 
 std::unique_ptr<ConvertSVGLayerResult> convertSVGDomToLayer(std::shared_ptr<tgfx::SVGDOM> dom, std::unordered_map<std::string, std::shared_ptr<tgfx::Layer>> *layerMap, const ConvertSVGLayerOptions &options) {
@@ -388,6 +500,49 @@ std::shared_ptr<tgfx::Layer> convertSVGDomTextNodeToLayer(std::shared_ptr<tgfx::
     }
 
     return container;
+}
+
+std::unique_ptr<ConvertSVGTextPictureResult> convertSVGDomTextNodeToPicture(std::shared_ptr<tgfx::SVGDOM> dom) {
+    if (dom == nullptr) {
+        return nullptr;
+    }
+
+    auto &rootNode = dom->getRoot();
+    if (!rootNode->hasChildren()) {
+        return nullptr;
+    }
+
+    auto rootWidth = rootNode->getWidth();
+    auto rootHeight = rootNode->getHeight();
+
+    tgfx::SVGLengthContext viewportLengthContext(tgfx::Size::Make(100, 100));
+    tgfx::Size containerSize = {};
+
+    if (rootNode->getViewBox().has_value()) {
+        viewportLengthContext = tgfx::SVGLengthContext(rootNode->getViewBox()->size());
+        containerSize = tgfx::Size::Make(
+            viewportLengthContext.resolve(rootWidth, tgfx::SVGLengthContext::LengthType::Horizontal),
+            viewportLengthContext.resolve(rootHeight, tgfx::SVGLengthContext::LengthType::Vertical));
+    } else {
+        containerSize = tgfx::Size::Make(
+            viewportLengthContext.resolve(rootWidth, tgfx::SVGLengthContext::LengthType::Horizontal),
+            viewportLengthContext.resolve(rootHeight, tgfx::SVGLengthContext::LengthType::Vertical));
+    }
+
+    tgfx::PictureRecorder recorder;
+    auto canvas = recorder.beginRecording();
+    if (canvas == nullptr) {
+        return std::make_unique<ConvertSVGTextPictureResult>(nullptr, containerSize);
+    }
+
+    auto recorded = false;
+    auto &childrens = rootNode->getChildren();
+    for (const auto &child : childrens) {
+        recorded = recordTextPictureFromNode(child.get(), canvas, viewportLengthContext) || recorded;
+    }
+
+    auto picture = recorded ? recorder.finishRecordingAsPicture() : nullptr;
+    return std::make_unique<ConvertSVGTextPictureResult>(std::move(picture), containerSize);
 }
 
 std::shared_ptr<tgfx::Layer> convertSVGNodeToLayer(tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext, const ConvertSVGLayerOptions &options, std::unordered_map<std::string, std::shared_ptr<tgfx::Layer>> *layerMap) {
@@ -490,6 +645,83 @@ static std::shared_ptr<tgfx::Layer> buildTextLayerTreeFromNode(tgfx::SVGNode *no
     }
 
     return nullptr;
+}
+
+static bool recordText(tgfx::SVGText *node, tgfx::Canvas *canvas, const tgfx::SVGLengthContext &lengthContext) {
+    auto fallbackTypefaces = FontManager::GetFallbackTypefaces();
+    auto shaper = tgfx::TextShaper::Make(std::move(fallbackTypefaces));
+    if (shaper == nullptr) {
+        return false;
+    }
+
+    std::vector<TextRun> runs = {};
+    collectTextRuns(node, node, lengthContext, 0.0f, 0.0f, runs);
+    if (runs.empty()) {
+        return false;
+    }
+
+    auto typeface = resolveTypeface(node, lengthContext);
+    auto fontSize = tgfx::SVGFontSize(tgfx::SVGLength(10.0f, tgfx::SVGLength::Unit::PT));
+    if (auto attr = node->getFontSize().get(); attr) {
+        fontSize = attr.value();
+    }
+    auto finalFontSize = lengthContext.resolve(fontSize.size(), tgfx::SVGLengthContext::LengthType::Vertical);
+    auto style = resolveTextPictureStyle(node);
+
+    auto recorded = false;
+    for (const auto &run : runs) {
+        auto textBlob = shaper->shape(run.text, typeface, finalFontSize);
+        if (textBlob == nullptr) {
+            continue;
+        }
+
+        auto bounds = textBlob->getTightBounds();
+        auto tx = getTextAlignmentFactor(style.textAlign) * bounds.width();
+        tgfx::AutoCanvasRestore autoRestore(canvas);
+        auto matrix = tgfx::Matrix::MakeTrans(run.offsetX, run.offsetY);
+        matrix.postConcat(node->getTransform());
+        canvas->concat(matrix);
+        if (style.fillPaint) {
+            canvas->drawTextBlob(textBlob, tx, 0, style.fillPaint.value());
+            recorded = true;
+        }
+        if (style.strokePaint) {
+            canvas->drawTextBlob(textBlob, tx, 0, style.strokePaint.value());
+            recorded = true;
+        }
+    }
+
+    return recorded;
+}
+
+static bool recordTextPictureFromNode(tgfx::SVGNode *node,
+                                      tgfx::Canvas *canvas,
+                                      const tgfx::SVGLengthContext &lengthContext) {
+    if (node == nullptr || canvas == nullptr) {
+        return false;
+    }
+
+    if (node->tag() == tgfx::SVGTag::Text) {
+        return recordText(static_cast<tgfx::SVGText *>(node), canvas, lengthContext);
+    }
+
+    if (node->tag() == tgfx::SVGTag::G) {
+        auto group = static_cast<tgfx::SVGGroup *>(node);
+        if (!group->hasChildren()) {
+            return false;
+        }
+
+        tgfx::AutoCanvasRestore autoRestore(canvas);
+        canvas->concat(group->getTransform());
+
+        auto recorded = false;
+        for (const auto &child : group->getChildren()) {
+            recorded = recordTextPictureFromNode(child.get(), canvas, lengthContext) || recorded;
+        }
+        return recorded;
+    }
+
+    return false;
 }
 
 std::shared_ptr<tgfx::Layer> convertGroup(const ConvertSVGLayerOptions &options, tgfx::SVGGroup *node, const tgfx::SVGLengthContext &lengthContext, std::unordered_map<std::string, std::shared_ptr<tgfx::Layer>> *layerMap) {

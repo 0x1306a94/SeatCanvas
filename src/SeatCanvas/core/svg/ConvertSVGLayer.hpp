@@ -27,6 +27,7 @@ class SVGRect;
 class SVGText;
 class SVGGroup;
 class Layer;
+class Picture;
 };  // namespace tgfx
 
 namespace kk::layer {
@@ -55,6 +56,15 @@ struct ConvertSVGLayerResult {
     }
 };
 
+struct ConvertSVGTextPictureResult {
+    std::shared_ptr<tgfx::Picture> picture = {nullptr};
+    tgfx::Size size = {};
+    explicit ConvertSVGTextPictureResult(std::shared_ptr<tgfx::Picture> picture, const tgfx::Size &size)
+        : picture(std::move(picture))
+        , size(size) {
+    }
+};
+
 /// 将 SVGDOM 转为 Layer 树（用于 minimap）
 /// @param dom SVG DOM
 /// @param options 转换选项
@@ -63,6 +73,10 @@ std::unique_ptr<ConvertSVGLayerResult> convertSVGDomToLayer(std::shared_ptr<tgfx
 /// 将 SVGDOM 中的 Text 节点转为 Layer 树
 /// @param dom SVG DOM
 std::shared_ptr<tgfx::Layer> convertSVGDomTextNodeToLayer(std::shared_ptr<tgfx::SVGDOM> dom);
+
+/// 将 SVGDOM 中的 Text 节点录制为 Picture
+/// @param dom SVG DOM
+std::unique_ptr<ConvertSVGTextPictureResult> convertSVGDomTextNodeToPicture(std::shared_ptr<tgfx::SVGDOM> dom);
 
 // 内部函数
 std::shared_ptr<tgfx::Layer> convertSVGNodeToLayer(tgfx::SVGNode *node, const tgfx::SVGLengthContext &lengthContext, const ConvertSVGLayerOptions &options, std::unordered_map<std::string, std::shared_ptr<tgfx::Layer>> *layerMap = nullptr);

@@ -41,8 +41,9 @@ std::unique_ptr<BaseMapParseResult> SVGBaseMapParser::parse(std::shared_ptr<tgfx
         return nullptr;
     }
 
-    // 解析 Text Layer
+    // 解析 Text Layer 和 Text Picture，用于渲染路径对比
     auto textLayer = kk::svg::convertSVGDomTextNodeToLayer(dom);
+    auto textPictureResult = kk::svg::convertSVGDomTextNodeToPicture(dom);
 
     auto options = svg::ConvertSVGLayerOptions::Default();
     options.zoneIdAttributeNames = parseConfig.zoneIdAttributeNames;
@@ -58,6 +59,7 @@ std::unique_ptr<BaseMapParseResult> SVGBaseMapParser::parse(std::shared_ptr<tgfx
     result->size = meshResult->size;
     result->meshBuilder = std::move(meshResult->meshBuilder);
     result->textLayer = std::move(textLayer);
+    result->textPicture = textPictureResult ? std::move(textPictureResult->picture) : nullptr;
     result->miniLayer = std::move(minimapResult->layer);
     result->miniLayerMap = std::move(layerMap);
 

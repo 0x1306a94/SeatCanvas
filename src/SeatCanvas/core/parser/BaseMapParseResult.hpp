@@ -16,7 +16,8 @@
 
 namespace tgfx {
 class Layer;
-};
+class Picture;
+};  // namespace tgfx
 
 namespace kk::layer {
 class BaseMapRootLayer;
@@ -40,6 +41,9 @@ struct BaseMapParseResult {
     /// 文本图层（可选，某些格式可能没有）
     std::shared_ptr<tgfx::Layer> textLayer = {nullptr};
 
+    /// 文本绘制记录（可选，某些格式可能没有）
+    std::shared_ptr<tgfx::Picture> textPicture = {nullptr};
+
     /// 小地图图层（可选，某些格式可能没有）
     std::shared_ptr<kk::layer::BaseMapRootLayer> miniLayer = {nullptr};
     std::unordered_map<std::string, std::shared_ptr<tgfx::Layer>> miniLayerMap = {};
@@ -48,6 +52,7 @@ struct BaseMapParseResult {
         : size(tgfx::Size::MakeEmpty())
         , meshBuilder(nullptr)
         , textLayer(nullptr)
+        , textPicture(nullptr)
         , miniLayer(nullptr) {
     }
 

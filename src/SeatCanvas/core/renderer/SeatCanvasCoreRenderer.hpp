@@ -19,6 +19,7 @@
 #include <tgfx/core/Color.h>
 #include <tgfx/core/Point.h>
 #include <tgfx/core/Rect.h>
+#include <tgfx/core/Size.h>
 
 #include "core/BaseMapColorState.h"
 #include "core/SeatData.hpp"
@@ -35,6 +36,7 @@ namespace tgfx {
 class TextShaper;
 class Context;
 class Canvas;
+class Picture;
 class Surface;
 class Texture;
 class GPU;
@@ -320,6 +322,8 @@ class SeatCanvasCoreRenderer : public ViewportControllerCallback {
 
     void drawDebugHUD(tgfx::Canvas *canvas);
 
+    void drawZoneNamePicture(tgfx::Canvas *canvas, const SeatCanvasCoreRendererState *state);
+
     bool executeCustomRenderPass(tgfx::Context *context, const SeatCanvasCoreRendererState *state);
 
     /// 判断是否应该自动绘制座位
@@ -344,6 +348,7 @@ class SeatCanvasCoreRenderer : public ViewportControllerCallback {
     std::shared_ptr<kk::DisplayLink> _displayLink = {nullptr};
     std::shared_ptr<kk::BaseMapConfig> _baseMapConfig = {nullptr};
     std::weak_ptr<kk::BaseMapConfig> _useBaseMapConfig;
+    std::shared_ptr<tgfx::Picture> _zoneNamePicture = {nullptr};
 
     tgfx::Color _backgroundColor = {tgfx::Color::White()};
     BaseMapColorState _baseMapColorState = {BaseMapColorState::Original};
