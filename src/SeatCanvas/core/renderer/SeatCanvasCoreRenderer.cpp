@@ -513,9 +513,7 @@ void SeatCanvasCoreRenderer::draw(bool force) {
     }
 
     PROFILE_STAGE_START(group, canvasZoneName, "Canvas Zone Name");
-    canvas->save();
     _seatZoneNameLayer->draw(canvas, statePtr);
-    canvas->restore();
     PROFILE_STAGE_END(group, canvasZoneName);
 
     if (shouldAutoDrawSeat() && _customSeatPass->hasData()) {
@@ -525,10 +523,8 @@ void SeatCanvasCoreRenderer::draw(bool force) {
     }
 
     PROFILE_STAGE_START(group, canvasOverlay, "Canvas Overlay");
-    canvas->save();
     _overlayLayer->draw(canvas, statePtr);
     drawDebugHUD(canvas);
-    canvas->restore();
     PROFILE_STAGE_END(group, canvasOverlay);
 
     PROFILE_STAGE_START(group, flush, "Canvas Flush");
@@ -582,6 +578,7 @@ void SeatCanvasCoreRenderer::drawDebugHUD(tgfx::Canvas *canvas) {
         return;
     }
 
+    tgfx::AutoCanvasRestore restore(canvas);
     struct HudLine {
         std::string text = {};
         tgfx::Color color = {tgfx::Color::White()};

@@ -45,8 +45,14 @@ class SeatCanvasCoreRendererState {
     /// @return 原始坐标系中的可见矩形，如果无效则返回空矩形
     tgfx::Rect getVisibleOriginalRect() const;
 
+    /// 计算并返回 MV 矩阵（Model-View）
+    /// 将原始坐标转换为屏幕坐标，供 Canvas API 绘制复用
+    /// 变换链：原始坐标 → 规范化内容坐标 → 屏幕坐标
+    /// @return MV 矩阵，如果状态无效则返回单位矩阵
+    tgfx::Matrix getMVMatrix() const;
+
     /// 计算并返回 MVP 矩阵（Model-View-Projection）
-    /// 将原始坐标转换为 NDC 坐标 [-1, 1]
+    /// 将原始坐标转换为 NDC 坐标 [-1, 1]，供自定义 RenderPass 使用
     /// 变换链：原始坐标 → 规范化内容坐标 → 屏幕坐标 → NDC坐标
     /// @return MVP 矩阵，如果状态无效则返回单位矩阵
     tgfx::Matrix getMVPMatrix() const;
