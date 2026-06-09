@@ -18,7 +18,7 @@ const Platform *Platform::Current() {
 
 bool NativePlatform::registerFallbackFonts() const {
     // Font registration is handled from the JavaScript side via
-    // SeatCanvasRenderer.SetFallbackFontNames() before the renderer is created.
+    // SeatCanvasRenderer.RegisterFonts() before the renderer is created.
     return false;
 }
 

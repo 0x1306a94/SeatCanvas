@@ -39,23 +39,76 @@
 
 namespace kk::web {
 
+namespace {
+
+std::shared_ptr<tgfx::Data> getDataFromEmscripten(const emscripten::val &emscriptenData) {
+    if (emscriptenData.isUndefined() || emscriptenData.isNull()) {
+        return nullptr;
+    }
+    if (!emscriptenData.instanceof (emscripten::val::global("Uint8Array"))) {
+        tgfx::PrintError("RegisterFonts: font data must be a Uint8Array");
+        return nullptr;
+    }
+    auto length = emscriptenData["length"].as<unsigned int>();
+    if (length == 0) {
+        return nullptr;
+    }
+    auto *buffer = new (std::nothrow) uint8_t[length];
+    if (buffer == nullptr) {
+        tgfx::PrintError("RegisterFonts: failed to allocate font buffer (%u bytes)", length);
+        return nullptr;
+    }
+    auto memory = emscripten::val::module_property("HEAPU8")["buffer"];
+    auto memoryView =
+        emscriptenData["constructor"].new_(memory, reinterpret_cast<uintptr_t>(buffer), length);
+    memoryView.call<void>("set", emscriptenData);
+    return tgfx::Data::MakeAdopted(buffer, length, tgfx::Data::DeleteProc);
+}
+
+void updateTextLayerFallbackTypefaces() {
+    auto fallbackTypefaces = kk::FontManager::GetFallbackTypefacesDirect();
+    tgfx::TextLayer::SetFallbackTypefaces(std::move(fallbackTypefaces));
+}
+
+}  // namespace
+
 // MARK: - Lifecycle
 
 std::shared_ptr<WebRendererCore> WebRendererCore::MakeFrom(const std::string &canvasID) {
     return std::shared_ptr<WebRendererCore>(new WebRendererCore(canvasID));
 }
 
-void WebRendererCore::SetFallbackFontNames(const emscripten::val &fontNames) {
-    auto length = fontNames["length"].as<size_t>();
-    std::vector<std::string> names;
-    names.reserve(length);
-    for (size_t i = 0; i < length; i++) {
-        names.push_back(fontNames[i].as<std::string>());
-    }
-    kk::FontManager::SetFallbackFontNames(names);
+bool WebRendererCore::RegisterFonts(const emscripten::val &fontData, const emscripten::val &emojiFontData) {
+    std::vector<std::shared_ptr<tgfx::Typeface>> typefaces = {};
 
-    std::vector<std::shared_ptr<tgfx::Typeface>> fallbackTypefaces = kk::FontManager::GetFallbackTypefacesDirect();
-    tgfx::TextLayer::SetFallbackTypefaces(std::move(fallbackTypefaces));
+    auto textData = getDataFromEmscripten(fontData);
+    if (textData == nullptr) {
+        tgfx::PrintError("RegisterFonts: text font data is missing or invalid");
+        return false;
+    }
+    auto textTypeface = tgfx::Typeface::MakeFromData(textData, 0);
+    if (textTypeface == nullptr) {
+        tgfx::PrintError("RegisterFonts: failed to parse text font data");
+        return false;
+    }
+    typefaces.push_back(std::move(textTypeface));
+
+    if (!emojiFontData.isUndefined() && !emojiFontData.isNull()) {
+        if (auto emojiData = getDataFromEmscripten(emojiFontData)) {
+            if (auto emojiTypeface = tgfx::Typeface::MakeFromData(emojiData, 0)) {
+                typefaces.push_back(std::move(emojiTypeface));
+            } else {
+                tgfx::PrintError("RegisterFonts: failed to parse emoji font data, continuing without emoji");
+            }
+        } else {
+            tgfx::PrintError("RegisterFonts: emoji font data is invalid, continuing without emoji");
+        }
+    }
+
+    kk::FontManager::SetFallbackFontPaths({}, {});
+    kk::FontManager::PrependFallbackTypefaces(typefaces);
+    updateTextLayerFallbackTypefaces();
+    return true;
 }
 
 WebRendererCore::WebRendererCore(const std::string &canvasID) {
@@ -365,7 +418,7 @@ EMSCRIPTEN_BINDINGS(SeatCanvasWeb) {
     emscripten::class_<WebRendererCore>("SeatCanvasRenderer")
         .smart_ptr<std::shared_ptr<WebRendererCore>>("SeatCanvasRenderer")
         .class_function("MakeFrom", &WebRendererCore::MakeFrom)
-        .class_function("SetFallbackFontNames", &WebRendererCore::SetFallbackFontNames)
+        .class_function("RegisterFonts", &WebRendererCore::RegisterFonts)
         .function("getDelegate", &WebRendererCore::getDelegate)
         .function("start", &WebRendererCore::start)
         .function("stop", &WebRendererCore::stop)

@@ -121,6 +121,8 @@ SeatCanvas/
 ├── android/                 # Android 示例和资源
 ├── ohos/                    # OHOS 示例和资源
 ├── resources/               # 资源文件
+│   ├── fonts/               # Web 演示字体（Git LFS；OFL 许可的 Noto）
+│   └── SeatCanvasSample.bundle/
 ├── third_party/             # 第三方依赖（通过 depsync 同步）
 └── CMakeLists.txt          # CMake 构建配置
 ```
@@ -408,9 +410,10 @@ SeatRenderStyleId.compose('1', 1, false);
 
 #### 快速开始
 
-在仓库根目录同步依赖（含 `third_party/emsdk`）：
+在仓库根目录安装 Git LFS（字体文件通过 LFS 管理）并同步依赖（含 `third_party/emsdk`）：
 
 ```bash
+git lfs install    # 每台机器执行一次
 ./sync_deps.sh
 ```
 
@@ -419,9 +422,11 @@ SeatRenderStyleId.compose('1', 1, false);
 ```bash
 cd web
 npm install
-npm run build:wasm   # 执行 setup.emsdk + emcmake（首次可能下载 SDK）
+npm run build:wasm   # 将 resources/fonts 复制到 demo/fonts，再编译 WASM
 npm start            # → http://localhost:8081
 ```
+
+`build:wasm` 依赖 `resources/fonts/`（见 `resources/fonts/LICENSE`）。演示字体：`NotoSansSC-Regular.otf`（正文）和 `NotoColorEmoji.ttf`（emoji，运行时可选）。
 
 可选：`npm run setup:emsdk` — 仅安装/激活 Emscripten，不编译 WASM。
 
@@ -432,9 +437,29 @@ npm run build:wasm         # 构建 WASM（C++ → Emscripten）
 npm run build:wasm:debug   # 构建 WASM（debug 模式，使用独立构建目录）
 npm run build:lib          # 构建 JS 库（ESM + CJS）+ 类型声明
 npm run build:demo         # 构建演示页面
-npm run build:deploy       # 构建可部署的静态站点
+npm run build:deploy       # 构建可部署的静态站点（含字体）
 npm run build              # 完整构建（wasm + lib + demo）
 ```
+
+#### 字体注册
+
+Web 构建使用 **FreeType** 进行文本塑形与字形光栅化（不走浏览器系统字体 + Canvas2D 路径）。须在 JS 侧自行加载字体文件，并在 `SeatCanvasInit()` **之后**、`app.init()` **之前**注册：
+
+```typescript
+async function loadFontBytes(url: string): Promise<Uint8Array> {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${url}`);
+    return new Uint8Array(await resp.arrayBuffer());
+}
+
+const textFont = await loadFontBytes('/fonts/NotoSansSC-Regular.otf');
+const emojiFont = await loadFontBytes('/fonts/NotoColorEmoji.ttf'); // 可选
+SeatCanvasFont.registerFonts(textFont, emojiFont);
+```
+
+- **正文字体必填** — 模块未就绪、入参非法或正文字体解析失败时 `registerFonts` 会抛出异常。
+- **emoji 字体可选** — 解析失败仅打印警告，不影响正文渲染。
+- **npm 包不包含字体文件** — 集成方需自行托管字体并 fetch（demo/deploy 从 `resources/fonts/` 复制）。
 
 #### 使用示例
 
@@ -446,14 +471,18 @@ const module = await SeatCanvasInit({
     locateFile: (file: string) => '/wasm/' + file,
 });
 
-// 2. 创建应用并初始化渲染器
+// 2. 加载并注册字体（Web 端必填）
+const textFont = new Uint8Array(await (await fetch('/fonts/NotoSansSC-Regular.otf')).arrayBuffer());
+SeatCanvasFont.registerFonts(textFont);
+
+// 3. 创建应用并初始化渲染器
 const app = new SeatCanvasApp('#seat-canvas');
 app.init(module);
 
-// 3. 设置 delegate 回调
+// 4. 设置 delegate 回调
 const delegate = app.getDelegate()!;
+const renderer = app.getRenderer()!;
 delegate.setDidLoadBaseMapCallback(() => {
-    const renderer = app.getRenderer()!;
     renderer.registerPricecodes(['1', '2']);
     renderer.applySeatStyleJSONConfig(styleJson);
     renderer.setSeatData('37492', seats);
@@ -470,10 +499,10 @@ delegate.setDidUpdateZoomLevelConfigCallback((event) => {
     renderer.setSeatRenderZoomThreshold(event.zoomLevels.venue);
 });
 
-// 4. 启动渲染循环
+// 5. 启动渲染循环
 app.start();
 
-// 5. 加载底图
+// 6. 加载底图
 app.loadBaseMapFromSVG(svgData);
 ```
 

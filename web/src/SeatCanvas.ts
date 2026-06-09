@@ -8,7 +8,6 @@
 import { GestureManager } from './GestureManager';
 import { bindCanvasEvents, bindDevicePixelRatioChange, updateCanvasSize } from './common';
 import * as types from './types';
-import { SeatCanvasFont } from './SeatCanvasFont';
 import createSeatCanvas from './wasm/libseatcanvas';
 import { SeatCanvasModuleBinding } from './binding';
 
@@ -26,7 +25,6 @@ const SeatCanvasInit = (moduleOption: ModuleOption = {}): Promise<types.SeatCanv
     createSeatCanvas(moduleOption)
         .then((module: any) => {
             SeatCanvasModuleBinding(module);
-            SeatCanvasFont.registerFallbackFontNames();
             return module;
         })
         .catch((error: any) => {
@@ -34,7 +32,8 @@ const SeatCanvasInit = (moduleOption: ModuleOption = {}): Promise<types.SeatCanv
             throw new Error('SeatCanvasInit fail! Please check .wasm file path valid.');
         });
 
-export { SeatCanvasInit, types, SeatCanvasFont };
+export { SeatCanvasInit, types };
+export { SeatCanvasFont } from './SeatCanvasFont';
 
 
 /**
