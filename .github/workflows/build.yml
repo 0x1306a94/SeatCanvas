@@ -139,6 +139,102 @@ jobs:
           name: android_build
           path: android
 
+  web:
+    runs-on: ubuntu-latest
+    env:
+      EMSDK_QUIET: 1
+    steps:
+      - name: Check Out Repo
+        uses: actions/checkout@v4
+
+      - name: Get Third-Party Cache
+        id: third-party-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: third_party
+          key: third-party-web-${{ hashFiles('DEPS') }}
+          restore-keys: third-party-web-
+
+      - name: Get node_modules Cache
+        id: node-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: web/node_modules
+          key: node-modules-web-${{ hashFiles('web/package-lock.json') }}
+          restore-keys: node-modules-web-
+
+      - name: Get depctl Cache
+        id: depctl-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/depctl
+          key: depctl-linux-x86_64-69ac32ee
+
+      - name: Install depctl
+        if: steps.depctl-cache.outputs.cache-hit != 'true'
+        run: |
+          DEPCTL_URL="https://github.com/0x1306a94/depctl/releases/download/v1.4.7/depctl-linux-x86_64.tar.gz"
+          curl -L -o /tmp/depctl.tar.gz "$DEPCTL_URL"
+          rm -rf ~/depctl
+          mkdir -p ~/depctl
+          tar -xzf /tmp/depctl.tar.gz -C ~/depctl
+          chmod +x ~/depctl/depctl
+
+      - name: Save depctl Cache
+        if: steps.depctl-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/depctl
+          key: depctl-linux-x86_64-69ac32ee
+
+      - name: Configure depctl PATH
+        run: echo "$HOME/depctl" >> $GITHUB_PATH
+
+      - name: Run depctl
+        run: |
+          depctl --version
+          depctl --skip-paths third_party/tgfx/third_party/shaderc
+        shell: bash
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: seanmiddleditch/gha-setup-ninja@master
+
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y cmake
+
+      - name: Install node_modules
+        if: steps.node-cache.outputs.cache-hit != 'true'
+        run: cd web && npm ci
+
+      - name: Build Web
+        run: cd web && npm run build:wasm
+
+      - name: Save Third-Party Cache
+        if: ${{ (github.event_name == 'push') && (steps.third-party-cache.outputs.cache-hit != 'true') }}
+        uses: actions/cache/save@v4
+        with:
+          path: third_party
+          key: third-party-web-${{ hashFiles('DEPS') }}
+
+      - name: Save node_modules Cache
+        if: ${{ (github.event_name == 'push') && (steps.node-cache.outputs.cache-hit != 'true') }}
+        uses: actions/cache/save@v4
+        with:
+          path: web/node_modules
+          key: node-modules-web-${{ hashFiles('web/package-lock.json') }}
+
+      - name: Job Failed
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: web_build
+          path: |
+            web/build
+            web/lib/wasm
+
   ohos:
     runs-on: macos-latest
     steps:

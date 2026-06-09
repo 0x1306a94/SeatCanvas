@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SeatCanvas Web Demo</title>
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div id="container">
+        <canvas id="seat-canvas"></canvas>
+        <div id="controls">
+            <div class="control-group">
+                <label for="basemap-select">Base Map:</label>
+                <select id="basemap-select">
+                    <option value="">-- Select --</option>
+                </select>
+                <button id="load-btn">Load</button>
+            </div>
+            <div class="control-group" id="status-display">
+                Status: Ready
+            </div>
+            <div class="control-group" id="fps-display">
+                FPS: --
+            </div>
+        </div>
+    </div>
+    <script type="module" src="index.js"></script>
+</body>
+</html>

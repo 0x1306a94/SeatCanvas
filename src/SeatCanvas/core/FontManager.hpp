@@ -8,6 +8,7 @@
 #ifndef FontManager_hpp
 #define FontManager_hpp
 
+#include <memory>
 #include <mutex>
 #include <unordered_map>
 #include <vector>
@@ -36,6 +37,10 @@ class FontManager {
 
     static void SetFallbackFontPaths(const std::vector<std::string> &fontPaths, const std::vector<int> &ttcIndices);
 
+    static void AppendFallbackTypefaces(const std::vector<std::shared_ptr<tgfx::Typeface>> &typefaces);
+
+    static void PrependFallbackTypefaces(const std::vector<std::shared_ptr<tgfx::Typeface>> &typefaces);
+
     static std::vector<std::shared_ptr<tgfx::Typeface>> GetFallbackTypefaces();
     static std::vector<std::shared_ptr<tgfx::Typeface>> GetFallbackTypefacesDirect();
     static bool HasFallbackFonts();
@@ -55,6 +60,10 @@ class FontManager {
     void setFallbackFontNames(const std::vector<std::string> &fontNames);
 
     void setFallbackFontPaths(const std::vector<std::string> &fontPaths, const std::vector<int> &ttcIndices);
+
+    void appendFallbackTypefaces(const std::vector<std::shared_ptr<tgfx::Typeface>> &typefaces);
+
+    void prependFallbackTypefaces(const std::vector<std::shared_ptr<tgfx::Typeface>> &typefaces);
 
   private:
     std::unordered_map<std::string, std::shared_ptr<tgfx::Typeface>> registeredFontMap;

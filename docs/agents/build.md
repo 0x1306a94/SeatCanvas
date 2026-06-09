@@ -39,12 +39,27 @@ $DEVECO_SDK_HOME/../tools/hvigor/bin/hvigorw assembleHar \
   --no-daemon
 ```
 
+**Web** (requires Emscripten; see [Web Build Notes](#web-build-notes)):
+
+```bash
+cd web
+npm install
+npm run build:wasm        # C++ → WASM
+npm run build:wasm:debug  # debug build (uses build_debug/)
+npm run build:lib         # JS library + types
+npm run build:demo        # demo page
+npm run build:deploy      # static site for Cloudflare Pages
+npm run build             # full build
+```
+
 ### Variants
 
 | Platform | Command | Notes |
 |----------|---------|-------|
 | iOS (CMake flags) | `./ios/gen_ios -D<FLAG>=ON` then `xcodebuild` as above | e.g. `-DENABLE_TIME_PROFILER=ON` |
 | Android (all arch) | `cd android/SeatCanvasSample && ./gradlew assembleRelease` | Slower; all architectures |
+| Web (debug) | `cd web && npm run build:wasm:debug` | Debug WASM with `-sSAFE_HEAP=1`; uses `build_debug/` |
+| Web (deploy) | `cd web && npm run build:deploy` | Produces `web/deploy/` for static hosting |
 
 ## Dependency Management
 
@@ -84,7 +99,7 @@ Uses clang-format 14.x for C++ and swiftformat for Swift. A pre-commit hook auto
 - **tgfx**: graphics rendering library, SVG parsing, layer support
 - **json**: nlohmann/json for style config parsing
 
-**Build system**: CMake, C++17, supports iOS/Android/OHOS, enables tgfx SVG and Layers support.
+**Build system**: CMake, C++17, supports iOS/Android/OHOS/Web, enables tgfx SVG and Layers support.
 
 ## iOS Build Notes
 
@@ -165,5 +180,18 @@ rm -rf ohos/.cxx
 **OHOS C++ native build fails or behaves inconsistently**
 → `rm -rf ohos/.cxx` (C++ CMake cache) then rebuild (see [OHOS Build Notes](#ohos-build-notes))
 
-**Pre-commit hook reformats code unexpectedly**
-→ Expected behavior — commit will succeed after auto-formatting
+## Web Build Notes
+
+- Requires **Emscripten** via `third_party/emsdk` (`web/script/setup.emsdk.js`: `emsdk install latest` / `activate latest`). Run `./sync_deps.sh` first, then `npm run build:wasm` — `web/script/cmake.js` runs setup automatically. Optional one-off setup: `cd web && npm run setup:emsdk`. Do not install Emscripten via Homebrew.
+
+- Debug build uses `build_debug/` directory; release uses `build/`. The two directories are independent — switching modes does not require a clean rebuild.
+- **`cmake.js` artifact flow**:
+  1. Configures and builds via `emcmake cmake` + `cmake --build`
+  2. Copies `.wasm` and `.js` glue files to `lib/wasm/`, `src/wasm/`, and `demo/wasm/`
+- **Library build** (`build:lib`): bundles TypeScript into ESM+CJS, generates `.d.ts` type declarations. WASM import (`./wasm/libseatcanvas`) is externalized — consumers must provide the WASM files or use `locateFile`.
+- **Demo** (`build:demo`): bundles `demo/index.ts` to `demo/index.js`. The demo imports wasm from `./wasm/libseatcanvas.js` (relative to the demo page).
+- **Deploy** (`build:deploy`): assembles a self-contained `deploy/` directory with HTML, bundled JS, WASM, sample resources, and a `_headers` file for Cloudflare Pages (COOP/COEP for SharedArrayBuffer).
+- **CI / clean builds**: GitHub Actions `web` job runs `npm run build:wasm` on `ubuntu-latest` (`depctl` + `third_party/emsdk` via `setup.emsdk.js`, same as local). Full pipeline locally: `npm run build` (wasm → lib → demo).
+- Resource files (`sample_resources/`) are copied from the project root's `resources/SeatCanvasSample.bundle` via `copy-resources.js`, which also auto-generates `basemaps.json`.
+
+## Troubleshooting

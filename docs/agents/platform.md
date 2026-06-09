@@ -57,6 +57,63 @@ controller.setDelegate(delegate)
 await controller.loadFromAssets(manager, assetPath, BaseMapFormat.SVG, parseConfig)
 ```
 
+## Web (Emscripten)
+
+**Main Files**:
+- `src/SeatCanvas/platform/web/` — C++ platform code, embind bindings
+- `web/` — TypeScript library + demo
+- `src/SeatCanvas/platform/web/WebPlatformView.cpp` — WebGL context (tgfx `WebGLWindow`)
+- `src/SeatCanvas/platform/web/WebRendererCore.cpp` — C++ renderer wrapper + embind bindings
+
+**Usage**: Emscripten + WebAssembly, WebGL 2.0 rendering, `requestAnimationFrame` render loop, embind for C++ ↔ JS bridging
+
+**Architecture** (three layers, following libpag's pattern):
+
+```
+C++ (embind) → TypeScript Binding → Application
+```
+
+1. **C++ WASM layer**: `WebRendererCore` wraps `SeatCanvasCoreRenderer`, exposed via embind as `SeatCanvasRenderer`
+2. **TypeScript binding layer** (`binding.ts`): attaches TS classes to the WASM module, calls `TGFXBind`
+3. **Application layer** (`SeatCanvasApp`): high-level API for consumers
+
+**Style key helper**: JS side passes `pricecode` as string; C++ converts to index via `pricecodeIndexForCode()`
+
+**Basemap lifecycle**: Call `SeatCanvasFont.registerFallbackFontNames()` **before** `app.init()`. Set delegate callbacks after init. In `didLoadBaseMap`, apply styles and push seat data; in `didUpdateZoomLevelConfig`, set `seatRenderZoomThreshold`; in `didUnloadBaseMap`, stop timers and clear cached seat state.
+
+```typescript
+// 1. Init module
+const module = await SeatCanvasInit({ locateFile: (f) => '/wasm/' + f });
+
+// 2. Register fonts before creating renderer
+SeatCanvasFont.registerFallbackFontNames();
+
+// 3. Create app
+const app = new SeatCanvasApp('#seat-canvas');
+app.init(module);
+
+// 4. Setup delegate
+const delegate = app.getDelegate()!;
+delegate.setDidLoadBaseMapCallback(() => {
+    renderer.registerPricecodes(['1', '2']);
+    renderer.applySeatStyleJSONConfig(styleJson);
+    renderer.setSeatData('37492', seats);
+    renderer.updateSeatStatusesForZone('37492', statuses);
+    renderer.setSelectedSeatIds(selectedSeatIds);
+});
+delegate.setDidUpdateZoomLevelConfigCallback((event) => {
+    renderer.setSeatRenderZoomThreshold(event.zoomLevels.venue);
+});
+
+// 5. Start and load
+app.start();
+app.loadBaseMapFromSVG(svgData);
+```
+
+**Font registration**: Unlike native platforms, web fonts are registered from the JS side. Use `SeatCanvasFont.registerFallbackFontNames(fontNames?)` to set fallback typefaces before the renderer is created. If not called, a default set of system fonts is used.
+
+**Resize handling**: Observe the canvas's parent container (not the canvas itself). Call `updateCanvasSize()` then `renderer.updateSize()` and `renderer.invalidateContent()`.
+
 ## Troubleshooting
 
 **GPU rendering issues**

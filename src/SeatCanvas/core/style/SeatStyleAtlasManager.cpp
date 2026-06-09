@@ -27,6 +27,11 @@ SeatStyleAtlasManager::~SeatStyleAtlasManager() {
 }
 
 void SeatStyleAtlasManager::update(float density, const tgfx::Size &seatSize) {
+#if defined(__EMSCRIPTEN__)
+    // 解决 Web 平台模糊问题
+    density = std::min(density * 2.0f, 5.0f);
+#endif
+
     bool sizeChanged = (this->seatSize != seatSize);
     bool densityChanged = (this->density != density);
 

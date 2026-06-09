@@ -7,8 +7,13 @@
     "common": [
       {
         "url": "${GITHUB_BASE_URL}/libpag/tgfx.git",
-        "commit": "c89bc394042c804f4adf98dd8e6901391fd30313",
+        "commit": "64c8597101809078bc71499c13fe850553fbfa1e",
         "dir": "third_party/tgfx"
+      },
+      {
+        "url": "${GITHUB_BASE_URL}/emscripten-core/emsdk.git",
+        "commit": "ba0585d60fb9cfd6f5088abb10a637ef34bcee9e",
+        "dir": "third_party/emsdk"
       }
     ],
     "mac": [

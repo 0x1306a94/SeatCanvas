@@ -112,6 +112,14 @@ void FontManager::SetFallbackFontPaths(const std::vector<std::string> &fontPaths
     fontManager.setFallbackFontPaths(fontPaths, ttcIndices);
 }
 
+void FontManager::AppendFallbackTypefaces(const std::vector<std::shared_ptr<tgfx::Typeface>> &typefaces) {
+    fontManager.appendFallbackTypefaces(typefaces);
+}
+
+void FontManager::PrependFallbackTypefaces(const std::vector<std::shared_ptr<tgfx::Typeface>> &typefaces) {
+    fontManager.prependFallbackTypefaces(typefaces);
+}
+
 std::vector<std::shared_ptr<tgfx::Typeface>> FontManager::getFallbackTypefaces() {
     std::lock_guard<std::mutex> autoLock(locker);
     return fallbackFontList;
@@ -141,5 +149,29 @@ void FontManager::setFallbackFontPaths(const std::vector<std::string> &fontPaths
         }
         fallbackFontList.push_back(face);
     }
+}
+
+void FontManager::appendFallbackTypefaces(const std::vector<std::shared_ptr<tgfx::Typeface>> &typefaces) {
+    std::lock_guard<std::mutex> autoLock(locker);
+    for (const auto &typeface : typefaces) {
+        if (typeface == nullptr) {
+            continue;
+        }
+        fallbackFontList.push_back(typeface);
+    }
+}
+
+void FontManager::prependFallbackTypefaces(const std::vector<std::shared_ptr<tgfx::Typeface>> &typefaces) {
+    std::lock_guard<std::mutex> autoLock(locker);
+    std::vector<std::shared_ptr<tgfx::Typeface>> updatedList = {};
+    updatedList.reserve(typefaces.size() + fallbackFontList.size());
+    for (const auto &typeface : typefaces) {
+        if (typeface == nullptr) {
+            continue;
+        }
+        updatedList.push_back(typeface);
+    }
+    updatedList.insert(updatedList.end(), fallbackFontList.begin(), fallbackFontList.end());
+    fallbackFontList = std::move(updatedList);
 }
 };  // namespace kk

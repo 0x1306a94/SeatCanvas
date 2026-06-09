@@ -5,13 +5,6 @@ PROJECT_DIR=$PWD
 
 ./install_tools.sh
 
-if [[ `uname` == 'Darwin' ]]; then
-  if [ ! $(which emcc) ]; then
-      echo "emscripten not found. Trying to install..."
-      brew install emscripten
-  fi
-fi
-
 if [ ! $(which depctl) ]; then
   echo "depctl not found. Trying to install..."
   brew install 0x1306a94/tap/depctl > /dev/null

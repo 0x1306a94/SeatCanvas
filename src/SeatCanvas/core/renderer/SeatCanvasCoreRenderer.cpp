@@ -597,7 +597,16 @@ void SeatCanvasCoreRenderer::drawDebugHUD(tgfx::Canvas *canvas) {
         fps < 30 ? tgfx::Color::Red() : tgfx::Color::Green(),
     });
 
+    std::snprintf(buffer, sizeof(buffer), "Density: %.3f", _state->getDensity());
+    lines.push_back(HudLine{buffer, tgfx::Color::White()});
+
     std::snprintf(buffer, sizeof(buffer), "Zoom: %.3f", getZoomScale());
+    lines.push_back(HudLine{buffer, tgfx::Color::White()});
+
+    std::snprintf(buffer, sizeof(buffer), "Zoom min: %.3f", getMinimumZoomScale());
+    lines.push_back(HudLine{buffer, tgfx::Color::White()});
+
+    std::snprintf(buffer, sizeof(buffer), "Zoom max: %.3f", getMaximumZoomScale());
     lines.push_back(HudLine{buffer, tgfx::Color::White()});
 
     std::snprintf(buffer, sizeof(buffer), "Loaded: %zu zones  %zu seats", zoneCount, seatCount);

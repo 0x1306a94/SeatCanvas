@@ -107,6 +107,13 @@ elseif (OHOS)
     
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--gc-sections -Wl,--version-script=${CMAKE_CURRENT_LIST_DIR}/SeatCanvas.ohos.def")
 
+elseif (EMSCRIPTEN)
+    message(STATUS "Platform: EMSCRIPTEN (Web)")
+    add_files_by_extension(SeatCanvas_PLATFORM_WEB_FILES ".h;.hpp;.cpp"
+        platform/web
+    )
+    list(APPEND SeatCanvas_ALL_FILES ${SeatCanvas_PLATFORM_WEB_FILES})
+
 endif()
 
 add_source_group(SeatCanvas_ALL_FILES ${CMAKE_CURRENT_LIST_DIR} "Sources")
@@ -115,9 +122,16 @@ set(LIB_TARGET_NAME ${PROJECT_NAME})
 if (OHOS)
     string(TOLOWER "${PROJECT_NAME}" PROJECT_NAME_LOWER)
     set(LIB_TARGET_NAME ${PROJECT_NAME_LOWER})
+elseif (EMSCRIPTEN)
+    string(TOLOWER "seatcanvas" PROJECT_NAME_LOWER)
+    set(LIB_TARGET_NAME "lib${PROJECT_NAME_LOWER}")
 endif()
 
-add_library(${LIB_TARGET_NAME} SHARED ${SeatCanvas_ALL_FILES} ${SeatCanvas_LDS})
+if (EMSCRIPTEN)
+    add_executable(${LIB_TARGET_NAME} ${SeatCanvas_ALL_FILES} ${SeatCanvas_LDS})
+else()
+    add_library(${LIB_TARGET_NAME} SHARED ${SeatCanvas_ALL_FILES} ${SeatCanvas_LDS})
+endif()
 
 target_include_directories(${LIB_TARGET_NAME} PRIVATE ${PROJECT_ROOT_INCLUDE_DIR}/${PROJECT_NAME})
 target_include_directories(${LIB_TARGET_NAME} PRIVATE ${PROJECT_THIRD_PARTY_ROOT_DIR}/tgfx/include ${PROJECT_THIRD_PARTY_ROOT_DIR}/tgfx/src)
@@ -127,6 +141,39 @@ target_link_libraries(${LIB_TARGET_NAME} PRIVATE
     ${SeatCanvas_SHARED_LIBS}
     nlohmann_json
 )
+
+if (EMSCRIPTEN)
+    target_compile_definitions(${LIB_TARGET_NAME} PRIVATE -DEMSCRIPTEN_HAS_UNBOUND_TYPE_NAMES=0)
+    target_compile_options(${LIB_TARGET_NAME} PRIVATE -fno-rtti)
+    target_link_options(${LIB_TARGET_NAME} PRIVATE
+        --no-entry -lembind -fno-rtti
+        -DEMSCRIPTEN_HAS_UNBOUND_TYPE_NAMES=0
+        -sEXPORT_NAME='SeatCanvasInit'
+        -sWASM=1
+        -sMAX_WEBGL_VERSION=2
+        -sEXPORTED_RUNTIME_METHODS=['GL','HEAPU8']
+        -sALLOW_MEMORY_GROWTH=1
+        -sMODULARIZE=1
+        -sENVIRONMENT=web,worker
+        -sEXPORT_ES6=1
+        -sEXPORTED_FUNCTIONS=['_malloc','_free']
+    )
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        target_compile_options(${LIB_TARGET_NAME} PRIVATE -O0 -g3)
+        target_link_options(${LIB_TARGET_NAME} PRIVATE -O0 -g3 -sSAFE_HEAP=1 -Wno-limited-postlink-optimizations)
+    else()
+        target_compile_options(${LIB_TARGET_NAME} PRIVATE -Oz)
+        target_link_options(${LIB_TARGET_NAME} PRIVATE -Oz)
+    endif()
+
+    if (TGFX_USE_THREADS)
+        target_link_options(${LIB_TARGET_NAME} PRIVATE -pthread -sUSE_PTHREADS=1 -sINITIAL_MEMORY=32MB
+                -sPTHREAD_POOL_SIZE=navigator.hardwareConcurrency -sPROXY_TO_PTHREAD=1
+                -sEXIT_RUNTIME=0 -sINVOKE_RUN=0 -sMALLOC=dlmalloc)
+        target_compile_options(${LIB_TARGET_NAME} PRIVATE -fPIC -pthread -sUSE_PTHREADS=1)
+    endif()
+
+endif()
 
 target_compile_definitions(${LIB_TARGET_NAME} PRIVATE $<$<CONFIG:Debug>:DEBUG>)
 target_compile_definitions(${LIB_TARGET_NAME} PRIVATE $<$<CONFIG:RelWithDebInfo>:DEBUG>)
