@@ -67,4 +67,3 @@ SeatCanvas/
 | Platform integration (iOS / Android / OHOS / Web) | @./docs/agents/platform.md |
 | C++ coding standards, naming, commit format | @./docs/agents/coding-standards.md |
 | Adding features, common tasks | @./docs/agents/development-guide.md |
-| Layer version implementation | @./docs/layer_version_implementation.md |
