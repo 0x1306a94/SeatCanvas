@@ -5,9 +5,7 @@
 //  Created by king on 2026/5/26.
 //
 
-import { SeatCanvasApp, SeatCanvasFont, types } from '../src/SeatCanvas';
-import  SeatCanvasInit  from './wasm/libseatcanvas';
-import { SeatCanvasModuleBinding } from '../src/binding';
+import { SeatCanvasInit, SeatCanvasApp, types } from '../src/SeatCanvas';
 import type { SeatCanvasRenderer, SeatData, SVGBaseMapParseConfig } from '../src/types';
 import { updateCanvasSize } from '../src/common';
 
@@ -357,8 +355,7 @@ if (typeof window !== 'undefined') {
             const module = await SeatCanvasInit({
                 locateFile: (file: string) => './wasm/' + file,
             }) as types.SeatCanvasModule;
-            SeatCanvasModuleBinding(module);
-            SeatCanvasFont.registerFallbackFontNames();
+
             app.init(module);
             console.log('[SeatCanvas] Initialized successfully');
         } catch (err) {

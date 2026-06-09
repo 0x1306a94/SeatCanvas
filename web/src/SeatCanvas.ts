@@ -9,8 +9,33 @@ import { GestureManager } from './GestureManager';
 import { bindCanvasEvents, bindDevicePixelRatioChange, updateCanvasSize } from './common';
 import * as types from './types';
 import { SeatCanvasFont } from './SeatCanvasFont';
-  
-export {  types, SeatCanvasFont };
+import createSeatCanvas from './wasm/libseatcanvas';
+import { SeatCanvasModuleBinding } from './binding';
+
+export interface ModuleOption {
+    /**
+     * Link to wasm file.
+     */
+    locateFile?: (file: 'libseatcanvas.wasm') => string;
+}
+
+/**
+* Initialize pag webassembly module.
+*/
+const SeatCanvasInit = (moduleOption: ModuleOption = {}): Promise<types.SeatCanvasModule> =>
+    createSeatCanvas(moduleOption)
+        .then((module: any) => {
+            SeatCanvasModuleBinding(module);
+            SeatCanvasFont.registerFallbackFontNames();
+            return module;
+        })
+        .catch((error: any) => {
+            console.error(error);
+            throw new Error('SeatCanvasInit fail! Please check .wasm file path valid.');
+        });
+
+export { SeatCanvasInit, types, SeatCanvasFont };
+
 
 /**
  * SeatCanvas Web 端高层封装

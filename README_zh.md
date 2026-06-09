@@ -439,21 +439,18 @@ npm run build              # 完整构建（wasm + lib + demo）
 #### 使用示例
 
 ```typescript
-import { SeatCanvasApp, SeatCanvasInit, SeatCanvasFont } from 'libseatcanvas';
+import { SeatCanvasInit, SeatCanvasApp, SeatCanvasFont } from 'libseatcanvas';
 
 // 1. 初始化 WASM 模块
 const module = await SeatCanvasInit({
     locateFile: (file: string) => '/wasm/' + file,
 });
 
-// 2. 在创建渲染器之前注册回退字体
-SeatCanvasFont.registerFallbackFontNames();
-
-// 3. 创建应用并初始化渲染器
+// 2. 创建应用并初始化渲染器
 const app = new SeatCanvasApp('#seat-canvas');
 app.init(module);
 
-// 4. 设置 delegate 回调
+// 3. 设置 delegate 回调
 const delegate = app.getDelegate()!;
 delegate.setDidLoadBaseMapCallback(() => {
     const renderer = app.getRenderer()!;
@@ -473,10 +470,10 @@ delegate.setDidUpdateZoomLevelConfigCallback((event) => {
     renderer.setSeatRenderZoomThreshold(event.zoomLevels.venue);
 });
 
-// 5. 启动渲染循环
+// 4. 启动渲染循环
 app.start();
 
-// 6. 加载底图
+// 5. 加载底图
 app.loadBaseMapFromSVG(svgData);
 ```
 

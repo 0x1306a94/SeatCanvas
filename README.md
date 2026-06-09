@@ -439,21 +439,18 @@ npm run build              # Full build (wasm + lib + demo)
 #### Usage
 
 ```typescript
-import { SeatCanvasApp, SeatCanvasInit, SeatCanvasFont } from 'libseatcanvas';
+import { SeatCanvasInit, SeatCanvasApp, SeatCanvasFont } from 'libseatcanvas';
 
 // 1. Initialize WASM module
 const module = await SeatCanvasInit({
     locateFile: (file: string) => '/wasm/' + file,
 });
 
-// 2. Register fallback fonts before creating renderer
-SeatCanvasFont.registerFallbackFontNames();
-
-// 3. Create app and initialize renderer
+// 2. Create app and initialize renderer
 const app = new SeatCanvasApp('#seat-canvas');
 app.init(module);
 
-// 4. Setup delegate callbacks
+// 3. Setup delegate callbacks
 const delegate = app.getDelegate()!;
 delegate.setDidLoadBaseMapCallback(() => {
     const renderer = app.getRenderer()!;
@@ -473,10 +470,10 @@ delegate.setDidUpdateZoomLevelConfigCallback((event) => {
     renderer.setSeatRenderZoomThreshold(event.zoomLevels.venue);
 });
 
-// 5. Start render loop
+// 4. Start render loop
 app.start();
 
-// 6. Load basemap
+// 5. Load basemap
 app.loadBaseMapFromSVG(svgData);
 ```
 

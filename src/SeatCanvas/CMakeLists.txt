@@ -148,7 +148,7 @@ if (EMSCRIPTEN)
     target_link_options(${LIB_TARGET_NAME} PRIVATE
         --no-entry -lembind -fno-rtti
         -DEMSCRIPTEN_HAS_UNBOUND_TYPE_NAMES=0
-        -sEXPORT_NAME='SeatCanvasInit'
+        -sEXPORT_NAME='SeatCanvas'
         -sWASM=1
         -sMAX_WEBGL_VERSION=2
         -sEXPORTED_RUNTIME_METHODS=['GL','HEAPU8']
