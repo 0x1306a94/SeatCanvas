@@ -13,10 +13,10 @@ option(ENABLE_TIME_PROFILER "Enable time profiler" OFF)
 if(MACOS OR IOS)
   enable_language(OBJC OBJCXX Swift)
   # Set up swiftrt.o and runtime library search paths
-  include(InitializeSwift)
-  # cmake/modules/AddSwift.cmake provides the function for creating the Swift to
-  # C++ bridging header
-  include(AddSwift)
+#   include(InitializeSwift)
+#   # cmake/modules/AddSwift.cmake provides the function for creating the Swift to
+#   # C++ bridging header
+#   include(AddSwift)
 
   set(SeatCanvas_BUILD_FRAMEWORK "Enable building framework")
 else()
@@ -245,7 +245,7 @@ if (SeatCanvas_BUILD_FRAMEWORK)
     set(SeatCanvas_IDENTIFIER "com.0x1306a94.seatcanvas")
     set_target_properties(${LIB_TARGET_NAME} PROPERTIES
         FRAMEWORK TRUE
-        INSTALL_NAME_DIR "@rpath/${PROJECT_NAME}.framework/${PROJECT_NAME}"
+        INSTALL_NAME_DIR "@rpath/${LIB_TARGET_NAME}.framework/${LIB_TARGET_NAME}"
         INSTALL_RPATH "@executable_path/Frameworks;@loader_path/Frameworks"
         XCODE_ATTRIBUTE_FRAMEWORK_VERSION A
         XCODE_ATTRIBUTE_WRAPPER_EXTENSION "framework"
