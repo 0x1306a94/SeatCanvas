@@ -61,3 +61,7 @@ __pycache__/
 .codegraph/
 .cursor/rules/codegraph.mdc
 web/build
+
+tests/out/
+tests/baseline-out/
+tests/baseline/.cache/

@@ -4,7 +4,10 @@ project(SeatCanvas LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # cmake_policy(SET CMP0063 NEW)
+set(CMAKE_C_VISIBILITY_PRESET hidden)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_OBJC_VISIBILITY_PRESET hidden)
+set(CMAKE_OBJCXX_VISIBILITY_PRESET hidden)
 
 set(SeatCanvas_VERSION "1.0.0")
 
@@ -106,9 +109,11 @@ elseif (MACOS)
     find_library(MetalKit_LIBS MetalKit REQUIRED)
     list(APPEND SeatCanvas_SHARED_LIBS ${MetalKit_LIBS})
 
-    list(APPEND SeatCanvas_LDS ${CMAKE_CURRENT_LIST_DIR}/SeatCanvas.mac.lds)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -exported_symbols_list ${SeatCanvas_LDS}")
-    add_source_group(SeatCanvas_LDS ${CMAKE_CURRENT_LIST_DIR} "Linker Script")
+    if(NOT SEATCANVAS_BUILD_TESTS)
+        list(APPEND SeatCanvas_LDS ${CMAKE_CURRENT_LIST_DIR}/SeatCanvas.mac.lds)
+        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -exported_symbols_list ${SeatCanvas_LDS}")
+        add_source_group(SeatCanvas_LDS ${CMAKE_CURRENT_LIST_DIR} "Linker Script")
+    endif()
 elseif (ANDROID)
     message(STATUS "Platform: ANDROID")
     add_files_by_extension(SeatCanvas_PLATFORM_ANDROID_FILES ".h;.hpp;.cpp"
@@ -166,6 +171,14 @@ elseif (EMSCRIPTEN)
     set(LIB_TARGET_NAME "lib${PROJECT_NAME_LOWER}")
 endif()
 
+if((MACOS OR IOS) AND NOT CMAKE_GENERATOR STREQUAL "Xcode")
+    # ios.toolchain.cmake sets raw -rpath flags for clang, but swiftc requires -Xlinker.
+    string(REPLACE "-rpath @executable_path/Frameworks " "" _seatcanvas_link_flags "${CMAKE_SHARED_LINKER_FLAGS}")
+    string(REPLACE "-rpath @loader_path/Frameworks" "" _seatcanvas_link_flags "${_seatcanvas_link_flags}")
+    string(STRIP "${_seatcanvas_link_flags}" _seatcanvas_link_flags)
+    set(CMAKE_SHARED_LINKER_FLAGS "${_seatcanvas_link_flags}")
+endif()
+
 if (EMSCRIPTEN)
     add_executable(${LIB_TARGET_NAME} ${SeatCanvas_ALL_FILES} ${SeatCanvas_LDS})
 else()
@@ -175,6 +188,17 @@ endif()
 target_include_directories(${LIB_TARGET_NAME} PRIVATE ${PROJECT_ROOT_INCLUDE_DIR}/${PROJECT_NAME})
 target_include_directories(${LIB_TARGET_NAME} PRIVATE ${PROJECT_THIRD_PARTY_ROOT_DIR}/tgfx/include ${PROJECT_THIRD_PARTY_ROOT_DIR}/tgfx/src)
 target_include_directories(${LIB_TARGET_NAME} PRIVATE .)
+
+if(SEATCANVAS_BUILD_TESTS)
+    set_target_properties(${LIB_TARGET_NAME} PROPERTIES
+        C_VISIBILITY_PRESET default
+        CXX_VISIBILITY_PRESET default
+        OBJC_VISIBILITY_PRESET default
+        OBJCXX_VISIBILITY_PRESET default
+        VISIBILITY_INLINES_HIDDEN OFF
+    )
+endif()
+
 target_link_libraries(${LIB_TARGET_NAME} PRIVATE 
     ${SeatCanvas_STATIC_LIBS} 
     ${SeatCanvas_SHARED_LIBS}
@@ -221,11 +245,15 @@ target_compile_definitions(${LIB_TARGET_NAME} PRIVATE
 )
 
 # for debug symbol
-target_compile_options(${LIB_TARGET_NAME} PRIVATE -g)
 target_compile_options(${LIB_TARGET_NAME} PRIVATE
-    $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:-O0>
-    $<$<CONFIG:Release>:-Os>
-    $<$<CONFIG:MinSizeRel>:-Os>
+    $<$<COMPILE_LANGUAGE:C,CXX,OBJC,OBJCXX>:-g>
+)
+target_compile_options(${LIB_TARGET_NAME} PRIVATE
+    $<$<COMPILE_LANGUAGE:C,CXX,OBJC,OBJCXX>:
+        $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:-O0>
+        $<$<CONFIG:Release>:-Os>
+        $<$<CONFIG:MinSizeRel>:-Os>
+    >
 )
 
 # tgfx
@@ -241,7 +269,16 @@ target_compile_options(${LIB_TARGET_NAME} PRIVATE
 )
 
 if(MACOS OR IOS)
-   
+    if(NOT CMAKE_GENERATOR STREQUAL "Xcode")
+        target_link_options(${LIB_TARGET_NAME} PRIVATE
+            "SHELL:-Xlinker -rpath -Xlinker @executable_path/Frameworks"
+            "SHELL:-Xlinker -rpath -Xlinker @loader_path/Frameworks"
+        )
+    endif()
+    
+
+    seatcanvas_enable_objc_arc(${LIB_TARGET_NAME})
+
     set_target_properties(${LIB_TARGET_NAME} PROPERTIES
       XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "YES"
       XCODE_ATTRIBUTE_SWIFT_OBJC_INTEROP_MODE "objcxx"
@@ -253,6 +290,8 @@ if(MACOS OR IOS)
       XCODE_ATTRIBUTE_STRIP_INSTALLED_PRODUCT "YES"
       XCODE_ATTRIBUTE_STRIP_STYLE "non-global"
       XCODE_ATTRIBUTE_SWIFT_VERSION "6.3"
+      XCODE_ATTRIBUTE_SWIFT_COMPILATION_MODE "wholemodule"
+      XCODE_ATTRIBUTE_SWIFT_COMPILATION_MODE[variant=Debug] "singlefile"
       XCODE_ATTRIBUTE_BUILD_LIBRARY_FOR_DISTRIBUTION "YES"
       XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS "YES"
       XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym"
@@ -265,6 +304,7 @@ if(MACOS OR IOS)
         "$<$<COMPILE_LANGUAGE:Swift>:-cxx-interoperability-mode=default>"
         "$<$<COMPILE_LANGUAGE:Swift>:-enable-library-evolution>"
         "$<$<COMPILE_LANGUAGE:Swift>:-emit-module-interface>"
+        "$<$<COMPILE_LANGUAGE:Swift>:$<$<NOT:$<CONFIG:Debug>>:-whole-module-optimization>>"
     )
     
     # _swift_generate_cxx_header_from_sources(${LIB_TARGET_NAME} 

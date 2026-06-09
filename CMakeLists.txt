@@ -42,4 +42,17 @@ add_subdirectory(third_party/tgfx/third_party/json)
 
 # set(CMAKE_BUILD_TYPE "${_SEATCANVAS_PREV_BUILD_TYPE}" CACHE STRING "" FORCE)
 
+option(SEATCANVAS_BUILD_TESTS "Build tests" OFF)
+message(STATUS "SEATCANVAS_BUILD_TESTS: ${SEATCANVAS_BUILD_TESTS}")
+
 add_subdirectory(src/SeatCanvas)
+
+if(SEATCANVAS_BUILD_TESTS AND MACOS)
+    enable_testing()
+    set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
+    set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+    set(gtest_build_samples OFF CACHE BOOL "" FORCE)
+    set(gtest_build_tests OFF CACHE BOOL "" FORCE)
+    add_subdirectory(third_party/googletest)
+    add_subdirectory(tests)
+endif()
