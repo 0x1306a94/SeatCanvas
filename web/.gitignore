@@ -3,6 +3,7 @@ lib/
 types/
 deploy/
 *.js.map
+demo/fonts/
 demo/*.js
 demo/wasm/
 demo/wasm-mt/

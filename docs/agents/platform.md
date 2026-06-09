@@ -79,14 +79,16 @@ C++ (embind) → TypeScript Binding → Application
 
 **Style key helper**: JS side passes `pricecode` as string; C++ converts to index via `pricecodeIndexForCode()`
 
-**Basemap lifecycle**: Call `SeatCanvasFont.registerFallbackFontNames()` **before** `app.init()`. Set delegate callbacks after init. In `didLoadBaseMap`, apply styles and push seat data; in `didUpdateZoomLevelConfig`, set `seatRenderZoomThreshold`; in `didUnloadBaseMap`, stop timers and clear cached seat state.
+**Basemap lifecycle**: Call `SeatCanvasFont.registerFonts()` **after** `SeatCanvasInit()` and **before** `app.init()`. Set delegate callbacks after init. In `didLoadBaseMap`, apply styles and push seat data; in `didUpdateZoomLevelConfig`, set `seatRenderZoomThreshold`; in `didUnloadBaseMap`, stop timers and clear cached seat state.
 
 ```typescript
 // 1. Init module
 const module = await SeatCanvasInit({ locateFile: (f) => '/wasm/' + f });
 
-// 2. Register fonts before creating renderer
-SeatCanvasFont.registerFallbackFontNames();
+// 2. Load and register fonts (required on Web — npm package does not ship font files)
+const textFont = new Uint8Array(await (await fetch('/fonts/NotoSansSC-Regular.otf')).arrayBuffer());
+const emojiFont = new Uint8Array(await (await fetch('/fonts/NotoColorEmoji.ttf')).arrayBuffer());
+SeatCanvasFont.registerFonts(textFont, emojiFont);
 
 // 3. Create app
 const app = new SeatCanvasApp('#seat-canvas');
@@ -94,6 +96,7 @@ app.init(module);
 
 // 4. Setup delegate
 const delegate = app.getDelegate()!;
+const renderer = app.getRenderer()!;
 delegate.setDidLoadBaseMapCallback(() => {
     renderer.registerPricecodes(['1', '2']);
     renderer.applySeatStyleJSONConfig(styleJson);
@@ -110,7 +113,9 @@ app.start();
 app.loadBaseMapFromSVG(svgData);
 ```
 
-**Font registration**: Unlike native platforms, web fonts are registered from the JS side. Use `SeatCanvasFont.registerFallbackFontNames(fontNames?)` to set fallback typefaces before the renderer is created. If not called, a default set of system fonts is used.
+**Font registration**: Web uses FreeType (not browser system fonts). Unlike native platforms, fonts must be loaded on the JS side and passed as `Uint8Array` via `SeatCanvasFont.registerFonts(textFontData, emojiFontData?)` after `SeatCanvasInit()` and before `app.init()`. The call throws if the module is not ready, arguments are invalid, or the text font cannot be parsed. Emoji font is optional; a parse failure logs a warning and continues without emoji. Provide your own font files (see `resources/fonts/` in the repo for demo fonts).
+
+**Migration from `registerFallbackFontNames`**: The old API registered browser font family names and is removed. Fetch font files (e.g. Noto Sans SC + optional Noto Color Emoji) and call `registerFonts` instead.
 
 **Resize handling**: Observe the canvas's parent container (not the canvas itself). Call `updateCanvasSize()` then `renderer.updateSize()` and `renderer.invalidateContent()`.
 

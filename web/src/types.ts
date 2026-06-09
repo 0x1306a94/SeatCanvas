@@ -27,8 +27,12 @@ export interface SeatCanvasModule extends EmscriptenModule {
     SeatCanvasRenderer: {
         /** 根据 canvas 选择器创建渲染器 */
         MakeFrom(canvasID: string): SeatCanvasRenderer;
-        /** 设置全局 fallback 字体名列表（需在创建渲染器前调用） */
-        SetFallbackFontNames(fontNames: string[]): void;
+        /**
+         * 通过 FreeType 注册 fallback 字体字节数据。
+         * 需在 SeatCanvasInit() 之后、MakeFrom() 创建渲染器之前调用。
+         * @returns 正文字体注册成功返回 true
+         */
+        RegisterFonts(textFontData: Uint8Array, emojiFontData?: Uint8Array): boolean;
     };
     GL: any;
     HEAPU8: Uint8Array;

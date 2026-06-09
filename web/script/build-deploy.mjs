@@ -62,6 +62,35 @@ const srcResources = path.join(webDir, 'demo', 'sample_resources');
 const dstResources = path.join(deployDir, 'sample_resources');
 fs.cpSync(srcResources, dstResources, { recursive: true });
 
+// Copy fonts for FreeType fallback registration
+const srcFonts = path.resolve(webDir, '..', 'resources', 'fonts');
+const dstFonts = path.join(deployDir, 'fonts');
+const minFontBytes = 1_000_000;
+const requiredFonts = ['NotoSansSC-Regular.otf', 'NotoColorEmoji.ttf'];
+
+if (!fs.existsSync(srcFonts)) {
+  throw new Error(
+    `Missing fonts directory: ${srcFonts}. ` +
+    'Place NotoSansSC-Regular.otf and NotoColorEmoji.ttf under resources/fonts/ (see resources/fonts/LICENSE).',
+  );
+}
+
+for (const fontName of requiredFonts) {
+  const fontPath = path.join(srcFonts, fontName);
+  if (!fs.existsSync(fontPath)) {
+    throw new Error(`Missing font file: ${fontPath}`);
+  }
+  const fontSize = fs.statSync(fontPath).size;
+  if (fontSize <= minFontBytes) {
+    throw new Error(
+      `Font file too small (${fontSize} bytes): ${fontPath}. ` +
+      'Git LFS files may not be pulled. Run: git lfs pull',
+    );
+  }
+}
+
+fs.cpSync(srcFonts, dstFonts, { recursive: true });
+
 // Generate static basemap list (replaces /api/basemaps)
 const basemapDir = path.join(srcResources, 'default', 'basemap');
 const basemaps = fs.readdirSync(basemapDir)

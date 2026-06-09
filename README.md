@@ -121,6 +121,8 @@ SeatCanvas/
 ├── android/                 # Android samples and resources
 ├── ohos/                    # OHOS samples and resources
 ├── resources/               # Resource files
+│   ├── fonts/               # Web demo fonts (Git LFS; OFL-licensed Noto)
+│   └── SeatCanvasSample.bundle/
 ├── third_party/             # Third-party dependencies (synced via depsync)
 └── CMakeLists.txt          # CMake build configuration
 ```
@@ -408,9 +410,10 @@ Live demo: [preview.seatcanvas-demo.pages.dev](https://preview.seatcanvas-demo.p
 
 #### Quick Start
 
-From the repository root, sync dependencies (includes `third_party/emsdk`):
+From the repository root, install Git LFS (font files are stored via LFS) and sync dependencies (includes `third_party/emsdk`):
 
 ```bash
+git lfs install    # once per machine
 ./sync_deps.sh
 ```
 
@@ -419,9 +422,11 @@ Then build and run the demo:
 ```bash
 cd web
 npm install
-npm run build:wasm   # runs setup.emsdk + emcmake (first run may download the SDK)
+npm run build:wasm   # copies resources/fonts → demo/fonts, then builds WASM
 npm start            # → http://localhost:8081
 ```
+
+`build:wasm` requires `resources/fonts/` (see `resources/fonts/LICENSE`). Demo fonts: `NotoSansSC-Regular.otf` (text) and `NotoColorEmoji.ttf` (emoji, optional at runtime).
 
 Optional: `npm run setup:emsdk` — install/activate Emscripten only, without compiling WASM.
 
@@ -432,9 +437,29 @@ npm run build:wasm         # Build WASM (C++ → Emscripten)
 npm run build:wasm:debug   # Build WASM (debug, separate build directory)
 npm run build:lib          # Build JS library (ESM + CJS) + type declarations
 npm run build:demo         # Build demo page
-npm run build:deploy       # Build deployable static site
+npm run build:deploy       # Build deployable static site (includes fonts/)
 npm run build              # Full build (wasm + lib + demo)
 ```
+
+#### Font Registration
+
+Web builds use **FreeType** for text shaping and glyph rasterization (not browser system fonts via Canvas2D). You must load font files on the JS side and register them **after** `SeatCanvasInit()` and **before** `app.init()`:
+
+```typescript
+async function loadFontBytes(url: string): Promise<Uint8Array> {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${url}`);
+    return new Uint8Array(await resp.arrayBuffer());
+}
+
+const textFont = await loadFontBytes('/fonts/NotoSansSC-Regular.otf');
+const emojiFont = await loadFontBytes('/fonts/NotoColorEmoji.ttf'); // optional
+SeatCanvasFont.registerFonts(textFont, emojiFont);
+```
+
+- **Text font is required** — `registerFonts` throws if the module is not ready, arguments are invalid, or the text font cannot be parsed.
+- **Emoji font is optional** — a parse failure logs a warning and continues without emoji.
+- **npm package does not ship font files** — integrators must host fonts and fetch them themselves (demo/deploy copy from `resources/fonts/`).
 
 #### Usage
 
@@ -446,14 +471,18 @@ const module = await SeatCanvasInit({
     locateFile: (file: string) => '/wasm/' + file,
 });
 
-// 2. Create app and initialize renderer
+// 2. Load and register fonts (required on Web)
+const textFont = new Uint8Array(await (await fetch('/fonts/NotoSansSC-Regular.otf')).arrayBuffer());
+SeatCanvasFont.registerFonts(textFont);
+
+// 3. Create app and initialize renderer
 const app = new SeatCanvasApp('#seat-canvas');
 app.init(module);
 
-// 3. Setup delegate callbacks
+// 4. Setup delegate callbacks
 const delegate = app.getDelegate()!;
+const renderer = app.getRenderer()!;
 delegate.setDidLoadBaseMapCallback(() => {
-    const renderer = app.getRenderer()!;
     renderer.registerPricecodes(['1', '2']);
     renderer.applySeatStyleJSONConfig(styleJson);
     renderer.setSeatData('37492', seats);
@@ -470,10 +499,10 @@ delegate.setDidUpdateZoomLevelConfigCallback((event) => {
     renderer.setSeatRenderZoomThreshold(event.zoomLevels.venue);
 });
 
-// 4. Start render loop
+// 5. Start render loop
 app.start();
 
-// 5. Load basemap
+// 6. Load basemap
 app.loadBaseMapFromSVG(svgData);
 ```
 

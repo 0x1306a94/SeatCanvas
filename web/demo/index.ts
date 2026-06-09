@@ -5,7 +5,7 @@
 //  Created by king on 2026/5/26.
 //
 
-import { SeatCanvasInit, SeatCanvasApp, types } from '../src/SeatCanvas';
+import { SeatCanvasInit, SeatCanvasApp, SeatCanvasFont, types } from '../src/SeatCanvas';
 import type { SeatCanvasRenderer, SeatData, SVGBaseMapParseConfig } from '../src/types';
 import { updateCanvasSize } from '../src/common';
 
@@ -65,6 +65,17 @@ async function fetchBasemapList(): Promise<string[]> {
     const resp = await fetch('/sample_resources/basemaps.json');
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     return resp.json();
+}
+
+async function fetchFontBytes(url: string): Promise<Uint8Array> {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${url}`);
+    return new Uint8Array(await resp.arrayBuffer());
+}
+
+async function registerDemoFonts(): Promise<void> {
+    const textFontData = await fetchFontBytes('fonts/NotoSansSC-Regular.otf')
+    SeatCanvasFont.registerFonts(textFontData);
 }
 
 // MARK: - Data Loading
@@ -349,13 +360,15 @@ if (typeof window !== 'undefined') {
 
         updateCanvasSize(canvas);
 
-        const app = new SeatCanvasApp('#seat-canvas');
+        let app: SeatCanvasApp | null = null;
 
         try {
             const module = await SeatCanvasInit({
                 locateFile: (file: string) => './wasm/' + file,
             }) as types.SeatCanvasModule;
 
+            await registerDemoFonts();
+            app = new SeatCanvasApp('#seat-canvas');
             app.init(module);
             console.log('[SeatCanvas] Initialized successfully');
         } catch (err) {

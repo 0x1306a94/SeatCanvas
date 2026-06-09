@@ -23,7 +23,8 @@ class WebSeatCanvasCoreRendererDelegate;
 class WebRendererCore {
   public:
     static std::shared_ptr<WebRendererCore> MakeFrom(const std::string &canvasID);
-    static void SetFallbackFontNames(const emscripten::val &fontNames);
+    static bool RegisterFonts(const emscripten::val &fontData,
+                              const emscripten::val &emojiFontData = emscripten::val::undefined());
 
     explicit WebRendererCore(const std::string &canvasID);
     ~WebRendererCore();

@@ -146,6 +146,8 @@ jobs:
     steps:
       - name: Check Out Repo
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Get Third-Party Cache
         id: third-party-cache
@@ -204,6 +206,13 @@ jobs:
 
       - name: Install build tools
         run: sudo apt-get update && sudo apt-get install -y cmake
+
+      - name: Verify demo fonts (Git LFS)
+        run: |
+          test -f resources/fonts/NotoSansSC-Regular.otf
+          test -f resources/fonts/NotoColorEmoji.ttf
+          test "$(wc -c < resources/fonts/NotoSansSC-Regular.otf)" -gt 1000000
+          test "$(wc -c < resources/fonts/NotoColorEmoji.ttf)" -gt 1000000
 
       - name: Install node_modules
         if: steps.node-cache.outputs.cache-hit != 'true'
