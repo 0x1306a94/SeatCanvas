@@ -8,8 +8,8 @@
 #import "ColorCast.h"
 
 namespace kk::bridge {
-tgfx::Color UIColorToTGFX(UIColor *color) {
-    if (!color || color == UIColor.clearColor) {
+tgfx::Color PlatformColorToTGFX(PlatformColor *_Nullable color) {
+    if (!color || color == PlatformColor.clearColor) {
         return tgfx::Color::Transparent();
     }
     CGFloat r, g, b, a;
@@ -23,23 +23,23 @@ tgfx::Color UIColorToTGFX(UIColor *color) {
     };
 }
 
-std::optional<tgfx::Color> UIColorToTGFXOptional(UIColor *color) {
+std::optional<tgfx::Color> PlatformColorToTGFXOptional(PlatformColor *_Nullable color) {
     if (!color) {
         return std::nullopt;
     }
 
-    return UIColorToTGFX(color);
+    return PlatformColorToTGFX(color);
 }
 
-UIColor *UIColorFromTGFX(const tgfx::Color &color) {
-    return [UIColor colorWithRed:static_cast<CGFloat>(color.red) green:static_cast<CGFloat>(color.green) blue:static_cast<CGFloat>(color.blue) alpha:static_cast<CGFloat>(color.alpha)];
+PlatformColor *PlatformColorFromTGFX(const tgfx::Color &color) {
+    return [PlatformColor colorWithRed:static_cast<CGFloat>(color.red) green:static_cast<CGFloat>(color.green) blue:static_cast<CGFloat>(color.blue) alpha:static_cast<CGFloat>(color.alpha)];
 }
 
-UIColor *_Nullable UIColorFromTGFXOptional(const std::optional<tgfx::Color> &color) {
+PlatformColor *_Nullable PlatformColorFromTGFXOptional(const std::optional<tgfx::Color> &color) {
     if (!color) {
         return nil;
     }
 
-    return UIColorFromTGFX(color.value());
+    return PlatformColorFromTGFX(color.value());
 }
 };  // namespace kk::bridge

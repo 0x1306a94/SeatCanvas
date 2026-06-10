@@ -15,7 +15,7 @@ class NativePlatform : public Platform {
   public:
     virtual ~NativePlatform() = default;
     virtual bool registerFallbackFonts() const override;
-    virtual std::shared_ptr<DisplayLink> createDisplayLink(std::function<void()> callback) const override;
+    virtual std::shared_ptr<DisplayLink> createDisplayLink(std::function<void()> callback, void *userInfo) const override;
 };
 };  // namespace kk
 

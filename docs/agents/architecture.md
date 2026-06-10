@@ -28,7 +28,7 @@ Core renderer responsible for rendering logic and lifecycle management.
 
 Platform view abstraction providing GPU context and window.
 
-Platform implementations: `IOSPlatformView.mm`, `AndroidPlatformView.cpp`, `OHOSPlatformView.cpp`
+Platform implementations: `ApplePlatformView.mm` (iOS/macOS), `AndroidPlatformView.cpp`, `OHOSPlatformView.cpp`
 
 ### Custom Render Passes
 **Location**: `src/SeatCanvas/core/renderer/pass/`

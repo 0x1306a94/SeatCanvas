@@ -5,7 +5,7 @@
 **Main Files**:
 - `src/SeatCanvas/platform/ios/` — C++ platform code
 - `src/SeatCanvas/platform/apple/swift/` — Swift bridging
-- `src/SeatCanvas/platform/ios/renderer/IOSPlatformView.mm` — Metal surface (`MTKView` / tgfx `MetalWindow`)
+- `src/SeatCanvas/platform/apple/renderer/ApplePlatformView.mm` — Metal surface (`MTKView` / tgfx `MetalWindow`)
 - Platform-facing UI: `ios/` sample app
 
 **Usage**: Swift/Objective-C++ bridging, Metal rendering via `MTKView`, CADisplayLink render loop
@@ -20,6 +20,17 @@ seatCanvasView.loadBaseMap(svgData, format: .svg)
 // In didLoadBaseMap: registerPricecodes → applySeatStyleJSONConfig → setSeatData / updateSeatStatuses*
 // In didUpdateZoomLevelConfig: seatRenderZoomThreshold = zoomLevels.venue
 ```
+
+## macOS
+
+**Main Files**:
+- `src/SeatCanvas/platform/mac/` — C++ platform code
+- `src/SeatCanvas/platform/apple/` — shared Apple code (Swift bridging, `ApplePlatformView`)
+- `mac/` — Xcode workspace and framework build scripts
+
+**Usage**: Same Swift/Objective-C++ bridging as iOS, Metal rendering via `MTKView`, `MTKView.displayLinkWithTarget` render loop (macOS 14+)
+
+**Build**: See [Build Guide](build.md#build-commands) — `./mac/gen_mac` then `xcodebuild` with `mac/SeatCanvas.xcworkspace`.
 
 ## Android
 

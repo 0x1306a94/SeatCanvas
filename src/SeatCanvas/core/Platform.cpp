@@ -21,7 +21,7 @@ double Platform::currentMediaTime() const {
     return static_cast<double>(ms.count());
 }
 
-std::shared_ptr<DisplayLink> Platform::createDisplayLink(std::function<void()>) const {
+std::shared_ptr<DisplayLink> Platform::createDisplayLink(std::function<void()>, void *userInfo) const {
     return nullptr;
 }
 

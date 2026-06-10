@@ -1,0 +1,35 @@
+#!/bin/bash
+
+SCRIPT_DIR=$(realpath $(dirname $0))
+PROJECT_DIR=$(realpath $SCRIPT_DIR/..)
+GEN_XCODE_PROJEC_DIR=$SCRIPT_DIR/gen_xcode
+GEN_XCODE_PROJEC_FILE=$GEN_XCODE_PROJEC_DIR/SeatCanvasKit.xcodeproj/project.pbxproj
+HOMEBREW_PATH="/opt/homebrew/bin"
+
+echo "[*] SCRIPT_DIR: ${SCRIPT_DIR}"
+
+rm -rf $GEN_XCODE_PROJEC_DIR/CMakeFiles
+rm -rf $GEN_XCODE_PROJEC_DIR/CMakeScripts
+rm -rf $GEN_XCODE_PROJEC_DIR/CMakeCache.txt
+rm -rf $GEN_XCODE_PROJEC_DIR/cmake_install.cmake
+
+echo "[*] Generating ..."
+
+cmake -G Xcode \
+-B $GEN_XCODE_PROJEC_DIR \
+-DCMAKE_BUILD_TYPE=RelWithDebInfo \
+-DCMAKE_TOOLCHAIN_FILE=$PROJECT_DIR/cmake/ios.toolchain.cmake \
+-DPLATFORM=MAC_ARM64 \
+-DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+-DCMAKE_XCODE_ATTRIBUTE_SUPPORTED_PLATFORMS="macosx" \
+-DDEPLOYMENT_TARGET="14.0" \
+${@} \
+-DCMAKE_ARCHIVE_OUTPUT_DIRECTORY=$GEN_XCODE_PROJEC_DIR/Products \
+-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$GEN_XCODE_PROJEC_DIR/Products \
+-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=$GEN_XCODE_PROJEC_DIR/Products \
+-S $PROJECT_DIR
+
+
+echo "[*] patch xcode project file PATH environment"
+sed -i '' "s#shellScript = \"#shellScript = \"export PATH=${HOMEBREW_PATH}:\\\$PATH\\n#" "$GEN_XCODE_PROJEC_FILE"
+echo "[*] Patch done."

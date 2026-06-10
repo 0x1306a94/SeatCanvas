@@ -22,7 +22,7 @@ bool NativePlatform::registerFallbackFonts() const {
     return false;
 }
 
-std::shared_ptr<DisplayLink> NativePlatform::createDisplayLink(std::function<void()> callback) const {
+std::shared_ptr<DisplayLink> NativePlatform::createDisplayLink(std::function<void()> callback, void *userInfo) const {
     if (!callback) {
         return nullptr;
     }

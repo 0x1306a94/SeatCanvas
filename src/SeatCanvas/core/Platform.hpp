@@ -25,7 +25,7 @@ class Platform {
     /// 当前媒体时间（毫秒）
     virtual double currentMediaTime() const;
 
-    virtual std::shared_ptr<DisplayLink> createDisplayLink(std::function<void()> callback) const;
+    virtual std::shared_ptr<DisplayLink> createDisplayLink(std::function<void()> callback, void *userInfo) const;
 };
 };  // namespace kk
 

@@ -10,14 +10,16 @@
 #import "core/SeatData.hpp"
 #import "core/gesture/GestureState.hpp"
 #import "core/parser/BaseMapFormat.hpp"
+#import "platform/apple/PlatformTypes.h"
 
 #import <CoreGraphics/CGGeometry.h>
+#import <CoreGraphics/CGImage.h>
 #import <Foundation/Foundation.h>
 #import <MetalKit/MTKView.h>
-#import <UIKit/UIColor.h>
-#import <UIKit/UIImage.h>
 #import <string>
 #import <vector>
+
+NS_ASSUME_NONNULL_BEGIN
 
 namespace kk::bridge {
 struct ZoomLevel {
@@ -54,7 +56,7 @@ bool SeatCanvasCoreRendererReplacePlatformView(CPPObject *_Nonnull cppObject, MT
 ///   - format: 格式
 ///   - miniMapImage: 生成的minimap 图片（可选）
 /// - Returns: 解析成功则返回不透明数据指针，失败时返回 nullptr
-void *_Nullable SeatCanvasCoreRendererParseBaseMap(const void *_Nullable __sized_by_or_null(len) bytes, size_t len, kk::parser::BaseMapFormat format, const void *_Nullable __sized_by_or_null(parseConfigLen) parseConfigBytes, size_t parseConfigLen, UIImage *_Nullable *_Nullable miniMapImage);
+void *_Nullable SeatCanvasCoreRendererParseBaseMap(const void *_Nullable __sized_by_or_null(len) bytes, size_t len, kk::parser::BaseMapFormat format, const void *_Nullable __sized_by_or_null(parseConfigLen) parseConfigBytes, size_t parseConfigLen, CGImageRef *_Nullable miniMapImage);
 
 /// 解析 SVG 底图（向后兼容接口）
 /// - Parameters:
@@ -62,7 +64,7 @@ void *_Nullable SeatCanvasCoreRendererParseBaseMap(const void *_Nullable __sized
 ///   - len: 数据长度
 ///   - miniMapImage: 生成的minimap 图片
 /// - Returns: 解析成功则返回不透明数据指针，失败时返回 nullptr
-void *_Nullable SeatCanvasCoreRendererParseBaseMapFromSVG(const void *_Nullable __sized_by_or_null(len) bytes, size_t len, UIImage *_Nullable *_Nullable miniMapImage);
+void *_Nullable SeatCanvasCoreRendererParseBaseMapFromSVG(const void *_Nullable __sized_by_or_null(len) bytes, size_t len, CGImageRef *_Nullable miniMapImage);
 
 /// 渲染器加载底图
 /// - Parameters:
@@ -75,13 +77,13 @@ bool SeatCanvasCoreRendererLoadBaseMap(CPPObject *_Nonnull cppObject, void *_Nul
 /// - Parameters:
 ///   - cppObject: C++渲染器实例
 ///   - colors: 颜色表
-void SeatCanvasCoreRendererSetSeatZoneAlternateColors(CPPObject *_Nonnull cppObject, NSDictionary<NSString *, UIColor *> *_Nullable colors);
+void SeatCanvasCoreRendererSetSeatZoneAlternateColors(CPPObject *_Nonnull cppObject, NSDictionary<NSString *, PlatformColor *> *_Nullable colors);
 
 /// 设置座位小地图区域颜色表
 /// - Parameters:
 ///   - cppObject: C++渲染器实例
 ///   - colors: 颜色表
-void SeatCanvasCoreRendererSetMiniMapZoneAlternateColors(CPPObject *_Nonnull cppObject, NSDictionary<NSString *, UIColor *> *_Nullable colors);
+void SeatCanvasCoreRendererSetMiniMapZoneAlternateColors(CPPObject *_Nonnull cppObject, NSDictionary<NSString *, PlatformColor *> *_Nullable colors);
 
 /// 设置渲染器座位数据
 /// - Parameters:
@@ -197,14 +199,14 @@ CGSize SeatCanvasCoreRendererContentSize(CPPObject *_Nonnull cppObject);
 ///   - cppObject: C++渲染器实例
 ///   - color: 背景色
 /// - Returns: 内容大小
-void SeatCanvasCoreRendererSetBackgroundColor(CPPObject *_Nonnull cppObject, UIColor *_Nullable color);
+void SeatCanvasCoreRendererSetBackgroundColor(CPPObject *_Nonnull cppObject, PlatformColor *_Nullable color);
 
 /// 获取渲染画布背景色
 /// - Parameters:
 ///   - cppObject: C++渲染器实例
 ///   - color: 背景色
 /// - Returns: 内容大小
-UIColor *_Nonnull SeatCanvasCoreRendererGetBackgroundColor(CPPObject *_Nonnull cppObject);
+PlatformColor *_Nonnull SeatCanvasCoreRendererGetBackgroundColor(CPPObject *_Nonnull cppObject);
 
 /// 获取座位大小
 /// - Parameter cppObject: C++渲染器实例
@@ -303,3 +305,5 @@ void SeatCanvasCoreRendererZoomToRect(CPPObject *_Nonnull cppObject, CGRect rect
 /// 生成与 C++ 渲染器相同格式的座位样式 ID
 NSString *_Nonnull SeatCanvasComposeSeatStyleId(NSString *_Nullable pricecode, uint32_t status, bool selected);
 }  // namespace kk::bridge
+
+NS_ASSUME_NONNULL_END

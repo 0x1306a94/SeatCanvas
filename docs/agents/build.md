@@ -19,6 +19,21 @@ xcodebuild -workspace ios/SeatCanvas.xcworkspace \
   CODE_SIGNING_REQUIRED=NO
 ```
 
+From the **repository root** (each block includes `cd` where needed).
+
+**macOS** (run `xcodebuild` outside the sandbox; see [macOS Build Notes](#macos-build-notes)):
+
+```bash
+./mac/gen_mac
+xcodebuild -workspace mac/SeatCanvas.xcworkspace \
+  -scheme SeatCanvas \
+  -configuration Release \
+  -sdk macosx \
+  -arch arm64 \
+  CODE_SIGN_IDENTITY="" \
+  CODE_SIGNING_REQUIRED=NO
+```
+
 **Android** (JDK 17+ required; see [Android Build Notes](#android-build-notes)):
 
 ```bash
@@ -106,6 +121,17 @@ Uses clang-format 14.x for C++ and swiftformat for Swift. A pre-commit hook auto
 - `./ios/gen_ios` only generates the Xcode project — it is **not** a full build. Always follow with `xcodebuild` from the repo root (see [Build Commands](#build-commands)).
 - Default local build uses **device** (`-sdk iphoneos`). Do **not** substitute `./ios/gen_simulator` unless explicitly requested.
 - **Agent: run `xcodebuild` outside the sandbox.** Do not invoke `xcodebuild` inside a sandboxed shell. The sandbox blocks access to CoreSimulator, temp directories, and XPC services that Xcode requires. Request full (non-sandbox) permissions when running iOS build commands.
+- Typical sandbox failures:
+  - `Operation not permitted`
+  - `couldn't create cache file`
+  - `Connection invalid`
+  - CoreSimulator connection errors
+
+## macOS Build Notes
+
+- `./mac/gen_mac` only generates the Xcode project — it is **not** a full build. Always follow with `xcodebuild` from the repo root (see [Build Commands](#build-commands)).
+- Default local build uses **device** (`-sdk macosx`).
+- **Agent: run `xcodebuild` outside the sandbox.** Do not invoke `xcodebuild` inside a sandboxed shell. The sandbox blocks access to CoreSimulator, temp directories, and XPC services that Xcode requires. Request full (non-sandbox) permissions when running macOS build commands.
 - Typical sandbox failures:
   - `Operation not permitted`
   - `couldn't create cache file`

@@ -5,9 +5,9 @@
 //  Created by king on 2026/1/15.
 //
 
-import UIKit
+import CoreFoundation
 
-package extension UIColor {
+package extension PlatformColor {
     var rgbaHex: String {
         var red: CGFloat = 0
         var green: CGFloat = 0

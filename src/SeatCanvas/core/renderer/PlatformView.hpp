@@ -27,6 +27,9 @@ class PlatformView {
     virtual void invalidSize() = 0;
     virtual tgfx::ISize getSize() = 0;
     virtual float getDensity() = 0;
+    virtual void *nativeHandle() {
+        return nullptr;
+    }
 };
 
 };  // namespace kk::renderer

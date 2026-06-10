@@ -7,8 +7,6 @@
 
 #import "SwiftSeatCanvasCoreRendererDelegate.hpp"
 
-#import <UIKit/UIColor.h>
-
 #import <tgfx/platform/Print.h>
 
 #import "SwiftBridgeCAPI.h"

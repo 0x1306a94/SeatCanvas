@@ -40,7 +40,6 @@ if(IOS)
     add_files_by_extension(SeatCanvas_PLATFORM_IOS_FILES ".h;.hpp;.m;.mm;.cpp;.swift"
         platform/apple
         platform/ios
-        swift
     )
     list(APPEND SeatCanvas_ALL_FILES ${SeatCanvas_PLATFORM_IOS_FILES})
     list(APPEND SeatCanvas_ALL_FILES ${SeatCanvas_PRIVATE_HEADERS})
@@ -68,6 +67,46 @@ if(IOS)
     list(APPEND SeatCanvas_SHARED_LIBS ${MetalKit_LIBS})
 
     list(APPEND SeatCanvas_LDS ${CMAKE_CURRENT_LIST_DIR}/SeatCanvas.ios.lds)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -exported_symbols_list ${SeatCanvas_LDS}")
+    add_source_group(SeatCanvas_LDS ${CMAKE_CURRENT_LIST_DIR} "Linker Script")
+elseif (MACOS)
+    message(STATUS "Platform: MACOS")
+    list(APPEND SeatCanvas_PRIVATE_HEADERS
+        ${CMAKE_CURRENT_LIST_DIR}/platform/apple/swift/SwiftBridge.h
+    )
+
+    add_files_by_extension(SeatCanvas_PLATFORM_MACOS_FILES ".h;.hpp;.m;.mm;.cpp;.swift"
+        platform/apple
+        platform/mac
+    )
+    list(APPEND SeatCanvas_ALL_FILES ${SeatCanvas_PLATFORM_MACOS_FILES})
+    list(APPEND SeatCanvas_ALL_FILES ${SeatCanvas_PRIVATE_HEADERS})
+    find_library(APPLICATION_SERVICES_FRAMEWORK ApplicationServices REQUIRED)
+    list(APPEND SeatCanvas_SHARED_LIBS ${APPLICATION_SERVICES_FRAMEWORK})
+    find_library(AppKit_LIBS AppKit REQUIRED)
+    list(APPEND SeatCanvas_SHARED_LIBS ${AppKit_LIBS})
+    find_library(Foundation_LIBS Foundation REQUIRED)
+    list(APPEND SeatCanvas_SHARED_LIBS ${Foundation_LIBS})
+    find_library(QuartzCore_LIBS QuartzCore REQUIRED)
+    list(APPEND SeatCanvas_SHARED_LIBS ${QuartzCore_LIBS})
+    find_library(CoreGraphics_LIBS CoreGraphics REQUIRED)
+    list(APPEND SeatCanvas_SHARED_LIBS ${CoreGraphics_LIBS})
+    find_library(CoreText_LIBS CoreText REQUIRED)
+    list(APPEND SeatCanvas_SHARED_LIBS ${CoreText_LIBS})
+    find_library(CoreMedia_LIBS CoreMedia REQUIRED)
+    list(APPEND SeatCanvas_SHARED_LIBS ${CoreMedia_LIBS})
+    find_library(ImageIO_LIBS ImageIO REQUIRED)
+    list(APPEND SeatCanvas_SHARED_LIBS ${ImageIO_LIBS})
+    find_library(CORE_VIDEO CoreVideo)
+    list(APPEND SeatCanvas_SHARED_LIBS ${CORE_VIDEO})
+    find_library(ICONV_LIBRARIES NAMES iconv libiconv libiconv-2 c)
+    list(APPEND SeatCanvas_SHARED_LIBS ${ICONV_LIBRARIES})
+    find_library(Metal_LIBS Metal REQUIRED)
+    list(APPEND SeatCanvas_SHARED_LIBS ${Metal_LIBS})
+    find_library(MetalKit_LIBS MetalKit REQUIRED)
+    list(APPEND SeatCanvas_SHARED_LIBS ${MetalKit_LIBS})
+
+    list(APPEND SeatCanvas_LDS ${CMAKE_CURRENT_LIST_DIR}/SeatCanvas.mac.lds)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -exported_symbols_list ${SeatCanvas_LDS}")
     add_source_group(SeatCanvas_LDS ${CMAKE_CURRENT_LIST_DIR} "Linker Script")
 elseif (ANDROID)
