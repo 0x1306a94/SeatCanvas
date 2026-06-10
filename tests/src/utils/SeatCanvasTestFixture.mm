@@ -1,16 +1,11 @@
 #include "SeatCanvasTestFixture.hpp"
 
 #include "Baseline.hpp"
+#include "HeadlessTestPlatformView.hpp"
 #include "TestFileUtils.hpp"
 #include "core/DeviceLockGuard.hpp"
 #include "core/parser/BaseMapLoadResult.hpp"
 #include "core/parser/BaseMapParserFactory.hpp"
-#include "platform/apple/renderer/ApplePlatformView.h"
-
-#include <tgfx/gpu/Window.h>
-#include <tgfx/layers/TextLayer.h>
-
-#import <MetalKit/MTKView.h>
 
 namespace kk::test {
 
@@ -31,14 +26,11 @@ void SeatCanvasTestFixture::TearDown() {
     }
     renderer = nullptr;
     platformView = nullptr;
-    metalView = nullptr;
     delegate = nullptr;
 }
 
 std::unique_ptr<kk::renderer::SeatCanvasCoreRenderer> SeatCanvasTestFixture::makeRenderer(int width, int height, float density) {
-    metalView = std::make_unique<TestMetalView>(width, height, density);
-    auto *mtkView = (__bridge MTKView *)metalView->rawView();
-    auto view = std::make_unique<kk::renderer::ApplePlatformView>(mtkView);
+    auto view = std::make_unique<HeadlessTestPlatformView>(width, height, density);
     platformView = view.get();
     auto zoomPanController = std::make_unique<kk::gesture::ElasticZoomPanController>();
     auto coreRenderer = std::make_unique<kk::renderer::SeatCanvasCoreRenderer>(
@@ -73,20 +65,13 @@ bool SeatCanvasTestFixture::loadSVGBaseMap(kk::renderer::SeatCanvasCoreRenderer 
 void SeatCanvasTestFixture::renderFrame(kk::renderer::SeatCanvasCoreRenderer &targetRenderer) {
     targetRenderer.invalidateContent();
     targetRenderer.draw(true);
-    waitForGPU(platformView);
-    targetRenderer.draw(true);
-    waitForGPU(platformView);
 }
 
 bool SeatCanvasTestFixture::compareBaseline(const std::string &key) {
     if (platformView == nullptr) {
         return false;
     }
-    auto window = platformView->getWindow();
-    if (window == nullptr) {
-        return false;
-    }
-    auto device = window->getDevice();
+    auto device = platformView->getDevice();
     if (device == nullptr) {
         return false;
     }
