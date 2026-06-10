@@ -53,6 +53,7 @@ format_swift_files() {
 # 并行格式化不同目录
 format_cpp_files "include" &
 format_cpp_files "src" &
+format_cpp_files "tests/src" &
 format_cpp_files "ios/SeatCanvasSample" &
 wait
 

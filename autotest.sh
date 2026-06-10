@@ -5,13 +5,12 @@ set -e
 cd $(dirname $0)
 
 PROJECT_DIR=$(pwd)
-BUILD_DIR="build_test"
+BUILD_DIR=${PROJECT_DIR}/build_test
 
 if [ "${1}" = "clean" ]; then
     rm -rf "${BUILD_DIR}"
 fi
 
-rm -rf ${BUILD_DIR}/CMakeCache.txt
 mkdir -p "${BUILD_DIR}"
 
 if [ ! -f "${BUILD_DIR}/CMakeCache.txt" ]; then

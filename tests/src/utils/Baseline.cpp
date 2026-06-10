@@ -167,7 +167,7 @@ static bool CompareVersionAndMd5(const std::string &md5, const std::string &key,
     auto baseline = GetJsonValue(baselineVersion, key);
     auto cache = GetJsonValue(cacheVersion, key);
     if (baseline.empty() || (baseline == cache && GetJsonValue(cacheMd5, key) != md5)) {
-        SetJsonValue(outputVersion, key, currentVersion);
+        SetJsonValue(outputVersion, key, md5);
         SetJsonValue(outputMd5, key, md5);
         if (callback) {
             callback(false);

@@ -29,10 +29,13 @@ echo "~~~~~~~~~~~~~~~~~~~Update Baseline Start~~~~~~~~~~~~~~~~~~~~~"
 
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 CURRENT_COMMIT=$(git rev-parse HEAD)
-BUILD_DIR="build-update-baseline"
+BUILD_DIR=${PROJECT_DIR}/build-update-baseline
 COMPILE_RESULT=true
 
-rm -rf "${BUILD_DIR}"
+if [ "${1}" = "clean" ]; then
+    rm -rf "${BUILD_DIR}"
+fi
+
 STASH_LIST_BEFORE=$(git stash list)
 git stash push --include-untracked --quiet
 STASH_LIST_AFTER=$(git stash list)
