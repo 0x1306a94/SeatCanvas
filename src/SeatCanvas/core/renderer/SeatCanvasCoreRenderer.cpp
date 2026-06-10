@@ -27,7 +27,6 @@
 #include <tgfx/gpu/GPU.h>
 #include <tgfx/gpu/RenderPass.h>
 #include <tgfx/gpu/Texture.h>
-#include <tgfx/gpu/Window.h>
 #include <tgfx/svg/SVGDOM.h>
 #include <tgfx/svg/TextShaper.h>
 
@@ -454,17 +453,15 @@ void SeatCanvasCoreRenderer::draw(bool force) {
     PROFILE_GROUP_START(group, "Draw Frame");
     PROFILE_GROUP_SET_THRESHOLD(group, 16.7);
 
-    PROFILE_STAGE_START(group, window, "Create Window");
+    PROFILE_STAGE_START(group, deviceStage, "Get Device");
 
-    auto window = _platformView ? _platformView->getWindow() : nullptr;
-    if (!window) {
+    auto device = _platformView ? _platformView->getDevice() : nullptr;
+    if (!device) {
         PROFILE_GROUP_DISABLE_AUTO_LOG(group);
         return;
     }
 
-    PROFILE_STAGE_END(group, window);
-
-    auto device = window->getDevice();
+    PROFILE_STAGE_END(group, deviceStage);
     DeviceLockGuard lockGuard(device.get());
     if (!lockGuard) {
         PROFILE_GROUP_DISABLE_AUTO_LOG(group);

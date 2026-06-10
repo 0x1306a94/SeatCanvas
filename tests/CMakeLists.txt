@@ -20,21 +20,22 @@ target_include_directories(SeatCanvasFullTests PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/src/base
     ${CMAKE_CURRENT_SOURCE_DIR}/src/utils
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/metal
 )
 
-find_library(METALKIT_FRAMEWORK MetalKit REQUIRED)
-find_library(APPKIT_FRAMEWORK AppKit REQUIRED)
 target_link_libraries(SeatCanvasFullTests PRIVATE
     SeatCanvas
     tgfx
     gtest
-    ${METALKIT_FRAMEWORK}
-    ${APPKIT_FRAMEWORK}
 )
 
 set_target_properties(SeatCanvasFullTests PROPERTIES MACOSX_BUNDLE FALSE)
 seatcanvas_enable_objc_arc(SeatCanvasFullTests)
+
+# Match SeatCanvas framework ABI (-fno-rtti/-fno-exceptions) so test subclasses of
+# PlatformView do not require base-class typeinfo from the dylib.
+target_compile_options(SeatCanvasFullTests PRIVATE
+    $<$<COMPILE_LANGUAGE:CXX,OBJCXX>:-fno-exceptions -fno-rtti>
+)
 
 set(CACHE_DIR ${PROJECT_SOURCE_DIR}/tests/baseline/.cache)
 file(MAKE_DIRECTORY ${CACHE_DIR})

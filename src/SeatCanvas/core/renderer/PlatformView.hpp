@@ -16,20 +16,20 @@ namespace tgfx {
 class Window;
 class Surface;
 class Context;
+class Device;
 };  // namespace tgfx
 
 namespace kk::renderer {
 class PlatformView {
   public:
-    virtual ~PlatformView() = default;
+    virtual ~PlatformView();
+    virtual std::shared_ptr<tgfx::Device> getDevice();
     virtual std::shared_ptr<tgfx::Window> getWindow() = 0;
     virtual std::shared_ptr<tgfx::Surface> getSurface(tgfx::Context *context) = 0;
     virtual void invalidSize() = 0;
     virtual tgfx::ISize getSize() = 0;
     virtual float getDensity() = 0;
-    virtual void *nativeHandle() {
-        return nullptr;
-    }
+    virtual void *nativeHandle();
 };
 
 };  // namespace kk::renderer

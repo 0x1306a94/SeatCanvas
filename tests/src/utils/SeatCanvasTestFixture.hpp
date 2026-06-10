@@ -7,12 +7,11 @@
 #include <gtest/gtest.h>
 
 #include "NullRendererDelegate.hpp"
-#include "TestMetalView.h"
 #include "core/gesture/ElasticZoomPanController.hpp"
 #include "core/renderer/SeatCanvasCoreRenderer.hpp"
 
 namespace kk::renderer {
-class ApplePlatformView;
+class PlatformView;
 };  // namespace kk::renderer
 
 namespace kk::test {
@@ -30,8 +29,7 @@ class SeatCanvasTestFixture : public ::testing::Test {
     bool compareBaseline(const std::string &key);
 
   protected:
-    std::unique_ptr<TestMetalView> metalView = {nullptr};
-    kk::renderer::ApplePlatformView *platformView = {nullptr};
+    kk::renderer::PlatformView *platformView = {nullptr};
     std::unique_ptr<kk::renderer::SeatCanvasCoreRenderer> renderer = {nullptr};
     std::shared_ptr<NullRendererDelegate> delegate = {nullptr};
 
