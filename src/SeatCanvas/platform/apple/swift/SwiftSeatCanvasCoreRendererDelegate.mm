@@ -1,3 +1,4 @@
+#include "core/Log.hpp"
 //
 //  SwiftSeatCanvasCoreRendererDelegate.cpp
 //  SeatCanvas
@@ -13,11 +14,11 @@
 
 namespace kk::bridge {
 SwiftSeatCanvasCoreRendererDelegate::SwiftSeatCanvasCoreRendererDelegate() {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 SwiftSeatCanvasCoreRendererDelegate::~SwiftSeatCanvasCoreRendererDelegate() {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 void SwiftSeatCanvasCoreRendererDelegate::didLoadBaseMap(uint32_t coreID) {

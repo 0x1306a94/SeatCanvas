@@ -7,11 +7,11 @@
 
 #include <jni.h>
 
+#include "core/Log.hpp"
 #include <tgfx/core/Color.h>
 #include <tgfx/core/Data.h>
 #include <tgfx/core/Stream.h>
 #include <tgfx/layers/TextLayer.h>
-#include <tgfx/platform/Print.h>
 #include <tgfx/platform/android/JNIEnvironment.h>
 #include <tgfx/svg/SVGDOM.h>
 
@@ -89,21 +89,21 @@ Java_com_libseatcanvas_SeatCanvasView_nativeLoadBaseMapFromFormat(JNIEnv *env, j
                                                                   jstring jformatName,
                                                                   jbyteArray parseConfigData) {
     if (srcData == nullptr) {
-        tgfx::PrintError("data is null");
+        SC_LOG_ERROR("data is null");
         return 0;
     }
 
     auto bytes = env->GetByteArrayElements(srcData, nullptr);
     auto len = env->GetArrayLength(srcData);
     if (len == 0) {
-        tgfx::PrintError("data length is zero");
+        SC_LOG_ERROR("data length is zero");
         return 0;
     }
 
     auto formatName = kk::jni::SafeConvertToStdString(env, jformatName);
     auto format = kk::parser::parseFormatName(formatName);
     if (format == kk::parser::BaseMapFormat::Unknown) {
-        tgfx::PrintError("format is Unknown");
+        SC_LOG_ERROR("format is Unknown");
         return 0;
     }
 
@@ -126,7 +126,7 @@ Java_com_libseatcanvas_SeatCanvasView_nativeLoadBaseMapFromFormat(JNIEnv *env, j
         env->ReleaseByteArrayElements(parseConfigData, parseConfigBytes, JNI_ABORT);
     }
     if (!result) {
-        tgfx::PrintError("parse result is null");
+        SC_LOG_ERROR("parse result is null");
         return 0;
     }
 
@@ -601,7 +601,7 @@ jint JNI_OnLoad(JavaVM *vm, void *) {
     auto env = environment.current();
     kk::jni::SeatCanvasViewClass = env->FindClass("com/libseatcanvas/SeatCanvasView");
     if (kk::jni::SeatCanvasViewClass.get() == nullptr) {
-        tgfx::PrintError(
+        SC_LOG_ERROR(
             "Could not run NativeDisplayLink.InitJNI(), DisplayLinkClass is not found!");
         return JNI_ERR;
     }

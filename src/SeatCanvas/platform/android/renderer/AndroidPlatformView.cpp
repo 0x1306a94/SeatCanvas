@@ -7,19 +7,19 @@
 
 #include "AndroidPlatformView.hpp"
 
+#include "core/Log.hpp"
 #include <tgfx/core/Surface.h>
 #include <tgfx/gpu/opengl/egl/EGLWindow.h>
-#include <tgfx/platform/Print.h>
 
 namespace kk::renderer {
 AndroidPlatformView::AndroidPlatformView(ANativeWindow *nativeWindow, float density)
     : _nativeWindow(nativeWindow)
     , _density(density) {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 AndroidPlatformView::~AndroidPlatformView() {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 std::shared_ptr<tgfx::Window> AndroidPlatformView::getWindow() {

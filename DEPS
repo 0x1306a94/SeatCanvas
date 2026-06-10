@@ -14,6 +14,11 @@
         "url": "${GITHUB_BASE_URL}/emscripten-core/emsdk.git",
         "commit": "ba0585d60fb9cfd6f5088abb10a637ef34bcee9e",
         "dir": "third_party/emsdk"
+      },
+      {
+        "url": "${GITHUB_BASE_URL}/google/googletest.git",
+        "commit": "6910c9d9165801d8827d628cb72eb7ea9dd538c5",
+        "dir": "third_party/googletest"
       }
     ],
     "mac": [

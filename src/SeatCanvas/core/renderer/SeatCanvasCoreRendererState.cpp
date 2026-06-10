@@ -7,19 +7,19 @@
 
 #include "SeatCanvasCoreRendererState.hpp"
 
+#include "core/Log.hpp"
 #include <algorithm>
-#include <tgfx/platform/Print.h>
 
 namespace kk::renderer {
 SeatCanvasCoreRendererState::SeatCanvasCoreRendererState(int width, int height, float density)
     : width(width)
     , height(height)
     , density(density) {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 SeatCanvasCoreRendererState::~SeatCanvasCoreRendererState() {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 tgfx::Size SeatCanvasCoreRendererState::getBoundsSize() const {
@@ -147,7 +147,7 @@ tgfx::Matrix SeatCanvasCoreRendererState::getMVPMatrix() const {
 
 bool SeatCanvasCoreRendererState::updateNormalizedContentSize(const tgfx::Size &normalizedContentSize) {
     if (normalizedContentSize.width <= 0 || normalizedContentSize.height <= 0) {
-        tgfx::PrintError("%s width or height is invalid!", __PRETTY_FUNCTION__);
+        SC_LOG_ERROR("%s width or height is invalid!", __PRETTY_FUNCTION__);
         return false;
     }
 
@@ -170,11 +170,11 @@ bool SeatCanvasCoreRendererState::updateContentScale(float scale) {
 
 bool SeatCanvasCoreRendererState::updateScreen(int width, int height, float density) {
     if (width <= 0 || height <= 0) {
-        tgfx::PrintError("%s width or height is invalid!", __PRETTY_FUNCTION__);
+        SC_LOG_ERROR("%s width or height is invalid!", __PRETTY_FUNCTION__);
         return false;
     }
     if (density < 1.0) {
-        tgfx::PrintError("%s density is invalid!", __PRETTY_FUNCTION__);
+        SC_LOG_ERROR("%s density is invalid!", __PRETTY_FUNCTION__);
         return false;
     }
     if (this->width == width && this->height == height && this->density == density) {

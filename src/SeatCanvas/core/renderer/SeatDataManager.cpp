@@ -11,8 +11,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include "core/Log.hpp"
 #include <tgfx/core/Rect.h>
-#include <tgfx/platform/Print.h>
 
 #include "core/renderer/BaseMapMeshBuilder.hpp"
 #include "core/style/SeatRenderStyleKey.hpp"
@@ -174,18 +174,18 @@ bool SeatDataManager::setStyleKeyToConfigFromJSON(const void *bytes, size_t len)
     std::string jsonString(reinterpret_cast<const char *>(bytes), len);
 
     if (!nlohmann::json::accept(jsonString)) {
-        tgfx::PrintError("Invalid JSON format");
+        SC_LOG_ERROR("Invalid JSON format");
         return false;
     }
 
     auto json = nlohmann::json::parse(jsonString, nullptr, false);
     if (json.is_discarded()) {
-        tgfx::PrintError("Failed to parse JSON");
+        SC_LOG_ERROR("Failed to parse JSON");
         return false;
     }
 
     if (!json.is_array()) {
-        tgfx::PrintError("Invalid JSON: expected array");
+        SC_LOG_ERROR("Invalid JSON: expected array");
         return false;
     }
 
@@ -193,30 +193,30 @@ bool SeatDataManager::setStyleKeyToConfigFromJSON(const void *bytes, size_t len)
 
     for (const auto &entry : json) {
         if (!entry.contains("key") || !entry.contains("config")) {
-            tgfx::PrintError("Invalid JSON entry: missing 'key' or 'config'");
+            SC_LOG_ERROR("Invalid JSON entry: missing 'key' or 'config'");
             continue;
         }
 
         if (!entry["key"].is_string()) {
-            tgfx::PrintError("Invalid JSON entry: 'key' is not a string");
+            SC_LOG_ERROR("Invalid JSON entry: 'key' is not a string");
             continue;
         }
 
         auto styleId = entry["key"].get<std::string>();
         if (styleId.empty()) {
-            tgfx::PrintError("Invalid JSON entry: styleId is empty");
+            SC_LOG_ERROR("Invalid JSON entry: styleId is empty");
             continue;
         }
 
         if (!entry["config"].is_object()) {
-            tgfx::PrintError("Invalid JSON entry: 'config' is not an object");
+            SC_LOG_ERROR("Invalid JSON entry: 'config' is not an object");
             continue;
         }
 
         std::shared_ptr<SeatStyleConfig> config = nullptr;
         entry["config"].get_to(config);
         if (!config) {
-            tgfx::PrintError("Failed to parse config");
+            SC_LOG_ERROR("Failed to parse config");
             continue;
         }
 

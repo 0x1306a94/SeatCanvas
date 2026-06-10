@@ -18,7 +18,7 @@
 #include <cfloat>
 #include <cmath>
 
-#include <tgfx/platform/Print.h>
+#include "core/Log.hpp"
 
 namespace kk::gesture {
 
@@ -34,7 +34,7 @@ static T signum(T x) {
 }
 
 ElasticZoomPanController::ElasticZoomPanController() {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 
     _panProxy = std::make_unique<PanProxy>();
     _panProxy->setCallback([this] {
@@ -47,7 +47,7 @@ ElasticZoomPanController::ElasticZoomPanController() {
 }
 
 ElasticZoomPanController::~ElasticZoomPanController() {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 void ElasticZoomPanController::setBounds(const tgfx::Size &bounds) {

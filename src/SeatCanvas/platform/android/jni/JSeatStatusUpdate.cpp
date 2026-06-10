@@ -8,7 +8,7 @@
 #include "JNIHelper.hpp"
 #include "JStringUtil.hpp"
 
-#include <tgfx/platform/Print.h>
+#include "core/Log.hpp"
 
 namespace kk::jni {
 
@@ -19,7 +19,7 @@ static jfieldID SeatStatusUpdate_status = nullptr;
 void JSeatStatusUpdate::InitJNI(JNIEnv *env) {
     SeatStatusUpdateClass = env->FindClass("com/libseatcanvas/SeatStatusUpdate");
     if (SeatStatusUpdateClass.get() == nullptr) {
-        tgfx::PrintError("Could not run JSeatStatusUpdate::InitJNI, class is not found!");
+        SC_LOG_ERROR("Could not run JSeatStatusUpdate::InitJNI, class is not found!");
         return;
     }
     SeatStatusUpdate_seatId = env->GetFieldID(SeatStatusUpdateClass.get(), "seatId", "Ljava/lang/String;");

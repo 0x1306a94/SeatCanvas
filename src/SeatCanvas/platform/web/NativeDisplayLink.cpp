@@ -9,19 +9,19 @@
 
 #include <emscripten/html5.h>
 
-#include <tgfx/platform/Print.h>
+#include "core/Log.hpp"
 
 namespace kk {
 
 NativeDisplayLink::NativeDisplayLink(std::function<void()> callback)
     : _callback(std::move(callback)) {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 NativeDisplayLink::~NativeDisplayLink() {
     cancelAnimationFrame();
     _started = false;
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 std::shared_ptr<DisplayLink> NativeDisplayLink::Make(std::function<void()> callback) {

@@ -15,7 +15,7 @@
 #include <cstdint>
 #include <napi/native_api.h>
 
-#include <tgfx/platform/Print.h>
+#include "core/Log.hpp"
 
 static void InitEnums(napi_env env, napi_value exports) {
     napi_value GestureState;
@@ -36,7 +36,7 @@ static void InitEnums(napi_env env, napi_value exports) {
 }
 
 static napi_value Init(napi_env env, napi_value exports) {
-    tgfx::PrintLog("Init called");
+    SC_LOG_INFO("Init called");
 
     napi_value namespaceExports;
     napi_create_object(env, &namespaceExports);

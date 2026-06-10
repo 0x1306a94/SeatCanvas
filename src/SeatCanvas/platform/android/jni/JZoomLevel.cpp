@@ -9,7 +9,7 @@
 
 #include "JNIHelper.hpp"
 
-#include <tgfx/platform/Print.h>
+#include "core/Log.hpp"
 
 namespace kk::jni {
 
@@ -19,13 +19,13 @@ static jmethodID ZoomLevel_constructor;
 void JZoomLevel::InitJNI(JNIEnv *env) {
     ZoomLevelClass = env->FindClass("com/libseatcanvas/ZoomLevel");
     if (ZoomLevelClass.get() == nullptr) {
-        tgfx::PrintError("Could not run JZoomLevel::InitJNI, ZoomLevelClass is not found!");
+        SC_LOG_ERROR("Could not run JZoomLevel::InitJNI, ZoomLevelClass is not found!");
         return;
     }
     // 获取构造函数：ZoomLevel(seat: Float, row: Float, zone: Float, venue: Float)
     ZoomLevel_constructor = env->GetMethodID(ZoomLevelClass.get(), "<init>", "(FFFF)V");
     if (ZoomLevel_constructor == nullptr) {
-        tgfx::PrintError("Could not get ZoomLevel constructor!");
+        SC_LOG_ERROR("Could not get ZoomLevel constructor!");
     }
 }
 

@@ -9,8 +9,8 @@
 
 #include "core/renderer/SeatCanvasCoreRendererState.hpp"
 
+#include "core/Log.hpp"
 #include <tgfx/core/Canvas.h>
-#include <tgfx/platform/Print.h>
 
 #include <utility>
 
@@ -30,12 +30,12 @@ void Drawer::setVisible(bool visible) {
 
 void Drawer::draw(tgfx::Canvas *canvas, const kk::renderer::SeatCanvasCoreRendererState *state) {
     if (canvas == nullptr) {
-        tgfx::PrintError("Drawer::draw() canvas is nullptr!");
+        SC_LOG_ERROR("Drawer::draw() canvas is nullptr!");
         return;
     }
 
     if (state == nullptr) {
-        tgfx::PrintError("Drawer::draw() state is nullptr!");
+        SC_LOG_ERROR("Drawer::draw() state is nullptr!");
         return;
     }
     tgfx::AutoCanvasRestore autoRestore(canvas);

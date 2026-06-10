@@ -7,16 +7,16 @@
 
 #include "WebSeatCanvasCoreRendererDelegate.hpp"
 
-#include <tgfx/platform/Print.h>
+#include "core/Log.hpp"
 
 namespace kk::web {
 
 WebSeatCanvasCoreRendererDelegate::WebSeatCanvasCoreRendererDelegate() {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 WebSeatCanvasCoreRendererDelegate::~WebSeatCanvasCoreRendererDelegate() {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 // MARK: - Delegate overrides (lifecycle)

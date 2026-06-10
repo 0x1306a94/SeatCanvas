@@ -11,7 +11,7 @@
 
 #include <string>
 
-#include <tgfx/platform/Print.h>
+#include "core/Log.hpp"
 
 namespace kk::jni {
 static Global<jclass> FontClass;
@@ -20,7 +20,7 @@ static jmethodID Font_RegisterFallbackFonts;
 void FontConfigAndroid::InitJNI(JNIEnv *env) {
     FontClass = env->FindClass("com/libseatcanvas/Font");
     if (FontClass.get() == nullptr) {
-        tgfx::PrintError("Could not run Font.RegisterFallbackFonts(), class is not found!");
+        SC_LOG_ERROR("Could not run Font.RegisterFallbackFonts(), class is not found!");
         return;
     }
     Font_RegisterFallbackFonts = env->GetStaticMethodID(FontClass.get(), "RegisterFallbackFonts", "()V");
@@ -33,7 +33,7 @@ bool FontConfigAndroid::RegisterFallbackFonts() {
         return false;
     }
     if (FontClass.get() == nullptr) {
-        tgfx::PrintError("FontClass is null");
+        SC_LOG_ERROR("FontClass is null");
         return false;
     }
     env->CallStaticVoidMethod(FontClass.get(), Font_RegisterFallbackFonts);

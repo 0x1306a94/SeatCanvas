@@ -1,8 +1,8 @@
 #include "SVGParseConfig.hpp"
 
+#include "core/Log.hpp"
 #include <nlohmann/json.hpp>
 #include <tgfx/core/Data.h>
-#include <tgfx/platform/Print.h>
 
 namespace kk::svg {
 
@@ -14,7 +14,7 @@ static std::vector<std::string> ParseZoneIdAttributeNames(const nlohmann::json &
 
     const auto &zoneIdAttributeNamesJSON = json["zoneIdAttributeNames"];
     if (!zoneIdAttributeNamesJSON.is_array()) {
-        tgfx::PrintError("Invalid SVG parse config JSON: 'zoneIdAttributeNames' is not an array");
+        SC_LOG_ERROR("Invalid SVG parse config JSON: 'zoneIdAttributeNames' is not an array");
         return zoneIdAttributeNames;
     }
 
@@ -22,19 +22,19 @@ static std::vector<std::string> ParseZoneIdAttributeNames(const nlohmann::json &
     parsedZoneIdAttributeNames.reserve(zoneIdAttributeNamesJSON.size());
     for (const auto &item : zoneIdAttributeNamesJSON) {
         if (!item.is_string()) {
-            tgfx::PrintError("Invalid SVG parse config JSON: 'zoneIdAttributeNames' contains non-string values");
+            SC_LOG_ERROR("Invalid SVG parse config JSON: 'zoneIdAttributeNames' contains non-string values");
             return zoneIdAttributeNames;
         }
         auto attributeName = item.get<std::string>();
         if (attributeName.empty()) {
-            tgfx::PrintError("Invalid SVG parse config JSON: 'zoneIdAttributeNames' contains empty values");
+            SC_LOG_ERROR("Invalid SVG parse config JSON: 'zoneIdAttributeNames' contains empty values");
             return zoneIdAttributeNames;
         }
         parsedZoneIdAttributeNames.push_back(attributeName);
     }
 
     if (parsedZoneIdAttributeNames.empty()) {
-        tgfx::PrintError("Invalid SVG parse config JSON: 'zoneIdAttributeNames' is empty");
+        SC_LOG_ERROR("Invalid SVG parse config JSON: 'zoneIdAttributeNames' is empty");
         return zoneIdAttributeNames;
     }
     return parsedZoneIdAttributeNames;
@@ -48,18 +48,18 @@ SVGParseConfig SVGParseConfig::FromJSON(const void *bytes, size_t len) {
 
     std::string jsonString(reinterpret_cast<const char *>(bytes), len);
     if (!nlohmann::json::accept(jsonString)) {
-        tgfx::PrintError("Invalid SVG parse config JSON format");
+        SC_LOG_ERROR("Invalid SVG parse config JSON format");
         return config;
     }
 
     auto json = nlohmann::json::parse(jsonString, nullptr, false);
     if (json.is_discarded()) {
-        tgfx::PrintError("Failed to parse SVG parse config JSON");
+        SC_LOG_ERROR("Failed to parse SVG parse config JSON");
         return config;
     }
 
     if (!json.is_object()) {
-        tgfx::PrintError("Invalid SVG parse config JSON: expected object");
+        SC_LOG_ERROR("Invalid SVG parse config JSON: expected object");
         return config;
     }
 
@@ -68,7 +68,7 @@ SVGParseConfig SVGParseConfig::FromJSON(const void *bytes, size_t len) {
     if (json.contains("zoneIdAttributeName")) {
         const auto zoneIdAttributeName = json.value("zoneIdAttributeName", std::string(""));
         if (zoneIdAttributeName.empty()) {
-            tgfx::PrintError("Invalid SVG parse config JSON: 'zoneIdAttributeName' is empty");
+            SC_LOG_ERROR("Invalid SVG parse config JSON: 'zoneIdAttributeName' is empty");
             return config;
         }
         config.zoneIdAttributeNames = {zoneIdAttributeName};

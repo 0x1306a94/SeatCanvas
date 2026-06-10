@@ -11,6 +11,7 @@
 #include "core/renderer/BaseMapMeshBuilder.hpp"
 #include "core/renderer/SeatCanvasCoreRendererState.hpp"
 
+#include "core/Log.hpp"
 #include <algorithm>
 #include <tgfx/core/Image.h>
 #include <tgfx/core/Surface.h>
@@ -18,7 +19,6 @@
 #include <tgfx/gpu/GPU.h>
 #include <tgfx/gpu/GPUBuffer.h>
 #include <tgfx/gpu/Texture.h>
-#include <tgfx/platform/Print.h>
 #include <unordered_set>
 
 namespace kk::renderer {
@@ -64,7 +64,7 @@ void main() {
 )";
 
 CustomBaseMapPass::CustomBaseMapPass() {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
     memset(&bitFields, 0, sizeof(bitFields));
     bitFields.dirtyFillUBO = true;
     bitFields.dirtyFillVBO = true;
@@ -83,7 +83,7 @@ CustomBaseMapPass::CustomBaseMapPass() {
 }
 
 CustomBaseMapPass::~CustomBaseMapPass() {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 void CustomBaseMapPass::updateMeshBuilder(std::shared_ptr<BaseMapMeshBuilder> meshBuilder) {

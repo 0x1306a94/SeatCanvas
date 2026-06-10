@@ -10,8 +10,6 @@
 #include "core/Platform.hpp"
 
 #include <tgfx/core/Typeface.h>
-#include <tgfx/platform/Print.h>
-
 namespace kk {
 static FontManager fontManager = {};
 FontManager::FontManager() {

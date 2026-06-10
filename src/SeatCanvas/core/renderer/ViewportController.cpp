@@ -11,9 +11,9 @@
 #include <cfloat>
 #include <cmath>
 
+#include "core/Log.hpp"
 #include <tgfx/core/Rect.h>
 #include <tgfx/core/Size.h>
-#include <tgfx/platform/Print.h>
 
 #include "core/EdgeInsets.h"
 #include "core/Platform.hpp"
@@ -264,13 +264,13 @@ void ViewportController::updateMaxMinZoomScalesForCurrentBounds() {
     _zoomPanController->setMaximumZoomScale(static_cast<float>(maximumZoomScale));
     _zoomPanController->setZoomScale(static_cast<float>(minimumZoomScale));
 
-    tgfx::PrintLog("updateMaxMinZoomScalesForCurrentBounds: min %f max %f seat %f row %f zone %f venue %f",
-                   minimumZoomScale,
-                   maximumZoomScale,
-                   _zoomLevelConfig->seat,
-                   _zoomLevelConfig->row,
-                   _zoomLevelConfig->zone,
-                   _zoomLevelConfig->venue);
+    SC_LOG_INFO("updateMaxMinZoomScalesForCurrentBounds: min %f max %f seat %f row %f zone %f venue %f",
+                minimumZoomScale,
+                maximumZoomScale,
+                _zoomLevelConfig->seat,
+                _zoomLevelConfig->row,
+                _zoomLevelConfig->zone,
+                _zoomLevelConfig->venue);
     _callback->onUpdateZoomPanControllerState(true);
 }
 

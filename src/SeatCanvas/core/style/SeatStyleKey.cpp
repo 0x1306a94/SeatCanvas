@@ -8,7 +8,6 @@
 #include "SeatStyleKey.hpp"
 
 #include <nlohmann/json.hpp>
-#include <tgfx/platform/Print.h>
 #include <tuple>
 
 namespace kk {

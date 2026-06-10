@@ -4,6 +4,7 @@
 
 **Build & Tooling** — when a build is required (verification, debugging, or user request), read and follow @./docs/agents/build.md exactly: full platform commands, prerequisites, and troubleshooting. Do not substitute `./ios/gen_simulator` unless the user explicitly requests a simulator build. Do not claim a build passes without running the complete command sequence from that guide.
 
+- Unit tests: `./autotest.sh` (macOS only; do not use `clean` unless necessary — see @./docs/agents/build.md)
 - Format code: `./codeformat.sh`
 - Sync dependencies: `./sync_deps.sh`
 

@@ -1,3 +1,4 @@
+#include "core/Log.hpp"
 //
 //  NativeDisplayLink.mm
 //  SeatCanvas
@@ -16,12 +17,12 @@
 namespace kk {
 NativeDisplayLink::NativeDisplayLink(std::function<void()> callback) {
     animationCallback = [[InternalAnimationCallback alloc] initWithCallback:callback];
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 NativeDisplayLink::~NativeDisplayLink() {
     stop();
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 void NativeDisplayLink::start() {

@@ -7,9 +7,9 @@
 
 #include "CustomRenderPass.hpp"
 
+#include "core/Log.hpp"
 #include <tgfx/gpu/Context.h>
 #include <tgfx/gpu/GPU.h>
-#include <tgfx/platform/Print.h>
 
 namespace kk::renderer {
 
@@ -22,7 +22,7 @@ std::shared_ptr<tgfx::RenderPipeline> CustomRenderPass::CreatePipeline(tgfx::GPU
     vertexModule.stage = tgfx::ShaderStage::Vertex;
     auto vertexShaderModule = gpu->createShaderModule(vertexModule);
     if (vertexShaderModule == nullptr) {
-        tgfx::PrintError("CustomRenderPass: Failed to create vertex shader");
+        SC_LOG_ERROR("CustomRenderPass: Failed to create vertex shader");
         return nullptr;
     }
 
@@ -31,7 +31,7 @@ std::shared_ptr<tgfx::RenderPipeline> CustomRenderPass::CreatePipeline(tgfx::GPU
     fragmentModule.stage = tgfx::ShaderStage::Fragment;
     auto fragmentShaderModule = gpu->createShaderModule(fragmentModule);
     if (fragmentShaderModule == nullptr) {
-        tgfx::PrintError("CustomRenderPass: Failed to create fragment shader");
+        SC_LOG_ERROR("CustomRenderPass: Failed to create fragment shader");
         return nullptr;
     }
 

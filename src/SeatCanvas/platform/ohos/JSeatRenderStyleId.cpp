@@ -8,7 +8,7 @@
 #include "JsHelper.h"
 #include "core/style/SeatRenderStyleKey.hpp"
 
-#include <tgfx/platform/Print.h>
+#include "core/Log.hpp"
 
 namespace kk::js {
 
@@ -53,7 +53,7 @@ bool JSeatRenderStyleId::Init(napi_env env, napi_value exports) {
 
     auto status = DefineClass(env, exports, "JSeatRenderStyleId", sizeof(classProp) / sizeof(classProp[0]), classProp, JSeatRenderStyleId::Constructor, "");
     if (status != napi_ok) {
-        tgfx::PrintError("JSeatRenderStyleId::Init DefineClass failed: %d", status);
+        SC_LOG_ERROR("JSeatRenderStyleId::Init DefineClass failed: %d", status);
         return false;
     }
     return true;

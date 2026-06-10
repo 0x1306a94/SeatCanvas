@@ -9,12 +9,12 @@
 
 #if ENABLE_TIME_PROFILER
 
-#include <tgfx/platform/Print.h>
+#include "core/Log.hpp"
 
 namespace kk::utils {
 
 void TimeProfiler::Point(const std::string &name) {
-    tgfx::PrintLog("[TimeProfiler] %s", name.c_str());
+    SC_LOG_DEBUG("[TimeProfiler] %s", name.c_str());
 }
 
 TimeProfiler::TimeProfiler(const std::string &tag, bool autoStart, bool autoLog, TimeProfilerGroup *group)
@@ -34,7 +34,7 @@ TimeProfiler::~TimeProfiler() {
         auto elapsedMs = end();
 
         if (_autoLog && _group == nullptr) {
-            tgfx::PrintLog("[TimeProfiler] %s: %.3f ms", _tag.c_str(), elapsedMs);
+            SC_LOG_DEBUG("[TimeProfiler] %s: %.3f ms", _tag.c_str(), elapsedMs);
         }
     }
 }
@@ -186,14 +186,14 @@ void TimeProfilerGroup::logResults() const {
         return;
     }
 
-    tgfx::PrintLog("[TimeProfiler] %s: %.3f ms", _groupName.c_str(), totalMs);
+    SC_LOG_DEBUG("[TimeProfiler] %s: %.3f ms", _groupName.c_str(), totalMs);
 
     if (!_stages.empty()) {
         for (size_t i = 0; i < _stages.size(); i++) {
             const auto &stage = _stages[i];
             bool isLast = (i == _stages.size() - 1);
             std::string prefix = isLast ? "  └─ " : "  ├─ ";
-            tgfx::PrintLog("[TimeProfiler] %s%s: %.3f ms", prefix.c_str(), stage.name.c_str(), stage.elapsedMs);
+            SC_LOG_DEBUG("[TimeProfiler] %s%s: %.3f ms", prefix.c_str(), stage.name.c_str(), stage.elapsedMs);
         }
     }
 }

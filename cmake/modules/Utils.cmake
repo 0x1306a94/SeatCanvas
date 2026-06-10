@@ -31,6 +31,18 @@ function(make_files_relative OUT_VAR BASE_DIR)
   set(${OUT_VAR} "${_result}")
 endfunction()
 
+function(seatcanvas_enable_objc_arc target)
+    if(NOT (MACOS OR IOS))
+        return()
+    endif()
+    if(CMAKE_GENERATOR STREQUAL "Xcode")
+        return()
+    endif()
+    target_compile_options(${target} PRIVATE
+        $<$<COMPILE_LANGUAGE:OBJC,OBJCXX>:-fobjc-arc>
+    )
+endfunction()
+
 macro(add_source_group files base_dir group_prefix)
   foreach(file IN LISTS ${files})
     file(RELATIVE_PATH rel_path "${base_dir}" "${file}")

@@ -1,0 +1,49 @@
+cmake_minimum_required(VERSION 3.22...3.29)
+
+if(MACOS)
+    enable_language(OBJCXX)
+endif()
+
+add_files_by_extension(SEATCANVAS_FULL_TEST_FILES ".h;.hpp;.cpp;.mm"
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+add_source_group(SEATCANVAS_FULL_TEST_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src "Sources")
+
+add_executable(SeatCanvasFullTests ${SEATCANVAS_FULL_TEST_FILES})
+
+target_include_directories(SeatCanvasFullTests PRIVATE
+    ${PROJECT_ROOT_INCLUDE_DIR}/SeatCanvas
+    ${PROJECT_THIRD_PARTY_ROOT_DIR}/tgfx/include
+    ${PROJECT_THIRD_PARTY_ROOT_DIR}/tgfx/third_party/json/include
+    ${PROJECT_SOURCE_DIR}/src/SeatCanvas
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/base
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/metal
+)
+
+find_library(METALKIT_FRAMEWORK MetalKit REQUIRED)
+find_library(APPKIT_FRAMEWORK AppKit REQUIRED)
+target_link_libraries(SeatCanvasFullTests PRIVATE
+    SeatCanvas
+    tgfx
+    gtest
+    ${METALKIT_FRAMEWORK}
+    ${APPKIT_FRAMEWORK}
+)
+
+set_target_properties(SeatCanvasFullTests PROPERTIES MACOSX_BUNDLE FALSE)
+seatcanvas_enable_objc_arc(SeatCanvasFullTests)
+
+set(CACHE_DIR ${PROJECT_SOURCE_DIR}/tests/baseline/.cache)
+file(MAKE_DIRECTORY ${CACHE_DIR})
+execute_process(COMMAND git rev-parse --short HEAD
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    OUTPUT_VARIABLE HEAD_COMMIT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+)
+if(HEAD_COMMIT)
+    file(WRITE ${CACHE_DIR}/HEAD "${HEAD_COMMIT}")
+endif()

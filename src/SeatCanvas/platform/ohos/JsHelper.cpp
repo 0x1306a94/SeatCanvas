@@ -9,8 +9,8 @@
 
 #include "core/style/ColorHexParser.hpp"
 
+#include "core/Log.hpp"
 #include <tgfx/core/Data.h>
-#include <tgfx/platform/Print.h>
 
 #include <unordered_map>
 
@@ -49,19 +49,19 @@ napi_status ExtendClass(napi_env env, napi_value constructor, const std::string 
     }
     napi_value baseConstructor = GetConstructor(env, parentName);
     if (baseConstructor == nullptr) {
-        tgfx::PrintError("ExtendClass get baseConstructor failed status");
+        SC_LOG_ERROR("ExtendClass get baseConstructor failed status");
         return napi_status::napi_invalid_arg;
     }
     napi_value basePrototype;
     napi_status statusCode = napi_get_named_property(env, baseConstructor, "prototype", &basePrototype);
     if (statusCode != napi_status::napi_ok) {
-        tgfx::PrintError("ExtendClass get baseConstructor's prototype  failed status :%d", statusCode);
+        SC_LOG_ERROR("ExtendClass get baseConstructor's prototype  failed status :%d", statusCode);
         return statusCode;
     }
     napi_value derivedPrototype;
     statusCode = napi_get_named_property(env, constructor, "prototype", &derivedPrototype);
     if (statusCode != napi_status::napi_ok) {
-        tgfx::PrintError("ExtendClass get constructor's prototype  failed status :%d", statusCode);
+        SC_LOG_ERROR("ExtendClass get constructor's prototype  failed status :%d", statusCode);
         return statusCode;
     }
     return napi_set_named_property(env, derivedPrototype, "__proto__", basePrototype);
@@ -72,12 +72,12 @@ napi_status DefineClass(napi_env env, napi_value exports, const std::string &utf
     napi_value classConstructor;
     auto status = napi_define_class(env, utf8name.c_str(), utf8name.length(), constructor, nullptr, propertyCount, properties, &classConstructor);
     if (status != napi_status::napi_ok) {
-        tgfx::PrintError("DefineClass napi_define_class failed:%d", status);
+        SC_LOG_ERROR("DefineClass napi_define_class failed:%d", status);
         return status;
     }
     status = napi_set_named_property(env, exports, utf8name.c_str(), classConstructor);
     if (status != napi_status::napi_ok) {
-        tgfx::PrintError("DefineClass napi_set_named_property failed:%d", status);
+        SC_LOG_ERROR("DefineClass napi_set_named_property failed:%d", status);
         return status;
     }
     SetConstructor(env, classConstructor, utf8name);
@@ -86,7 +86,7 @@ napi_status DefineClass(napi_env env, napi_value exports, const std::string &utf
     }
     status = ExtendClass(env, classConstructor, parentName);
     if (status != napi_status::napi_ok) {
-        tgfx::PrintError("DefineClass ExtendClass failed:%d", status);
+        SC_LOG_ERROR("DefineClass ExtendClass failed:%d", status);
         return status;
     }
     return status;
@@ -104,12 +104,12 @@ napi_value NewInstance(napi_env env, const std::string &name, void *handler) {
     napi_value external[1];
     auto status = napi_create_external(env, handler, nullptr, nullptr, &external[0]);
     if (status != napi_ok) {
-        tgfx::PrintError("NewInstance napi_create_external failed :%d", status);
+        SC_LOG_ERROR("NewInstance napi_create_external failed :%d", status);
         return nullptr;
     }
     status = napi_new_instance(env, constructor, 1, external, &result);
     if (status != napi_ok) {
-        tgfx::PrintError("NewInstance napi_new_instance failed :%d", status);
+        SC_LOG_ERROR("NewInstance napi_new_instance failed :%d", status);
         return nullptr;
     }
     return result;
