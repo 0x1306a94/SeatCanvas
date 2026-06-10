@@ -68,4 +68,12 @@ TEST_F(SeatCanvasTestFixture, SeatScale) {
     EXPECT_TRUE(compareBaseline("BaseMap/SeatScale"));
 }
 
+TEST_F(SeatCanvasTestFixture, MaximumZoomScale) {
+    ASSERT_NE(renderer, nullptr);
+    ASSERT_TRUE(loadSVGBaseMap(*renderer, "resources/SeatCanvasSample.bundle/default/basemap/performbg.svg"));
+    renderer->setZoomScale(renderer->getMaximumZoomScale());
+    renderFrame(*renderer);
+    EXPECT_TRUE(compareBaseline("BaseMap/MaximumZoomScale"));
+}
+
 };  // namespace kk::test

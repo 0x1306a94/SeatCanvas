@@ -40,7 +40,7 @@ jobs:
           xcode-version: "26.4.1"
 
       - name: Run autotest
-        run: ./autotest.sh
+        run: ./autotest.sh clean
 
       - name: Save Third-Party Cache
         if: ${{ (github.event_name == 'push') && (steps.third-party-cache.outputs.cache-hit != 'true') }}
