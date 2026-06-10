@@ -45,6 +45,8 @@ add_subdirectory(third_party/tgfx/third_party/json)
 option(SEATCANVAS_BUILD_TESTS "Build tests" OFF)
 message(STATUS "SEATCANVAS_BUILD_TESTS: ${SEATCANVAS_BUILD_TESTS}")
 
+option(SEATCANVAS_ENABLE_COVERAGE "Enable code coverage instrumentation" OFF)
+
 add_subdirectory(src/SeatCanvas)
 
 if(SEATCANVAS_BUILD_TESTS AND MACOS)

@@ -37,6 +37,24 @@ target_compile_options(SeatCanvasFullTests PRIVATE
     $<$<COMPILE_LANGUAGE:CXX,OBJCXX>:-fno-exceptions -fno-rtti>
 )
 
+if(SEATCANVAS_ENABLE_COVERAGE AND MACOS)
+    target_compile_options(SeatCanvas PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX,OBJCXX>:-fprofile-instr-generate -fcoverage-mapping>
+    )
+    target_link_options(SeatCanvas PRIVATE "LINKER:-undefined,dynamic_lookup")
+
+    execute_process(COMMAND xcrun --sdk macosx clang -print-file-name=libclang_rt.profile_osx.a
+        OUTPUT_VARIABLE CLANG_RT_PROFILE_LIB
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if(EXISTS "${CLANG_RT_PROFILE_LIB}")
+        target_link_libraries(SeatCanvas PRIVATE "${CLANG_RT_PROFILE_LIB}")
+    endif()
+
+    target_compile_options(SeatCanvasFullTests PRIVATE -fprofile-instr-generate -fcoverage-mapping)
+    target_link_options(SeatCanvasFullTests PRIVATE -fprofile-instr-generate)
+endif()
+
 set(CACHE_DIR ${PROJECT_SOURCE_DIR}/tests/baseline/.cache)
 file(MAKE_DIRECTORY ${CACHE_DIR})
 execute_process(COMMAND git rev-parse --short HEAD
