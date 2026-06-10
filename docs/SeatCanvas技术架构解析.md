@@ -566,7 +566,8 @@ SeatCanvas 的核心 C++ 代码（约 180+ 源文件）完全平台无关。平�
 
 | 平台      | 实现文件                      | GPU 后端                    |
 | ------- | ------------------------- | ------------------------- |
-| iOS     | `IOSPlatformView.mm`      | Metal（通过 MTKView）         |
+| iOS     | `ApplePlatformView.mm`    | Metal（通过 MTKView）         |
+| macOS   | `ApplePlatformView.mm`    | Metal（通过 MTKView）         |
 | Android | `AndroidPlatformView.cpp` | OpenGL ES（通过 TextureView） |
 | OHOS    | `OHOSPlatformView.cpp`    | OpenGL ES（通过 XComponent）  |
 
@@ -577,6 +578,7 @@ SeatCanvas 的核心 C++ 代码（约 180+ 源文件）完全平台无关。平�
 | 平台      | 实现                            | 文件                      |
 | ------- | ----------------------------- | ----------------------- |
 | iOS     | CADisplayLink                 | `NativeDisplayLink.h`   |
+| macOS   | MTKView displayLink           | `NativeDisplayLink.h`   |
 | Android | Choreographer / ValueAnimator | `NativeDisplayLink.cpp` |
 | OHOS    | VSync callback                | `NativeDisplayLink.cpp` |
 

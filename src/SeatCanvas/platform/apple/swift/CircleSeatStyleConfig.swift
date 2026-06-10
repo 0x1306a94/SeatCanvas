@@ -5,15 +5,15 @@
 //  Created by king on 2026/1/15.
 //
 
-import UIKit
+import Foundation
 
 struct CircleSeatStyleConfig: SeatStyleConfig {
     let type: SeatStyleType = .circle
-    let fill: UIColor
-    let overlay: UIColor?
-    let checkmark: UIColor?
+    let fill: PlatformColor
+    let overlay: PlatformColor?
+    let checkmark: PlatformColor?
 
-    init(fill: UIColor, overlay: UIColor? = nil, checkmark: UIColor? = nil) {
+    init(fill: PlatformColor, overlay: PlatformColor? = nil, checkmark: PlatformColor? = nil) {
         self.fill = fill
         self.overlay = overlay
         self.checkmark = checkmark

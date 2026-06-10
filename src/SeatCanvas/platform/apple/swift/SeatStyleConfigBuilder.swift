@@ -6,7 +6,12 @@
 //
 
 import Foundation
-import UIKit
+
+#if os(macOS)
+    import AppKit
+#elseif os(iOS)
+    import UIKit
+#endif
 
 struct StyleConfigEntry: Encodable {
     let key: String
@@ -42,9 +47,9 @@ public final class SeatStyleConfigBuilder: NSObject {
     @objc @discardableResult
     public func addCircleStyle(
         styleId: String,
-        fill: UIColor,
-        overlay: UIColor,
-        checkmark: UIColor
+        fill: PlatformColor,
+        overlay: PlatformColor,
+        checkmark: PlatformColor
     ) -> SeatStyleConfigBuilder {
         guard !styleId.isEmpty else {
             return self
@@ -64,9 +69,9 @@ public final class SeatStyleConfigBuilder: NSObject {
     @discardableResult
     public func addCircleStyle(
         styleId: String,
-        fill: UIColor,
-        overlay: UIColor? = nil,
-        checkmark: UIColor? = nil
+        fill: PlatformColor,
+        overlay: PlatformColor? = nil,
+        checkmark: PlatformColor? = nil
     ) -> SeatStyleConfigBuilder {
         guard !styleId.isEmpty else {
             return self

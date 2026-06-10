@@ -9,7 +9,7 @@
 #import "core/Platform.hpp"
 
 namespace kk::bridge {
-void RegisterFallbackFonts() {
+void RegisterFallbackFonts(void) {
     kk::Platform::Current()->registerFallbackFonts();
 }
 };  // namespace kk::bridge

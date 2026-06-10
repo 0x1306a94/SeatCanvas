@@ -25,7 +25,7 @@ final class SeatCanvasCoreRenderer {
         kk.bridge.SeatCanvasCoreRendererPrewarmShaderCompiler()
     }
 
-    var backgroundColor: UIColor? {
+    var backgroundColor: PlatformColor? {
         set {
             guard let cppObject else {
                 return
@@ -252,14 +252,14 @@ extension SeatCanvasCoreRenderer {
         }
     }
 
-    func updateSeatZoneAlternateColors(colors: [String: UIColor]?) {
+    func updateSeatZoneAlternateColors(colors: [String: PlatformColor]?) {
         guard let cppObject else {
             return
         }
         kk.bridge.SeatCanvasCoreRendererSetSeatZoneAlternateColors(cppObject, colors)
     }
 
-    func updateMiniMapZoneAlternateColors(colors: [String: UIColor]?) {
+    func updateMiniMapZoneAlternateColors(colors: [String: PlatformColor]?) {
         guard let cppObject else {
             return
         }

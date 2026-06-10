@@ -1,11 +1,11 @@
 //
-//  IOSPlatformView.mm
+//  ApplePlatformView.mm
 //  SeatCanvas
 //
 //  Created by king on 2025/11/11.
 //
 
-#import "IOSPlatformView.h"
+#import "ApplePlatformView.h"
 
 #import <tgfx/core/Surface.h>
 #import <tgfx/gpu/metal/MetalWindow.h>
@@ -17,23 +17,23 @@
 
 namespace kk::renderer {
 
-IOSPlatformView::IOSPlatformView(MTKView *metalView)
+ApplePlatformView::ApplePlatformView(MTKView *metalView)
     : _metalView(metalView) {
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
 }
 
-IOSPlatformView::~IOSPlatformView() {
+ApplePlatformView::~ApplePlatformView() {
     tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
 }
 
-std::shared_ptr<tgfx::Window> IOSPlatformView::getWindow() {
+std::shared_ptr<tgfx::Window> ApplePlatformView::getWindow() {
     if (_window == nullptr) {
         _window = tgfx::MetalWindow::MakeFrom(_metalView);
     }
     return _window;
 }
 
-std::shared_ptr<tgfx::Surface> IOSPlatformView::getSurface(tgfx::Context *context) {
+std::shared_ptr<tgfx::Surface> ApplePlatformView::getSurface(tgfx::Context *context) {
     if (context == nullptr) {
         return nullptr;
     }
@@ -45,18 +45,18 @@ std::shared_ptr<tgfx::Surface> IOSPlatformView::getSurface(tgfx::Context *contex
     return _surface;
 }
 
-void IOSPlatformView::invalidSize() {
+void ApplePlatformView::invalidSize() {
     _surface = nullptr;
 }
 
-tgfx::ISize IOSPlatformView::getSize() {
+tgfx::ISize ApplePlatformView::getSize() {
     CAMetalLayer *metalLayer = (CAMetalLayer *)_metalView.layer;
     auto width = static_cast<int>(roundf(static_cast<float>(metalLayer.bounds.size.width * metalLayer.contentsScale)));
     auto height = static_cast<int>(roundf(static_cast<float>(metalLayer.bounds.size.height * metalLayer.contentsScale)));
     return tgfx::ISize{width, height};
 }
 
-float IOSPlatformView::getDensity() {
+float ApplePlatformView::getDensity() {
     CAMetalLayer *metalLayer = (CAMetalLayer *)_metalView.layer;
     float contentsScale = static_cast<float>(metalLayer.contentsScale);
     return contentsScale;

@@ -13,4 +13,5 @@
 **/BuildProfile.ets
 /log.txt
 /signingConfigs
+/signingConfigs.zip
 /local.signingconfig.json

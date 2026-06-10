@@ -26,7 +26,7 @@
 #import "core/utils/SystemProperties.hpp"
 #import "core/utils/TimeProfiler.hpp"
 #import "platform/apple/LayerPrerenderImage.h"
-#import "platform/ios/renderer/IOSPlatformView.h"
+#import "platform/apple/renderer/ApplePlatformView.h"
 
 #import "SwiftSeatCanvasCoreRendererDelegate.hpp"
 
@@ -104,7 +104,7 @@ void SeatCanvasCoreRendererPrewarmShaderCompiler(void) {
 }
 
 CPPObject *_Nonnull CreateSeatCanvasCoreRenderer(MTKView *_Nullable view) {
-    auto platformView = std::make_unique<kk::renderer::IOSPlatformView>(view);
+    auto platformView = std::make_unique<kk::renderer::ApplePlatformView>(view);
     auto zoomPanController = std::make_unique<kk::gesture::ElasticZoomPanController>();
     auto renderer = new kk::renderer::SeatCanvasCoreRenderer(std::move(platformView), std::move(zoomPanController));
 
@@ -126,14 +126,14 @@ bool SeatCanvasCoreRendererReplacePlatformView(CPPObject *_Nonnull cppObject, MT
         renderer->replacePlatformView(nullptr);
         return true;
     }
-    auto platformView = std::make_unique<kk::renderer::IOSPlatformView>(view);
+    auto platformView = std::make_unique<kk::renderer::ApplePlatformView>(view);
     renderer->replacePlatformView(std::move(platformView));
     return true;
 }
 
 void *_Nullable SeatCanvasCoreRendererParseBaseMap(const void *_Nullable __sized_by_or_null(len) bytes, size_t len, kk::parser::BaseMapFormat format,
                                                    const void *_Nullable __sized_by_or_null(parseConfigLen) parseConfigBytes, size_t parseConfigLen,
-                                                   UIImage *_Nullable *_Nullable miniMapImage) {
+                                                   CGImageRef *_Nullable miniMapImage) {
     if (bytes == nullptr || len == 0) {
         tgfx::PrintError("bytes is null or len is zero");
         return nullptr;
@@ -171,7 +171,7 @@ void *_Nullable SeatCanvasCoreRendererParseBaseMap(const void *_Nullable __sized
     return static_cast<void *>(outResult);
 }
 
-void *_Nullable SeatCanvasCoreRendererParseBaseMapFromSVG(const void *_Nullable __sized_by_or_null(len) bytes, size_t len, UIImage *_Nullable *_Nullable miniMapImage) {
+void *_Nullable SeatCanvasCoreRendererParseBaseMapFromSVG(const void *_Nullable __sized_by_or_null(len) bytes, size_t len, CGImageRef *_Nullable miniMapImage) {
     return SeatCanvasCoreRendererParseBaseMap(bytes, len, kk::parser::BaseMapFormat::SVG, nullptr, 0, miniMapImage);
 }
 
@@ -197,7 +197,7 @@ bool SeatCanvasCoreRendererLoadBaseMap(CPPObject *_Nonnull cppObject, void *_Nul
     return true;
 }
 
-void SeatCanvasCoreRendererSetSeatZoneAlternateColors(CPPObject *_Nonnull cppObject, NSDictionary<NSString *, UIColor *> *_Nullable colors) {
+void SeatCanvasCoreRendererSetSeatZoneAlternateColors(CPPObject *_Nonnull cppObject, NSDictionary<NSString *, PlatformColor *> *_Nullable colors) {
     GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
     if (colors == nil) {
         renderer->updateSeatZoneAlternateColors({});
@@ -206,17 +206,17 @@ void SeatCanvasCoreRendererSetSeatZoneAlternateColors(CPPObject *_Nonnull cppObj
     std::unordered_map<std::string, tgfx::Color> cppColors{};
     cppColors.reserve(colors.count);
     for (NSString *zoneId in colors.keyEnumerator) {
-        UIColor *color = colors[zoneId];
+        PlatformColor *color = colors[zoneId];
         if (!color) {
             continue;
         }
-        cppColors.emplace(std::string(zoneId.UTF8String), UIColorToTGFX(color));
+        cppColors.emplace(std::string(zoneId.UTF8String), PlatformColorToTGFX(color));
     }
 
     renderer->updateSeatZoneAlternateColors(cppColors);
 }
 
-void SeatCanvasCoreRendererSetMiniMapZoneAlternateColors(CPPObject *_Nonnull cppObject, NSDictionary<NSString *, UIColor *> *_Nullable colors) {
+void SeatCanvasCoreRendererSetMiniMapZoneAlternateColors(CPPObject *_Nonnull cppObject, NSDictionary<NSString *, PlatformColor *> *_Nullable colors) {
     GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
     if (colors == nil) {
         renderer->updateMiniMapZoneAlternateColors({});
@@ -225,11 +225,11 @@ void SeatCanvasCoreRendererSetMiniMapZoneAlternateColors(CPPObject *_Nonnull cpp
     std::unordered_map<std::string, tgfx::Color> cppColors{};
     cppColors.reserve(colors.count);
     for (NSString *zoneId in colors.keyEnumerator) {
-        UIColor *color = colors[zoneId];
+        PlatformColor *color = colors[zoneId];
         if (!color) {
             continue;
         }
-        cppColors.emplace(std::string(zoneId.UTF8String), UIColorToTGFX(color));
+        cppColors.emplace(std::string(zoneId.UTF8String), PlatformColorToTGFX(color));
     }
 
     renderer->updateMiniMapZoneAlternateColors(cppColors);
@@ -403,7 +403,7 @@ CGSize SeatCanvasCoreRendererContentSize(CPPObject *_Nonnull cppObject) {
     return CGSizeMake(static_cast<CGFloat>(size.width), static_cast<CGFloat>(size.height));
 }
 
-void SeatCanvasCoreRendererSetBackgroundColor(CPPObject *_Nonnull cppObject, UIColor *_Nullable color) {
+void SeatCanvasCoreRendererSetBackgroundColor(CPPObject *_Nonnull cppObject, PlatformColor *_Nullable color) {
     GetCPPObjectOrReturn(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer);
     if (color == nil) {
         renderer->setBackgroundColor(tgfx::Color::White());
@@ -415,10 +415,10 @@ void SeatCanvasCoreRendererSetBackgroundColor(CPPObject *_Nonnull cppObject, UIC
     renderer->setBackgroundColor(tgfxColor);
 }
 
-UIColor *SeatCanvasCoreRendererGetBackgroundColor(CPPObject *_Nonnull cppObject) {
-    GetCPPObjectOrReturnValue(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer, UIColor.clearColor);
+PlatformColor *SeatCanvasCoreRendererGetBackgroundColor(CPPObject *_Nonnull cppObject) {
+    GetCPPObjectOrReturnValue(cppObject, kk::renderer::SeatCanvasCoreRenderer *, renderer, PlatformColor.clearColor);
     const auto &backgroundColor = renderer->getBackgroundColor();
-    return UIColorFromTGFX(backgroundColor);
+    return PlatformColorFromTGFX(backgroundColor);
 }
 
 CGFloat SeatCanvasCoreRendererGetSeatSize(CPPObject *_Nonnull cppObject) {

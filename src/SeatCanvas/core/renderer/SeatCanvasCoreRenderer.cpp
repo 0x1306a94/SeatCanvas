@@ -140,7 +140,15 @@ float SeatCanvasCoreRenderer::getSeatRenderZoomThreshold() const {
 }
 
 void SeatCanvasCoreRenderer::replacePlatformView(std::unique_ptr<PlatformView> platformView) {
+    bool restart = false;
+    if (_displayLink) {
+        stop();
+        restart = true;
+    }
     _platformView = std::move(platformView);
+    if (restart && _platformView) {
+        start();
+    }
 }
 
 bool SeatCanvasCoreRenderer::updateSize() {
@@ -416,7 +424,8 @@ void SeatCanvasCoreRenderer::start() {
             _frameMetrics->recordFrame(drawTime);
         };
 
-        _displayLink = Platform::Current()->createDisplayLink(std::move(callback));
+        void *handle = _platformView ? _platformView->nativeHandle() : nullptr;
+        _displayLink = Platform::Current()->createDisplayLink(std::move(callback), handle);
     }
 
     if (_displayLink) {
@@ -433,6 +442,7 @@ void SeatCanvasCoreRenderer::stop() {
     _viewportController->resetAnimationState();
     if (_displayLink) {
         _displayLink->stop();
+        _displayLink = nullptr;
     }
 }
 

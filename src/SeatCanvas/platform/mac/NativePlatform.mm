@@ -9,6 +9,8 @@
 
 #import "NativeDisplayLink.h"
 
+#import <MetalKit/MTKView.h>
+
 namespace kk {
 const Platform *Platform::Current() {
     static const NativePlatform platform = {};
@@ -16,9 +18,13 @@ const Platform *Platform::Current() {
 }
 
 std::shared_ptr<DisplayLink> NativePlatform::createDisplayLink(std::function<void()> callback, void *userInfo) const {
+    if (userInfo == nullptr) {
+        return nullptr;
+    }
+
     if (!callback) {
         return nullptr;
     }
-    return std::make_shared<NativeDisplayLink>(std::move(callback));
+    return std::make_shared<NativeDisplayLink>(std::move(callback), (__bridge MTKView *)userInfo);
 }
 };  // namespace kk

@@ -9,8 +9,6 @@
 #define SwiftBridge_h
 
 #import <CoreGraphics/CGGeometry.h>
-#import <UIKit/UIColor.h>
-#import <UIKit/UIImage.h>
 #import <string>
 
 #import "CPPObject.hpp"

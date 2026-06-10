@@ -38,7 +38,7 @@ bool NativePlatform::registerFallbackFonts() const {
     return kk::jni::FontConfigAndroid::RegisterFallbackFonts();
 }
 
-std::shared_ptr<DisplayLink> NativePlatform::createDisplayLink(std::function<void()> callback) const {
+std::shared_ptr<DisplayLink> NativePlatform::createDisplayLink(std::function<void()> callback, void *userInfo) const {
     return NativeDisplayLink::Make(std::move(callback));
 }
 };  // namespace kk

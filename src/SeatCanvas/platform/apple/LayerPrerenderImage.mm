@@ -8,7 +8,6 @@
 #include "LayerPrerenderImage.h"
 
 #import <CoreGraphics/CoreGraphics.h>
-#import <UIKit/UIImage.h>
 
 #include <tgfx/core/Bitmap.h>
 #include <tgfx/core/Buffer.h>

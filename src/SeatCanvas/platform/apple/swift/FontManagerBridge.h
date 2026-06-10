@@ -9,5 +9,5 @@
 
 namespace kk::bridge {
 /// 注册回退字体
-void RegisterFallbackFonts();
+void RegisterFallbackFonts(void);
 };  // namespace kk::bridge
