@@ -219,7 +219,7 @@ TEST_F(SeatCanvasTestFixture, SeatRenderingAtVenueLevel) {
 
 TEST_F(SeatCanvasTestFixture, MultiZoneColorChange) {
     ASSERT_NE(renderer, nullptr);
-    ASSERT_TRUE(loadSVGBaseMap(*renderer, "resources/SeatCanvasSample.bundle/default/basemap/performbg_2.svg"));
+    ASSERT_TRUE(loadSVGBaseMap(*renderer, "resources/SeatCanvasSample.bundle/default/basemap/performbg.svg"));
 
     renderer->updateSeatZoneAlternateColors({
         {"10001", tgfx::Color::Red()},
@@ -244,18 +244,18 @@ TEST_F(SeatCanvasTestFixture, PanAndZoomCombined) {
     EXPECT_TRUE(compareBaseline("BaseMap/PanZoomCombined"));
 }
 
-TEST_F(SeatCanvasTestFixture, ZoneColorOnPerformbg2) {
+TEST_F(SeatCanvasTestFixture, ZoneColorOnSingleZone) {
     ASSERT_NE(renderer, nullptr);
-    ASSERT_TRUE(loadSVGBaseMap(*renderer, "resources/SeatCanvasSample.bundle/default/basemap/performbg_2.svg"));
-    renderer->updateSeatZoneAlternateColors({{"10001", tgfx::Color::Red()}});
+    ASSERT_TRUE(loadSVGBaseMap(*renderer, "resources/SeatCanvasSample.bundle/default/basemap/performbg.svg"));
+    renderer->updateSeatZoneAlternateColors({{"30001", tgfx::Color::Red()}});
     renderFrame(*renderer);
-    EXPECT_TRUE(compareBaseline("BaseMap/Performbg2ZoneColor"));
+    EXPECT_TRUE(compareBaseline("BaseMap/SingleZoneColor"));
 }
 
 TEST_F(SeatCanvasTestFixture, ZoneColorOnPerformbg3) {
     ASSERT_NE(renderer, nullptr);
     ASSERT_TRUE(loadSVGBaseMap(*renderer, "resources/SeatCanvasSample.bundle/default/basemap/performbg_3.svg"));
-    renderer->updateSeatZoneAlternateColors({{"30001", tgfx::Color::FromRGBA(0x00, 0x80, 0xFF, 0xFF)}});
+    renderer->updateSeatZoneAlternateColors({{"inner_105889", tgfx::Color::FromRGBA(0x00, 0x80, 0xFF, 0xFF)}});
     renderFrame(*renderer);
     EXPECT_TRUE(compareBaseline("BaseMap/Performbg3ZoneColor"));
 }

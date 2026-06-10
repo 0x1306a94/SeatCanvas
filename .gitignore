@@ -65,3 +65,4 @@ web/build
 tests/out/
 tests/baseline-out/
 tests/baseline/.cache/
+*.profraw

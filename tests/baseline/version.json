@@ -13,7 +13,6 @@
         "PannedDown": "fdeebc71049e55db3a433ae8d5fe2814",
         "PannedRight": "fdeebc71049e55db3a433ae8d5fe2814",
         "Performbg2": "27f3dade68ef6809eb017f5097a5fc11",
-        "Performbg2ZoneColor": "27f3dade68ef6809eb017f5097a5fc11",
         "Performbg3": "156468210a77e11b7b6a191425c09461",
         "Performbg3ZoneColor": "156468210a77e11b7b6a191425c09461",
         "RowScale": "4617b9c28f0f345ad71ac30201668f8d",
@@ -21,6 +20,7 @@
         "SeatRenderingRow": "0bd9f87ee6932976f2331b07c4c719a7",
         "SeatRenderingVenue": "1b30b58fc42dd9316c1ff608d991017e",
         "SeatScale": "a6b1801ca7c7f7ac0eb5a162a0bb3075",
+        "SingleZoneColor": "ebcecb610063461c167afb9c596ca0f8",
         "StandardDensity": "134490979ef74d5b10573076d192e7b2",
         "ZoneScale": "1de7e80acb69f9c604b005f68ba3b9ef"
     }
