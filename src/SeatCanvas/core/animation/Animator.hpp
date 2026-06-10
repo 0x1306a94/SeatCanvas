@@ -41,6 +41,8 @@ class Animator {
     bool tick(double currentTimeMs);
     bool hasRunningAnimations() const;
 
+    static float evaluateCurve(AnimationCurve curve, float t);
+
   private:
     struct Animation {
         AnimationId id;
@@ -50,8 +52,6 @@ class Animator {
         double startTimeMs{0.0};
         bool finished{false};
     };
-
-    static float evaluateCurve(AnimationCurve curve, float t);
 
     AnimationId _nextId{1};
     std::vector<Animation> _animations;
