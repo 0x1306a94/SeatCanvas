@@ -7,8 +7,8 @@
 
 #include "UniformData.hpp"
 
+#include "core/Log.hpp"
 #include <cstring>
-#include <tgfx/platform/Print.h>
 
 namespace kk::renderer {
 
@@ -54,19 +54,19 @@ void UniformData::setBuffer(void *buffer) {
 
 void UniformData::onSetData(const std::string &name, const void *data, size_t size) const {
     if (_buffer == nullptr) {
-        tgfx::PrintError("UniformData::onSetData() buffer not set!");
+        SC_LOG_ERROR("UniformData::onSetData() buffer not set!");
         return;
     }
 
     const Field *field = findField(name);
     if (field == nullptr) {
-        tgfx::PrintError("UniformData::onSetData() uniform '%s' not found!", name.c_str());
+        SC_LOG_ERROR("UniformData::onSetData() uniform '%s' not found!", name.c_str());
         return;
     }
 
     if (field->size != size) {
-        tgfx::PrintError("UniformData::onSetData() size mismatch for '%s': expected %zu, got %zu",
-                         name.c_str(), field->size, size);
+        SC_LOG_ERROR("UniformData::onSetData() size mismatch for '%s': expected %zu, got %zu",
+                     name.c_str(), field->size, size);
         return;
     }
 
@@ -75,24 +75,24 @@ void UniformData::onSetData(const std::string &name, const void *data, size_t si
 
 void UniformData::setArrayData(const std::string &name, const void *data, int count) const {
     if (_buffer == nullptr) {
-        tgfx::PrintError("UniformData::setArrayData() buffer not set!");
+        SC_LOG_ERROR("UniformData::setArrayData() buffer not set!");
         return;
     }
 
     const Field *field = findField(name);
     if (field == nullptr) {
-        tgfx::PrintError("UniformData::setArrayData() uniform '%s' not found!", name.c_str());
+        SC_LOG_ERROR("UniformData::setArrayData() uniform '%s' not found!", name.c_str());
         return;
     }
 
     if (field->count <= 1) {
-        tgfx::PrintError("UniformData::setArrayData() uniform '%s' is not an array!", name.c_str());
+        SC_LOG_ERROR("UniformData::setArrayData() uniform '%s' is not an array!", name.c_str());
         return;
     }
 
     if (count > field->count) {
-        tgfx::PrintError("UniformData::setArrayData() count mismatch for '%s': expected <= %d, got %d",
-                         name.c_str(), field->count, count);
+        SC_LOG_ERROR("UniformData::setArrayData() count mismatch for '%s': expected <= %d, got %d",
+                     name.c_str(), field->count, count);
         return;
     }
 
@@ -109,24 +109,24 @@ void UniformData::setArrayData(const std::string &name, const void *data, int co
 
 void UniformData::setArrayElement(const std::string &name, int index, const void *data) const {
     if (_buffer == nullptr) {
-        tgfx::PrintError("UniformData::setArrayElement() buffer not set!");
+        SC_LOG_ERROR("UniformData::setArrayElement() buffer not set!");
         return;
     }
 
     const Field *field = findField(name);
     if (field == nullptr) {
-        tgfx::PrintError("UniformData::setArrayElement() uniform '%s' not found!", name.c_str());
+        SC_LOG_ERROR("UniformData::setArrayElement() uniform '%s' not found!", name.c_str());
         return;
     }
 
     if (field->count <= 1) {
-        tgfx::PrintError("UniformData::setArrayElement() uniform '%s' is not an array!", name.c_str());
+        SC_LOG_ERROR("UniformData::setArrayElement() uniform '%s' is not an array!", name.c_str());
         return;
     }
 
     if (index < 0 || index >= field->count) {
-        tgfx::PrintError("UniformData::setArrayElement() index out of range for '%s': index=%d, count=%d",
-                         name.c_str(), index, field->count);
+        SC_LOG_ERROR("UniformData::setArrayElement() index out of range for '%s': index=%d, count=%d",
+                     name.c_str(), index, field->count);
         return;
     }
 

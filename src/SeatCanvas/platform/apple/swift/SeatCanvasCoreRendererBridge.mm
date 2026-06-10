@@ -35,6 +35,7 @@
 #import <tgfx/platform/Print.h>
 #import <tgfx/svg/SVGDOM.h>
 
+#include "core/Log.hpp"
 #include <mutex>
 
 #include <tgfx/core/Canvas.h>
@@ -135,12 +136,12 @@ void *_Nullable SeatCanvasCoreRendererParseBaseMap(const void *_Nullable __sized
                                                    const void *_Nullable __sized_by_or_null(parseConfigLen) parseConfigBytes, size_t parseConfigLen,
                                                    CGImageRef *_Nullable miniMapImage) {
     if (bytes == nullptr || len == 0) {
-        tgfx::PrintError("bytes is null or len is zero");
+        SC_LOG_ERROR("bytes is null or len is zero");
         return nullptr;
     }
 
     if (format == kk::parser::BaseMapFormat::Unknown) {
-        tgfx::PrintError("format is Unknown");
+        SC_LOG_ERROR("format is Unknown");
         return nullptr;
     }
 
@@ -152,7 +153,7 @@ void *_Nullable SeatCanvasCoreRendererParseBaseMap(const void *_Nullable __sized
     }
     auto result = kk::parser::BaseMapParserFactory::parse(data, format, parseConfigData);
     if (!result) {
-        tgfx::PrintError("parse result is null");
+        SC_LOG_ERROR("parse result is null");
         return nullptr;
     }
 

@@ -7,8 +7,8 @@
 
 #include "AndroidSeatCanvasCoreRendererDelegate.hpp"
 
+#include "core/Log.hpp"
 #include <jni.h>
-#include <tgfx/platform/Print.h>
 #include <tgfx/platform/android/JNIEnvironment.h>
 
 #include "JStringUtil.hpp"
@@ -17,11 +17,11 @@ namespace kk::renderer {
 
 AndroidSeatCanvasCoreRendererDelegate::AndroidSeatCanvasCoreRendererDelegate(jobject seatCanvasView)
     : _seatCanvasView(seatCanvasView) {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 AndroidSeatCanvasCoreRendererDelegate::~AndroidSeatCanvasCoreRendererDelegate() {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 void AndroidSeatCanvasCoreRendererDelegate::didLoadBaseMap(uint32_t) {

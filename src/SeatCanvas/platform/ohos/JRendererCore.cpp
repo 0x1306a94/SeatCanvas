@@ -33,9 +33,9 @@
 #include <unordered_map>
 #include <vector>
 
+#include "core/Log.hpp"
 #include <tgfx/core/Data.h>
 #include <tgfx/core/Stream.h>
-#include <tgfx/platform/Print.h>
 #include <tgfx/svg/SVGDOM.h>
 
 namespace kk::js {
@@ -58,11 +58,11 @@ static void LoadBaseMapTaskExecute(napi_env env, void *userdata) {
 
     auto data = LoadDataFromAsset(taskData->mNativeResMgr, taskData->filename.c_str());
     if (data == nullptr) {
-        tgfx::PrintError("data is null");
+        SC_LOG_ERROR("data is null");
         return;
     }
     if (taskData->format == kk::parser::BaseMapFormat::Unknown) {
-        tgfx::PrintError("format is Unknown");
+        SC_LOG_ERROR("format is Unknown");
         return;
     }
 
@@ -73,7 +73,7 @@ static void LoadBaseMapTaskExecute(napi_env env, void *userdata) {
     }
     auto result = kk::parser::BaseMapParserFactory::parse(data, taskData->format, parseConfigData);
     if (!result) {
-        tgfx::PrintError("parse result is null");
+        SC_LOG_ERROR("parse result is null");
         return;
     }
 
@@ -1250,13 +1250,13 @@ JRendererCore::JRendererCore(const std::string &id)
     : id(std::move(id))
     , renderer(std::make_unique<kk::renderer::SeatCanvasCoreRenderer>(nullptr, std::make_unique<kk::gesture::ElasticZoomPanController>()))
     , delegate(std::make_shared<OHOSSeatCanvasCoreRendererDelegate>()) {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 
     renderer->setDelegate(delegate);
 }
 
 JRendererCore::~JRendererCore() {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
     // delegate 会在析构时自动清理 threadsafe function
 }
 

@@ -34,8 +34,8 @@
 #include "core/style/SeatStyleConfig.hpp"
 #include "core/utils/SystemProperties.hpp"
 
+#include "core/Log.hpp"
 #include <emscripten/val.h>
-#include <tgfx/platform/Print.h>
 
 namespace kk::web {
 
@@ -46,7 +46,7 @@ std::shared_ptr<tgfx::Data> getDataFromEmscripten(const emscripten::val &emscrip
         return nullptr;
     }
     if (!emscriptenData.instanceof (emscripten::val::global("Uint8Array"))) {
-        tgfx::PrintError("RegisterFonts: font data must be a Uint8Array");
+        SC_LOG_ERROR("RegisterFonts: font data must be a Uint8Array");
         return nullptr;
     }
     auto length = emscriptenData["length"].as<unsigned int>();
@@ -55,7 +55,7 @@ std::shared_ptr<tgfx::Data> getDataFromEmscripten(const emscripten::val &emscrip
     }
     auto *buffer = new (std::nothrow) uint8_t[length];
     if (buffer == nullptr) {
-        tgfx::PrintError("RegisterFonts: failed to allocate font buffer (%u bytes)", length);
+        SC_LOG_ERROR("RegisterFonts: failed to allocate font buffer (%u bytes)", length);
         return nullptr;
     }
     auto memory = emscripten::val::module_property("HEAPU8")["buffer"];
@@ -83,12 +83,12 @@ bool WebRendererCore::RegisterFonts(const emscripten::val &fontData, const emscr
 
     auto textData = getDataFromEmscripten(fontData);
     if (textData == nullptr) {
-        tgfx::PrintError("RegisterFonts: text font data is missing or invalid");
+        SC_LOG_ERROR("RegisterFonts: text font data is missing or invalid");
         return false;
     }
     auto textTypeface = tgfx::Typeface::MakeFromData(textData, 0);
     if (textTypeface == nullptr) {
-        tgfx::PrintError("RegisterFonts: failed to parse text font data");
+        SC_LOG_ERROR("RegisterFonts: failed to parse text font data");
         return false;
     }
     typefaces.push_back(std::move(textTypeface));
@@ -98,10 +98,10 @@ bool WebRendererCore::RegisterFonts(const emscripten::val &fontData, const emscr
             if (auto emojiTypeface = tgfx::Typeface::MakeFromData(emojiData, 0)) {
                 typefaces.push_back(std::move(emojiTypeface));
             } else {
-                tgfx::PrintError("RegisterFonts: failed to parse emoji font data, continuing without emoji");
+                SC_LOG_ERROR("RegisterFonts: failed to parse emoji font data, continuing without emoji");
             }
         } else {
-            tgfx::PrintError("RegisterFonts: emoji font data is invalid, continuing without emoji");
+            SC_LOG_ERROR("RegisterFonts: emoji font data is invalid, continuing without emoji");
         }
     }
 
@@ -145,7 +145,7 @@ void WebRendererCore::draw(bool force) {
 
 bool WebRendererCore::loadBaseMapFromSVG(const std::string &svgData, const std::string &parseConfigJSON) {
     if (svgData.empty()) {
-        tgfx::PrintError("loadBaseMapFromSVG: empty SVG data");
+        SC_LOG_ERROR("loadBaseMapFromSVG: empty SVG data");
         return false;
     }
     auto data = tgfx::Data::MakeWithCopy(svgData.data(), svgData.size());
@@ -155,7 +155,7 @@ bool WebRendererCore::loadBaseMapFromSVG(const std::string &svgData, const std::
     }
     auto result = kk::parser::BaseMapParserFactory::parse(data, kk::parser::BaseMapFormat::SVG, configData);
     if (result == nullptr) {
-        tgfx::PrintError("loadBaseMapFromSVG: failed to parse SVG");
+        SC_LOG_ERROR("loadBaseMapFromSVG: failed to parse SVG");
         return false;
     }
     kk::parser::BaseMapLoadResult loadResult(std::move(result));
@@ -364,7 +364,7 @@ void WebRendererCore::updateSeatZoneAlternateColors(const emscripten::val &color
         auto colorStr = colors[key].as<std::string>();
         tgfx::Color color{};
         if (!kk::renderer::ParseColorFromARGBHex(colorStr, color)) {
-            tgfx::PrintError("updateSeatZoneAlternateColors: invalid color '%s'", colorStr.c_str());
+            SC_LOG_ERROR("updateSeatZoneAlternateColors: invalid color '%s'", colorStr.c_str());
             continue;
         }
         cppColors.emplace(key, color);
@@ -381,7 +381,7 @@ void WebRendererCore::updateMiniMapZoneAlternateColors(const emscripten::val &co
         auto colorStr = colors[key].as<std::string>();
         tgfx::Color color{};
         if (!kk::renderer::ParseColorFromARGBHex(colorStr, color)) {
-            tgfx::PrintError("updateMiniMapZoneAlternateColors: invalid color '%s'", colorStr.c_str());
+            SC_LOG_ERROR("updateMiniMapZoneAlternateColors: invalid color '%s'", colorStr.c_str());
             continue;
         }
         cppColors.emplace(key, color);

@@ -1,3 +1,4 @@
+#include "core/Log.hpp"
 //
 //  ApplePlatformView.mm
 //  SeatCanvas
@@ -19,11 +20,11 @@ namespace kk::renderer {
 
 ApplePlatformView::ApplePlatformView(MTKView *metalView)
     : _metalView(metalView) {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 ApplePlatformView::~ApplePlatformView() {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 std::shared_ptr<tgfx::Window> ApplePlatformView::getWindow() {

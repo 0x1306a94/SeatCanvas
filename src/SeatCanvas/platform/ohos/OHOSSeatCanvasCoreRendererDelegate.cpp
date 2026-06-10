@@ -10,17 +10,17 @@
 #include "JsHelper.h"
 #include "NapiEnvHolder.hpp"
 
+#include "core/Log.hpp"
 #include <napi/native_api.h>
-#include <tgfx/platform/Print.h>
 
 namespace kk::js {
 
 OHOSSeatCanvasCoreRendererDelegate::OHOSSeatCanvasCoreRendererDelegate() {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 OHOSSeatCanvasCoreRendererDelegate::~OHOSSeatCanvasCoreRendererDelegate() {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
     napi_env env = kk::js::NapiEnvHolder::getEnv();
     if (env != nullptr) {
         clearCallback(env, _didTapSeat);
@@ -128,7 +128,7 @@ void OHOSSeatCanvasCoreRendererDelegate::didLoadBaseMap(uint32_t) {
 
     napi_status status = napi_call_function(env, nullptr, callback, 0, nullptr, nullptr);
     if (status != napi_ok) {
-        tgfx::PrintError("OHOSSeatCanvasCoreRendererDelegate::didLoadBaseMap failed: %d", static_cast<int>(status));
+        SC_LOG_ERROR("OHOSSeatCanvasCoreRendererDelegate::didLoadBaseMap failed: %d", static_cast<int>(status));
     }
 }
 
@@ -150,7 +150,7 @@ void OHOSSeatCanvasCoreRendererDelegate::didUnloadBaseMap(uint32_t) {
 
     napi_status status = napi_call_function(env, nullptr, callback, 0, nullptr, nullptr);
     if (status != napi_ok) {
-        tgfx::PrintError("OHOSSeatCanvasCoreRendererDelegate::didUnloadBaseMap failed: %d", static_cast<int>(status));
+        SC_LOG_ERROR("OHOSSeatCanvasCoreRendererDelegate::didUnloadBaseMap failed: %d", static_cast<int>(status));
     }
 }
 
@@ -174,7 +174,7 @@ void OHOSSeatCanvasCoreRendererDelegate::didUpdateZoomLevelConfig(uint32_t, cons
     napi_value argv[1] = {configEvent};
     napi_status status = napi_call_function(env, nullptr, callback, 1, argv, nullptr);
     if (status != napi_ok) {
-        tgfx::PrintError("OHOSSeatCanvasCoreRendererDelegate::didUpdateZoomLevelConfig failed: %d", static_cast<int>(status));
+        SC_LOG_ERROR("OHOSSeatCanvasCoreRendererDelegate::didUpdateZoomLevelConfig failed: %d", static_cast<int>(status));
     }
 }
 
@@ -336,7 +336,7 @@ void OHOSSeatCanvasCoreRendererDelegate::callViewportCallback(napi_ref ref, cons
     napi_value argv[1] = {viewport};
     napi_status status = napi_call_function(env, nullptr, callback, 1, argv, nullptr);
     if (status != napi_ok) {
-        tgfx::PrintError("OHOSSeatCanvasCoreRendererDelegate::callViewportCallback failed: %d", static_cast<int>(status));
+        SC_LOG_ERROR("OHOSSeatCanvasCoreRendererDelegate::callViewportCallback failed: %d", static_cast<int>(status));
     }
 }
 
@@ -362,8 +362,8 @@ void OHOSSeatCanvasCoreRendererDelegate::callViewportCallback(napi_ref ref, cons
     napi_value argv[2] = {viewport, willDecelerateValue};
     napi_status status = napi_call_function(env, nullptr, callback, 2, argv, nullptr);
     if (status != napi_ok) {
-        tgfx::PrintError("OHOSSeatCanvasCoreRendererDelegate::callViewportCallback(didEndDragging) failed: %d",
-                         static_cast<int>(status));
+        SC_LOG_ERROR("OHOSSeatCanvasCoreRendererDelegate::callViewportCallback(didEndDragging) failed: %d",
+                     static_cast<int>(status));
     }
 }
 

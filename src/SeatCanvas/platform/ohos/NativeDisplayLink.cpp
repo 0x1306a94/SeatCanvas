@@ -12,7 +12,7 @@
 #include <mutex>
 #include <unordered_map>
 
-#include <tgfx/platform/Print.h>
+#include "core/Log.hpp"
 
 namespace kk {
 
@@ -52,7 +52,7 @@ bool NativeDisplayLink::Init(napi_env env, napi_value exports) {
 NativeDisplayLink::NativeDisplayLink(std::function<void()> callback)
     : callback(std::move(callback))
     , id(kk::UniqueID::Next()) {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 
     displaySoloist = OH_DisplaySoloist_Create(true);
     DisplaySoloist_ExpectedRateRange expectedRateRange{60, 120, 120};
@@ -66,7 +66,7 @@ NativeDisplayLink::~NativeDisplayLink() {
         OH_DisplaySoloist_Destroy(displaySoloist);
         displaySoloist = nullptr;
     }
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 void NativeDisplayLink::start() {

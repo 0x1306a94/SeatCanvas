@@ -10,20 +10,20 @@
 #include <emscripten/html5.h>
 #include <emscripten/val.h>
 
+#include "core/Log.hpp"
 #include <tgfx/core/Surface.h>
 #include <tgfx/gpu/opengl/webgl/WebGLWindow.h>
-#include <tgfx/platform/Print.h>
 
 namespace kk::renderer {
 
 WebPlatformView::WebPlatformView(const std::string &canvasID)
     : _canvasID(canvasID) {
     refreshDensity();
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 WebPlatformView::~WebPlatformView() {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
     _surface = nullptr;
     _window = nullptr;
 }

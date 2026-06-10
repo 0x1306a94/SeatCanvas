@@ -9,7 +9,7 @@
 
 #include "JNIHelper.hpp"
 
-#include <tgfx/platform/Print.h>
+#include "core/Log.hpp"
 
 namespace kk::jni {
 
@@ -23,7 +23,7 @@ static jmethodID Rect_constructor;
 void JRect::InitJNI(JNIEnv *env) {
     RectClass = env->FindClass("com/libseatcanvas/Rect");
     if (RectClass.get() == nullptr) {
-        tgfx::PrintError("Could not run JRect::InitJNI, RectClass is not found!");
+        SC_LOG_ERROR("Could not run JRect::InitJNI, RectClass is not found!");
         return;
     }
     Rect_x = env->GetFieldID(RectClass.get(), "x", "F");
@@ -33,7 +33,7 @@ void JRect::InitJNI(JNIEnv *env) {
     // 获取构造函数：Rect(x: Float, y: Float, width: Float, height: Float)
     Rect_constructor = env->GetMethodID(RectClass.get(), "<init>", "(FFFF)V");
     if (Rect_constructor == nullptr) {
-        tgfx::PrintError("Could not get Rect constructor!");
+        SC_LOG_ERROR("Could not get Rect constructor!");
     }
 }
 

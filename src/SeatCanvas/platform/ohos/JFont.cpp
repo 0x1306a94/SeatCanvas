@@ -10,9 +10,9 @@
 #include "core/FontManager.hpp"
 #include "platform/ohos/JsHelper.h"
 
+#include "core/Log.hpp"
 #include <tgfx/core/Data.h>
 #include <tgfx/layers/TextLayer.h>
-#include <tgfx/platform/Print.h>
 
 #include <rawfile/raw_file_manager.h>
 
@@ -147,7 +147,7 @@ napi_value JFont::ToJs(napi_env env, const kk::Font &font) {
     napi_value result;
     auto status = napi_new_instance(env, GetConstructor(env, ClassName()), 2, arg, &result);
     if (status != napi_ok) {
-        tgfx::PrintError("JPAGFont::ToJs napi_new_instance failed :%d", status);
+        SC_LOG_ERROR("JPAGFont::ToJs napi_new_instance failed :%d", status);
         return nullptr;
     }
     return result;

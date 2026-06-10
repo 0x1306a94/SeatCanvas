@@ -16,12 +16,12 @@
 #include <algorithm>
 #include <cmath>
 
+#include "core/Log.hpp"
 #include <tgfx/core/Canvas.h>
 #include <tgfx/core/TextBlob.h>
 #include <tgfx/layers/DisplayList.h>
 #include <tgfx/layers/ImageLayer.h>
 #include <tgfx/layers/ShapeLayer.h>
-#include <tgfx/platform/Print.h>
 #include <tgfx/svg/SVGDOM.h>
 #include <tgfx/svg/TextShaper.h>
 
@@ -38,12 +38,12 @@ SeatOverlayLayerTree::SeatOverlayLayerTree()
         kk::utils::vp2px(10.0f),
         kk::utils::vp2px(10.0f)};
 
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
     _displayList.setRenderMode(tgfx::RenderMode::Direct);
 }
 
 SeatOverlayLayerTree::~SeatOverlayLayerTree() {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 void SeatOverlayLayerTree::setBaseMapLayer(std::shared_ptr<kk::layer::BaseMapRootLayer> layer, const tgfx::Size &baseMapSize) {

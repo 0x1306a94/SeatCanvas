@@ -8,8 +8,8 @@
 #include "JNIHelper.hpp"
 #include "JStringUtil.hpp"
 
+#include "core/Log.hpp"
 #include <functional>
-#include <tgfx/platform/Print.h>
 
 namespace kk::jni {
 
@@ -24,7 +24,7 @@ static jmethodID SeatData_constructor = nullptr;
 void JSeatData::InitJNI(JNIEnv *env) {
     SeatDataClass = env->FindClass("com/libseatcanvas/SeatData");
     if (SeatDataClass.get() == nullptr) {
-        tgfx::PrintError("Could not run JSeatData::InitJNI, SeatDataClass is not found!");
+        SC_LOG_ERROR("Could not run JSeatData::InitJNI, SeatDataClass is not found!");
         return;
     }
     SeatData_seatId = env->GetFieldID(SeatDataClass.get(), "seatId", "Ljava/lang/String;");
@@ -34,7 +34,7 @@ void JSeatData::InitJNI(JNIEnv *env) {
     SeatData_pricecode = env->GetFieldID(SeatDataClass.get(), "pricecode", "Ljava/lang/String;");
     SeatData_constructor = env->GetMethodID(SeatDataClass.get(), "<init>", "(Ljava/lang/String;FFFLjava/lang/String;)V");
     if (SeatData_constructor == nullptr) {
-        tgfx::PrintError("Could not get SeatData constructor!");
+        SC_LOG_ERROR("Could not get SeatData constructor!");
     }
 }
 

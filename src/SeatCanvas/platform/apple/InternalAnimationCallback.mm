@@ -1,3 +1,4 @@
+#include "core/Log.hpp"
 //
 //  InternalAnimationCallback.m
 //  SeatCanvas
@@ -7,12 +8,10 @@
 
 #import "InternalAnimationCallback.h"
 
-#import <tgfx/platform/Print.h>
-
 @implementation InternalAnimationCallback
 #if DEBUG
 - (void)dealloc {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 #endif
 
@@ -22,7 +21,7 @@
         self->callback = animationCallback;
     }
 #if DEBUG
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 #endif
     return self;
 }
@@ -31,7 +30,7 @@
 #if DEBUG
     CFTimeInterval frameInterval = sender.targetTimestamp - sender.timestamp;
     if (frameInterval > 0.02) {  // 超过20ms(低于50fps)
-        tgfx::PrintLog("⚠️ Frame drop detected: %.2fms\n", (frameInterval * 1000));
+        SC_LOG_WARN("Frame drop detected: %.2fms", (frameInterval * 1000));
     }
 #endif
 

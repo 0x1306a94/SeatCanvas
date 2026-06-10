@@ -7,7 +7,7 @@
 
 #include "NativeDisplayLink.hpp"
 
-#include <tgfx/platform/Print.h>
+#include "core/Log.hpp"
 
 namespace kk {
 static kk::jni::Global<jclass> DisplayLinkClass;
@@ -18,7 +18,7 @@ static jmethodID DisplayLink_stop;
 void NativeDisplayLink::InitJNI(JNIEnv *env) {
     DisplayLinkClass = env->FindClass("com/libseatcanvas/DisplayLink");
     if (DisplayLinkClass.get() == nullptr) {
-        tgfx::PrintError("Could not run NativeDisplayLink.InitJNI(), DisplayLinkClass is not found!");
+        SC_LOG_ERROR("Could not run NativeDisplayLink.InitJNI(), DisplayLinkClass is not found!");
         return;
     }
     DisplayLink_Create = env->GetStaticMethodID(DisplayLinkClass.get(), "Create", "(J)Lcom/libseatcanvas/DisplayLink;");
@@ -43,12 +43,12 @@ std::shared_ptr<DisplayLink> NativeDisplayLink::Make(std::function<void()> callb
 
 NativeDisplayLink::NativeDisplayLink(std::function<void()> callback)
     : callback(std::move(callback)) {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 NativeDisplayLink::~NativeDisplayLink() {
     started = false;
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 void NativeDisplayLink::start() {

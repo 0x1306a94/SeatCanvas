@@ -7,20 +7,20 @@
 
 #include "ColorHexParser.hpp"
 
+#include "core/Log.hpp"
 #include <sstream>
-#include <tgfx/platform/Print.h>
 
 namespace kk::renderer {
 
 bool ParseColorFromARGBHex(const std::string &hexString, tgfx::Color &outColor) {
     if (hexString.empty() || hexString[0] != '#') {
-        tgfx::PrintError("Invalid color hex string: must start with #");
+        SC_LOG_ERROR("Invalid color hex string: must start with #");
         return false;
     }
 
     std::string hex = hexString.substr(1);
     if (hex.length() != 8 && hex.length() != 6) {
-        tgfx::PrintError("Invalid color hex string: must be 6 or 8 characters");
+        SC_LOG_ERROR("Invalid color hex string: must be 6 or 8 characters");
         return false;
     }
 

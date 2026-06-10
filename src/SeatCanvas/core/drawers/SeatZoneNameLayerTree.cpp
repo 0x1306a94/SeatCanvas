@@ -11,6 +11,7 @@
 #include "core/renderer/SeatCanvasCoreRendererState.hpp"
 #include "core/svg/ConvertSVGLayer.hpp"
 
+#include "core/Log.hpp"
 #include <tgfx/core/Buffer.h>
 #include <tgfx/core/Canvas.h>
 #include <tgfx/core/Data.h>
@@ -21,7 +22,6 @@
 #include <tgfx/layers/ImageLayer.h>
 #include <tgfx/layers/ShapeLayer.h>
 #include <tgfx/layers/TextLayer.h>
-#include <tgfx/platform/Print.h>
 
 namespace kk::drawers {
 
@@ -30,13 +30,13 @@ SeatZoneNameLayerTree::SeatZoneNameLayerTree()
     , _root(nullptr)
     , _textRootLayer(nullptr)
     , _displayList(std::make_unique<tgfx::DisplayList>()) {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 
     _displayList->setRenderMode(tgfx::RenderMode::Partial);
 };
 
 SeatZoneNameLayerTree::~SeatZoneNameLayerTree() {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 void SeatZoneNameLayerTree::setTextRootLayer(std::shared_ptr<tgfx::Layer> layer, const tgfx::Size &baseMapSize) {

@@ -7,9 +7,9 @@
 
 #include "OHOSPlatformView.h"
 
+#include "core/Log.hpp"
 #include <tgfx/core/Surface.h>
 #include <tgfx/gpu/opengl/egl/EGLWindow.h>
-#include <tgfx/platform/Print.h>
 
 namespace kk::renderer {
 
@@ -19,11 +19,11 @@ OHOSPlatformView::OHOSPlatformView(OH_NativeXComponent *component, void *nativeW
     , _nativeWindow(nativeWindow)
     , _window(nullptr)
     , _surface(nullptr) {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 OHOSPlatformView::~OHOSPlatformView() {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 std::shared_ptr<tgfx::Window> OHOSPlatformView::getWindow() {

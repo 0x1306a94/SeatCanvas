@@ -9,8 +9,8 @@
 #include "JStringUtil.hpp"
 #include "core/utils/ColorIntConverter.hpp"
 
+#include "core/Log.hpp"
 #include <tgfx/core/Color.h>
-#include <tgfx/platform/Print.h>
 
 namespace kk::jni {
 
@@ -25,12 +25,12 @@ static jmethodID Integer_valueOf;
 void JSeatZoneColor::InitJNI(JNIEnv *env) {
     SeatZoneColorClass = env->FindClass("com/libseatcanvas/SeatZoneColor");
     if (SeatZoneColorClass.get() == nullptr) {
-        tgfx::PrintError("Could not run JSeatZoneColor::InitJNI, SeatZoneColorClass is not found!");
+        SC_LOG_ERROR("Could not run JSeatZoneColor::InitJNI, SeatZoneColorClass is not found!");
         return;
     }
     IntegerClass = env->FindClass("java/lang/Integer");
     if (IntegerClass.get() == nullptr) {
-        tgfx::PrintError("Could not find java/lang/Integer in JSeatZoneColor::InitJNI!");
+        SC_LOG_ERROR("Could not find java/lang/Integer in JSeatZoneColor::InitJNI!");
         return;
     }
     SeatZoneColor_zoneId = env->GetFieldID(SeatZoneColorClass.get(), "zoneId", "Ljava/lang/String;");
@@ -39,12 +39,12 @@ void JSeatZoneColor::InitJNI(JNIEnv *env) {
     SeatZoneColor_constructor = env->GetMethodID(
         SeatZoneColorClass.get(), "<init>", "(Ljava/lang/String;Ljava/lang/Integer;)V");
     if (SeatZoneColor_constructor == nullptr) {
-        tgfx::PrintError("Could not get SeatZoneColor constructor!");
+        SC_LOG_ERROR("Could not get SeatZoneColor constructor!");
     }
     Integer_intValue = env->GetMethodID(IntegerClass.get(), "intValue", "()I");
     Integer_valueOf = env->GetStaticMethodID(IntegerClass.get(), "valueOf", "(I)Ljava/lang/Integer;");
     if (Integer_intValue == nullptr || Integer_valueOf == nullptr) {
-        tgfx::PrintError("Could not get Integer intValue or valueOf in JSeatZoneColor::InitJNI!");
+        SC_LOG_ERROR("Could not get Integer intValue or valueOf in JSeatZoneColor::InitJNI!");
     }
 }
 

@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "core/Log.hpp"
 #include <tgfx/core/Canvas.h>
 #include <tgfx/core/Data.h>
 #include <tgfx/core/Path.h>
@@ -27,7 +28,6 @@
 #include <tgfx/gpu/RenderPass.h>
 #include <tgfx/gpu/Texture.h>
 #include <tgfx/gpu/Window.h>
-#include <tgfx/platform/Print.h>
 #include <tgfx/svg/SVGDOM.h>
 #include <tgfx/svg/TextShaper.h>
 
@@ -99,12 +99,12 @@ SeatCanvasCoreRenderer::SeatCanvasCoreRenderer(
 
     _viewportController->setCoreID(_coreID);
 
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
     updateSize();
 }
 
 SeatCanvasCoreRenderer::~SeatCanvasCoreRenderer() {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 uint32_t SeatCanvasCoreRenderer::coreID() const {

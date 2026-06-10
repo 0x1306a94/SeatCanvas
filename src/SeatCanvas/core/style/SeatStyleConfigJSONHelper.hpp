@@ -14,8 +14,8 @@
 #include "core/style/SeatStyleConfig.hpp"
 #include "core/style/SeatStyleType.hpp"
 
+#include "core/Log.hpp"
 #include <nlohmann/json.hpp>
-#include <tgfx/platform/Print.h>
 
 namespace nlohmann {
 
@@ -45,7 +45,7 @@ struct adl_serializer<std::shared_ptr<kk::renderer::CircleSeatStyleConfig>> {
 
     static void from_json(const json &j, std::shared_ptr<kk::renderer::CircleSeatStyleConfig> &config) {
         if (!j.contains("fill")) {
-            tgfx::PrintError("Missing fill field in CircleSeatStyleConfig");
+            SC_LOG_ERROR("Missing fill field in CircleSeatStyleConfig");
             config = nullptr;
             return;
         }
@@ -56,7 +56,7 @@ struct adl_serializer<std::shared_ptr<kk::renderer::CircleSeatStyleConfig>> {
 
         tgfx::Color fillColor = {};
         if (!kk::renderer::ParseColorFromARGBHex(fillHex, fillColor)) {
-            tgfx::PrintError("Failed to parse fill color hex string");
+            SC_LOG_ERROR("Failed to parse fill color hex string");
             config = nullptr;
             return;
         }
@@ -65,7 +65,7 @@ struct adl_serializer<std::shared_ptr<kk::renderer::CircleSeatStyleConfig>> {
         if (!overlayHex.empty()) {
             tgfx::Color parsedOverlayColor = {};
             if (!kk::renderer::ParseColorFromARGBHex(overlayHex, parsedOverlayColor)) {
-                tgfx::PrintError("Failed to parse overlay color hex string");
+                SC_LOG_ERROR("Failed to parse overlay color hex string");
                 config = nullptr;
                 return;
             }
@@ -76,7 +76,7 @@ struct adl_serializer<std::shared_ptr<kk::renderer::CircleSeatStyleConfig>> {
         if (!checkmarkHex.empty()) {
             tgfx::Color parsedCheckmarkColor = {};
             if (!kk::renderer::ParseColorFromARGBHex(checkmarkHex, parsedCheckmarkColor)) {
-                tgfx::PrintError("Failed to parse checkmark color hex string");
+                SC_LOG_ERROR("Failed to parse checkmark color hex string");
                 config = nullptr;
                 return;
             }
@@ -103,14 +103,14 @@ struct adl_serializer<std::shared_ptr<kk::renderer::SVGSeatStyleConfig>> {
 
     static void from_json(const json &j, std::shared_ptr<kk::renderer::SVGSeatStyleConfig> &config) {
         if (!j.contains("content")) {
-            tgfx::PrintError("Missing content fields in SVGSeatStyleConfig");
+            SC_LOG_ERROR("Missing content fields in SVGSeatStyleConfig");
             config = nullptr;
             return;
         }
 
         auto content = j.value("content", "");
         if (content.empty()) {
-            tgfx::PrintError("Missing content fields in SVGSeatStyleConfig");
+            SC_LOG_ERROR("Missing content fields in SVGSeatStyleConfig");
             config = nullptr;
             return;
         }
@@ -139,7 +139,7 @@ struct adl_serializer<std::shared_ptr<kk::renderer::SeatStyleConfig>> {
                 break;
             }
             default:
-                tgfx::PrintError("Unsupported SeatStyleType");
+                SC_LOG_ERROR("Unsupported SeatStyleType");
                 j = json::object();
                 break;
         }
@@ -147,14 +147,14 @@ struct adl_serializer<std::shared_ptr<kk::renderer::SeatStyleConfig>> {
 
     static void from_json(const json &j, std::shared_ptr<kk::renderer::SeatStyleConfig> &config) {
         if (!j.contains("type")) {
-            tgfx::PrintError("Missing 'type' field in config");
+            SC_LOG_ERROR("Missing 'type' field in config");
             config = nullptr;
             return;
         }
 
         int typeValue = j.value("type", -1);
         if (typeValue < 0) {
-            tgfx::PrintError("Invalid 'type' field in config");
+            SC_LOG_ERROR("Invalid 'type' field in config");
             config = nullptr;
             return;
         }
@@ -174,7 +174,7 @@ struct adl_serializer<std::shared_ptr<kk::renderer::SeatStyleConfig>> {
                 break;
             }
             default:
-                tgfx::PrintError("Unsupported SeatStyleType: %d", typeValue);
+                SC_LOG_ERROR("Unsupported SeatStyleType: %d", typeValue);
                 config = nullptr;
                 break;
         }

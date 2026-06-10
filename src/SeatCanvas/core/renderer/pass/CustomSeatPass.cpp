@@ -10,6 +10,7 @@
 #include "UniformData.hpp"
 #include "core/renderer/SeatCanvasCoreRendererState.hpp"
 
+#include "core/Log.hpp"
 #include <algorithm>
 #include <cstring>
 #include <tgfx/core/Image.h>
@@ -17,7 +18,6 @@
 #include <tgfx/gpu/GPU.h>
 #include <tgfx/gpu/GPUBuffer.h>
 #include <tgfx/gpu/Texture.h>
-#include <tgfx/platform/Print.h>
 
 namespace kk::renderer {
 static constexpr char SEAT_VERTEXT_SHADER[] = R"(
@@ -68,7 +68,7 @@ void main() {
 )";
 
 CustomSeatPass::CustomSeatPass() {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 
     memset(&bitFields, 0, sizeof(bitFields));
     bitFields.avaiable = false;
@@ -86,7 +86,7 @@ CustomSeatPass::CustomSeatPass() {
 }
 
 CustomSeatPass::~CustomSeatPass() {
-    tgfx::PrintLog("%s", __PRETTY_FUNCTION__);
+    SC_LOG_TRACE(__PRETTY_FUNCTION__);
 }
 
 void CustomSeatPass::updateUVOffset(const std::vector<float> &uvOffset) {
