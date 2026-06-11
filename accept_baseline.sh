@@ -29,6 +29,10 @@ fi
 cmake --build "${BUILD_DIR}" --target SeatCanvasFullTests -j"$(sysctl -n hw.logicalcpu)"
 
 echo "Step 2: Running SeatCanvasFullTests..."
+if [ ! -f "tests/baseline/.cache/md5.json" ]; then
+    echo "Seeding baseline cache (first run or cache missing)..."
+    SEATCANVAS_UPDATE_BASELINE=1 "${TEST_BIN}"
+fi
 set +e
 "${TEST_BIN}"
 COMPARE_EXIT=$?

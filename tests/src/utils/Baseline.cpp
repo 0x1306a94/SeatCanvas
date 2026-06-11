@@ -166,14 +166,35 @@ static bool CompareVersionAndMd5(const std::string &md5, const std::string &key,
     }
     auto baseline = GetJsonValue(baselineVersion, key);
     auto cache = GetJsonValue(cacheVersion, key);
-    if (baseline.empty() || (baseline == cache && GetJsonValue(cacheMd5, key) != md5)) {
-        SetJsonValue(outputVersion, key, md5);
+
+    if (baseline.empty()) {
+        SetJsonValue(outputVersion, key, currentVersion);
         SetJsonValue(outputMd5, key, md5);
         if (callback) {
             callback(false);
         }
         return false;
     }
+
+    // version.json changed since last cache sync (e.g. pull) — skip until update_baseline.sh
+    if (baseline != cache) {
+        SetJsonValue(outputVersion, key, baseline);
+        if (callback) {
+            callback(true);
+        }
+        return true;
+    }
+
+    auto cachedMd5 = GetJsonValue(cacheMd5, key);
+    if (cachedMd5.empty() || cachedMd5 != md5) {
+        SetJsonValue(outputVersion, key, currentVersion);
+        SetJsonValue(outputMd5, key, md5);
+        if (callback) {
+            callback(false);
+        }
+        return false;
+    }
+
     SetJsonValue(outputVersion, key, baseline);
     if (callback) {
         callback(true);
