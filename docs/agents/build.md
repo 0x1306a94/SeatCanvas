@@ -54,7 +54,7 @@ $DEVECO_SDK_HOME/../tools/hvigor/bin/hvigorw assembleHar \
   --no-daemon
 ```
 
-**Unit tests** (macOS only; see [Unit Test Notes](#unit-test-notes)):
+**Autotest** (macOS only; unit + rendering snapshot tests; see [Autotest Guide](autotest.md)):
 
 ```bash
 ./autotest.sh
@@ -77,7 +77,7 @@ npm run build             # full build
 
 | Platform | Command | Notes |
 |----------|---------|-------|
-| Unit tests | `./autotest.sh` | macOS only; do **not** pass `clean` unless necessary (see [Unit Test Notes](#unit-test-notes)) |
+| Autotest | `./autotest.sh` | macOS only; unit + snapshot tests (see [Autotest Guide](autotest.md)); do **not** pass `clean` unless necessary |
 | iOS (CMake flags) | `./ios/gen_ios -D<FLAG>=ON` then `xcodebuild` as above | e.g. `-DENABLE_TIME_PROFILER=ON` |
 | Android (all arch) | `cd android/SeatCanvasSample && ./gradlew assembleRelease` | Slower; all architectures |
 | Web (debug) | `cd web && npm run build:wasm:debug` | Debug WASM with `-sSAFE_HEAP=1`; uses `build_debug/` |
@@ -136,99 +136,11 @@ Uses clang-format 14.x for C++ and swiftformat for Swift. A pre-commit hook auto
 
 ## Unit Test Notes
 
-- **Agent: run unit tests via `./autotest.sh` only.** Do not hand-roll `cmake` / `ninja` / run `SeatCanvasUnitTests` directly unless the user explicitly asks. The script configures (`Ninja` + `MAC_ARM64`), builds `SeatCanvasUnitTests`, and runs the binary from `build_test/`.
+- **Agent: run tests via `./autotest.sh` only.** Do not hand-roll `cmake` / `ninja` / run `SeatCanvasFullTests` directly unless the user explicitly asks. The script configures (`Ninja` + `MAC_ARM64`), builds targets, and runs the binary from `build_test/`.
 - **Do not pass `clean` unless necessary.** Default `./autotest.sh` is enough for normal verification. Use `./autotest.sh clean` only when the build tree is corrupted, CMake options changed incompatibly, or a full rebuild is required — `clean` deletes the entire `build_test/` directory and forces a full recompile.
-- Unit tests are enabled only on macOS (`SEATCANVAS_BUILD_TESTS=ON`). iOS / Android / OHOS / Web builds do not include this target.
+- Tests are enabled only on macOS (`SEATCANVAS_BUILD_TESTS=ON`). iOS / Android / OHOS / Web builds do not include this target.
 - Prerequisites: same as macOS builds (Xcode toolchain, `./sync_deps.sh` on first run).
-- Screenshot baseline tests are part of `SeatCanvasFullTests`. See [Baseline Screenshot Tests](#baseline-screenshot-tests).
-
-## Baseline Screenshot Tests
-
-Seat map rendering tests compare GPU snapshots against a **two-layer** baseline (same model as tgfx):
-
-| Layer | Path | In git? | Purpose |
-|-------|------|---------|---------|
-| Version marker | `tests/baseline/version.json` | Yes | Git short hash per test key; marks which baseline generation is current |
-| Pixel MD5 cache | `tests/baseline/.cache/metal/md5.json` | No (`.gitignore`) | Actual pixel MD5 for the local Metal GPU |
-
-Local M1 and CI Paravirtual GPU produce different pixels. Each environment keeps its own MD5 cache; only `version.json` is committed.
-
-### Daily development
-
-For normal code changes, run:
-
-```bash
-./autotest.sh
-```
-
-`autotest.sh` automatically:
-
-1. Builds `SeatCanvasFullTests` and `SeatCanvasUpdateBaseline`
-2. Refreshes `tests/baseline/.cache/metal/` when `version.json` changed or cache is missing (`SeatCanvasUpdateBaseline`)
-3. Runs all tests and compares against the local cache
-
-No manual cache steps are needed for day-to-day work.
-
-### After pulling baseline changes
-
-When someone else updated `tests/baseline/version.json`, your local cache is stale. Either:
-
-```bash
-./autotest.sh
-```
-
-(cache refresh is automatic), or run the full workflow with develop verification:
-
-```bash
-./update_baseline.sh
-```
-
-`update_baseline.sh` syncs the MD5 cache and, on feature branches, verifies `develop` first when `version.json` differs.
-
-### Accepting intentional rendering changes
-
-When you **intentionally** change rendering and need a new baseline:
-
-```bash
-# 1. Run tests; failures write diffs to tests/out/*.webp
-./autotest.sh
-
-# 2. Review tests/out/, then accept
-./accept_baseline.sh
-
-# 3. Commit only version.json (not .cache/)
-git add tests/baseline/version.json
-git commit -m "Update baseline."
-```
-
-`accept_baseline.sh` runs tests, copies `tests/out/version.json` → `tests/baseline/version.json`, then runs `SeatCanvasUpdateBaseline` to refresh the local MD5 cache.
-
-### Commands summary
-
-| Scenario | Command |
-|----------|---------|
-| Daily verification | `./autotest.sh` |
-| Full rebuild | `./autotest.sh clean` |
-| Pull baseline + optional develop check | `./update_baseline.sh` |
-| Accept new screenshots | `./accept_baseline.sh` |
-
-### CI
-
-- Autotest runs on macOS with Metal (Paravirtual on `macos-26`).
-- `tests/baseline/.cache/metal` is restored/saved via a **separate** GHA cache from `third_party` (key: `autotest-baseline-metal-${{ hashFiles('tests/baseline/version.json') }}`).
-- On cache miss, `autotest.sh` seeds the CI MD5 cache via `SeatCanvasUpdateBaseline` before compare.
-- Failed tests upload `tests/out/` as an artifact.
-
-### Troubleshooting
-
-**Baseline tests fail after pull, but rendering looks correct**
-→ Run `./autotest.sh` once to refresh local cache; or `./update_baseline.sh`.
-
-**Baseline tests fail and `tests/out/*.webp` shows a real regression**
-→ Fix rendering; do not run `accept_baseline.sh`.
-
-**Cache seems corrupted**
-→ `rm -rf tests/baseline/.cache/metal` then `./autotest.sh`.
+- Full workflow (unit tests + rendering snapshots, baseline accept/update, CI): see [Autotest Guide](autotest.md).
 
 ## macOS Build Notes
 
@@ -312,8 +224,8 @@ rm -rf ohos/.cxx
 **Unit tests fail to configure or link after CMake changes**
 → Retry with `./autotest.sh clean` once; otherwise see [Unit Test Notes](#unit-test-notes)
 
-**Baseline screenshot tests fail**
-→ See [Baseline Screenshot Tests](#baseline-screenshot-tests)
+**Autotest / snapshot baseline tests fail**
+→ See [Autotest Guide](autotest.md)
 
 ## Web Build Notes
 
