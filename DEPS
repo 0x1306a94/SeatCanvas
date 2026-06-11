@@ -19,13 +19,11 @@
         "url": "${GITHUB_BASE_URL}/google/googletest.git",
         "commit": "6910c9d9165801d8827d628cb72eb7ea9dd538c5",
         "dir": "third_party/googletest"
-      }
-    ],
-    "mac": [
+      },
       {
         "url": "${GITHUB_BASE_URL}/QMUI/LookinServer.git",
         "commit": "ae396132ce6494477457cf450116dc760518d8ad",
-        "dir": "ios/third_party/LookinServer"
+        "dir": "third_party/LookinServer"
       }
     ]
   },

@@ -1,0 +1,27 @@
+name: ci-runners
+
+on:
+  workflow_call:
+    outputs:
+      macos:
+        description: Runner for macOS jobs (iOS, HarmonyOS, autotest)
+        value: ${{ jobs.read.outputs.macos }}
+      linux:
+        description: Runner for Linux jobs (third-party, Android, Web)
+        value: ${{ jobs.read.outputs.linux }}
+
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    outputs:
+      macos: ${{ steps.runners.outputs.macos }}
+      linux: ${{ steps.runners.outputs.linux }}
+    steps:
+      - name: Check Out Repo
+        uses: actions/checkout@v4
+
+      - name: Read Runner Config
+        id: runners
+        run: |
+          echo "macos=$(jq -r .macos .github/ci-runners.json)" >> "$GITHUB_OUTPUT"
+          echo "linux=$(jq -r .linux .github/ci-runners.json)" >> "$GITHUB_OUTPUT"

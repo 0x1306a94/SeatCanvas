@@ -181,7 +181,7 @@
 			mainGroup = 3C509FB92EC41C3D00014F5E;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				3C7E691A2F67EBDE00512FD7 /* XCLocalSwiftPackageReference "../third_party/LookinServer" */,
+				3C7E691A2F67EBDE00512FD7 /* XCLocalSwiftPackageReference "../../third_party/LookinServer" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3C509FC32EC41C3D00014F5E /* Products */;
@@ -468,9 +468,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		3C7E691A2F67EBDE00512FD7 /* XCLocalSwiftPackageReference "../third_party/LookinServer" */ = {
+		3C7E691A2F67EBDE00512FD7 /* XCLocalSwiftPackageReference "../../third_party/LookinServer" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = ../third_party/LookinServer;
+			relativePath = ../../third_party/LookinServer;
 		};
 /* End XCLocalSwiftPackageReference section */
 

@@ -1,0 +1,63 @@
+name: third-party
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        required: true
+        type: string
+
+jobs:
+  third-party:
+    runs-on: ${{ inputs.runner }}
+    steps:
+      - name: Check Out Repo
+        uses: actions/checkout@v4
+
+      - name: Get Third-Party Cache
+        id: third-party-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: third_party
+          key: third-party-${{ hashFiles('DEPS') }}
+          restore-keys: third-party-
+
+      - name: Get depctl Cache
+        id: depctl-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/depctl
+          key: depctl-linux-x86_64-69ac32ee
+
+      - name: Install depctl
+        if: steps.depctl-cache.outputs.cache-hit != 'true'
+        run: |
+          DEPCTL_URL="https://github.com/0x1306a94/depctl/releases/download/v1.4.7/depctl-linux-x86_64.tar.gz"
+          curl -L -o /tmp/depctl.tar.gz "$DEPCTL_URL"
+          rm -rf ~/depctl
+          mkdir -p ~/depctl
+          tar -xzf /tmp/depctl.tar.gz -C ~/depctl
+          chmod +x ~/depctl/depctl
+
+      - name: Save depctl Cache
+        if: steps.depctl-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/depctl
+          key: depctl-linux-x86_64-69ac32ee
+
+      - name: Configure depctl PATH
+        run: echo "$HOME/depctl" >> $GITHUB_PATH
+
+      - name: Run depctl
+        run: |
+          depctl --version
+          depctl --skip-paths third_party/tgfx/third_party/shaderc
+        shell: bash
+
+      - name: Save Third-Party Cache
+        if: steps.third-party-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: third_party
+          key: third-party-${{ hashFiles('DEPS') }}
