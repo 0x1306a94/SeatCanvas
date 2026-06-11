@@ -406,7 +406,7 @@ SeatRenderStyleId.compose('1', 1, false);
 
 ### Web
 
-在线演示: [preview.seatcanvas-demo.pages.dev](https://preview.seatcanvas-demo.pages.dev)
+Web 端 sample 在线示例: [preview.seatcanvas-demo.pages.dev](https://preview.seatcanvas-demo.pages.dev) — 对应仓库内 `web/demo`
 
 #### 快速开始
 

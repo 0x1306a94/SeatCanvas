@@ -406,7 +406,7 @@ SeatRenderStyleId.compose('1', 1, false);
 
 ### Web
 
-Live demo: [preview.seatcanvas-demo.pages.dev](https://preview.seatcanvas-demo.pages.dev)
+Web sample (online): [preview.seatcanvas-demo.pages.dev](https://preview.seatcanvas-demo.pages.dev) — deployed `web/demo`
 
 #### Quick Start
 
