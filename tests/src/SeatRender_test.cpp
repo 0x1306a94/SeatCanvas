@@ -2,6 +2,7 @@
 #include "TestFileUtils.hpp"
 #include "core/SeatData.hpp"
 #include "core/style/CircleSeatStyleConfig.hpp"
+#include "core/style/ColorHexParser.hpp"
 #include "core/style/SeatRenderStyleKey.hpp"
 
 #include <nlohmann/json.hpp>
@@ -70,17 +71,20 @@ static void resolvePricecodeIndices(
 
     // Re-read JSON to get pricecode per seat (avoid carrying extra state)
     auto raw = ReadFile(resourcePath);
-    if (!raw)
+    if (!raw) {
         return;
+    }
     std::string jsonStr(reinterpret_cast<const char *>(raw->data()), raw->size());
     auto json = nlohmann::json::parse(jsonStr, nullptr, false);
-    if (json.is_discarded() || !json.is_object())
+    if (json.is_discarded() || !json.is_object()) {
         return;
+    }
 
     for (auto &[zoneId, seats] : json.items()) {
         auto it = seatDataMap.find(zoneId);
-        if (it == seatDataMap.end())
+        if (it == seatDataMap.end()) {
             continue;
+        }
         auto &seatVec = it->second;
         size_t idx = 0;
         for (auto &seat : seats) {
@@ -114,6 +118,36 @@ buildDefaultStyleConfigs(const std::vector<std::string> &pricecodes) {
         configs[composeSeatStyleId(pc, 2, false)] = reserved;
     }
     return configs;
+}
+
+// Parse mock price JSON (same format as demo's loadMockPrice).
+// Returns zoneId → color map built from price.zoneIds.
+static std::unordered_map<std::string, tgfx::Color> loadMockPriceZoneColors(const std::string &resourcePath) {
+    std::unordered_map<std::string, tgfx::Color> zoneColors;
+
+    auto raw = ReadFile(resourcePath);
+    if (!raw) {
+        return zoneColors;
+    }
+    std::string jsonStr(reinterpret_cast<const char *>(raw->data()), raw->size());
+    auto json = nlohmann::json::parse(jsonStr, nullptr, false);
+    if (json.is_discarded() || !json.is_array()) {
+        return zoneColors;
+    }
+
+    for (auto &price : json) {
+        std::string colorHex = price.value("color", "");
+        tgfx::Color color = {};
+        if (!kk::renderer::ParseColorFromARGBHex(colorHex, color)) {
+            continue;
+        }
+        for (auto &zoneId : price["zoneIds"]) {
+            if (zoneId.is_string()) {
+                zoneColors[zoneId.get<std::string>()] = color;
+            }
+        }
+    }
+    return zoneColors;
 }
 
 TEST_F(SeatCanvasTestFixture, SeatRenderingAtSeatLevel) {
@@ -217,7 +251,20 @@ TEST_F(SeatCanvasTestFixture, SeatRenderingAtVenueLevel) {
     EXPECT_TRUE(compareBaseline("BaseMap/SeatRenderingVenue"));
 }
 
-TEST_F(SeatCanvasTestFixture, MultiZoneColorChange) {
+TEST_F(SeatCanvasTestFixture, MultiZoneColorFullChange) {
+    ASSERT_NE(renderer, nullptr);
+    ASSERT_TRUE(loadSVGBaseMap(*renderer, "resources/SeatCanvasSample.bundle/default/basemap/performbg.svg"));
+
+    const char *priceDataPath = "resources/SeatCanvasSample.bundle/default/zonedata/performbg_pricecode.json";
+    auto zoneColors = loadMockPriceZoneColors(priceDataPath);
+    ASSERT_GT(zoneColors.size(), 0u);
+    renderer->updateSeatZoneAlternateColors(zoneColors);
+
+    renderFrame(*renderer);
+    EXPECT_TRUE(compareBaseline("BaseMap/MultiZoneColorFullChange"));
+}
+
+TEST_F(SeatCanvasTestFixture, MultiZoneColorManualChange) {
     ASSERT_NE(renderer, nullptr);
     ASSERT_TRUE(loadSVGBaseMap(*renderer, "resources/SeatCanvasSample.bundle/default/basemap/performbg.svg"));
 
@@ -229,7 +276,7 @@ TEST_F(SeatCanvasTestFixture, MultiZoneColorChange) {
     });
 
     renderFrame(*renderer);
-    EXPECT_TRUE(compareBaseline("BaseMap/MultiZoneColor"));
+    EXPECT_TRUE(compareBaseline("BaseMap/MultiZoneColorManualChange"));
 }
 
 TEST_F(SeatCanvasTestFixture, PanAndZoomCombined) {

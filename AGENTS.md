@@ -4,7 +4,7 @@
 
 **Build & Tooling** — when a build is required (verification, debugging, or user request), read and follow @./docs/agents/build.md exactly: full platform commands, prerequisites, and troubleshooting. Do not substitute `./ios/gen_simulator` unless the user explicitly requests a simulator build. Do not claim a build passes without running the complete command sequence from that guide.
 
-- Unit tests: `./autotest.sh` (macOS only; do not use `clean` unless necessary — see @./docs/agents/build.md)
+- Autotest: `./autotest.sh` (macOS only; unit + rendering snapshots — see @./docs/agents/autotest.md)
 - Format code: `./codeformat.sh`
 - Sync dependencies: `./sync_deps.sh`
 
@@ -64,6 +64,7 @@ SeatCanvas/
 | Topic | File |
 |-------|------|
 | Build commands, dependencies, formatting | @./docs/agents/build.md |
+| Autotest (unit + rendering snapshots, baseline workflow) | @./docs/agents/autotest.md |
 | Architecture, core components, render pipeline, APIs | @./docs/agents/architecture.md |
 | Platform integration (iOS / Android / OHOS / Web) | @./docs/agents/platform.md |
 | C++ coding standards, naming, commit format | @./docs/agents/coding-standards.md |

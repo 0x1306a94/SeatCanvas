@@ -6,6 +6,16 @@ cd $(dirname $0)
 
 PROJECT_DIR=$(pwd)
 BUILD_DIR=${PROJECT_DIR}/build_test
+CACHE_DIR="${PROJECT_DIR}/tests/baseline/.cache/metal"
+
+ensure_baseline_cache() {
+    if [ -f "${CACHE_DIR}/md5.json" ] && cmp -s "${PROJECT_DIR}/tests/baseline/version.json" "${CACHE_DIR}/version.json" 2>/dev/null; then
+        return 0
+    fi
+    echo "Baseline md5 cache is stale, running SeatCanvasUpdateBaseline..."
+    cmake --build "${BUILD_DIR}" --target SeatCanvasUpdateBaseline -j"$(sysctl -n hw.logicalcpu)"
+    "${BUILD_DIR}/tests/SeatCanvasUpdateBaseline"
+}
 
 ENABLE_COVERAGE=OFF
 if [ "${1}" = "coverage" ]; then
@@ -32,7 +42,7 @@ if [ ! -f "${BUILD_DIR}/CMakeCache.txt" ]; then
         -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 fi
 
-cmake --build ${BUILD_DIR} --target SeatCanvasFullTests -j$(sysctl -n hw.logicalcpu)
+cmake --build ${BUILD_DIR} --target SeatCanvasFullTests SeatCanvasUpdateBaseline -j$(sysctl -n hw.logicalcpu)
 
 if [ "${ENABLE_COVERAGE}" = "ON" ]; then
     PROFRAW_DIR=${BUILD_DIR}/coverage
@@ -59,5 +69,6 @@ if [ "${ENABLE_COVERAGE}" = "ON" ]; then
     echo ""
     echo "Coverage report: ${PROFRAW_DIR}/html/index.html"
 else
+    ensure_baseline_cache
     ${BUILD_DIR}/tests/SeatCanvasFullTests
 fi

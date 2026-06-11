@@ -54,7 +54,7 @@ $DEVECO_SDK_HOME/../tools/hvigor/bin/hvigorw assembleHar \
   --no-daemon
 ```
 
-**Unit tests** (macOS only; see [Unit Test Notes](#unit-test-notes)):
+**Autotest** (macOS only; unit + rendering snapshot tests; see [Autotest Guide](autotest.md)):
 
 ```bash
 ./autotest.sh
@@ -77,7 +77,7 @@ npm run build             # full build
 
 | Platform | Command | Notes |
 |----------|---------|-------|
-| Unit tests | `./autotest.sh` | macOS only; do **not** pass `clean` unless necessary (see [Unit Test Notes](#unit-test-notes)) |
+| Autotest | `./autotest.sh` | macOS only; unit + snapshot tests (see [Autotest Guide](autotest.md)); do **not** pass `clean` unless necessary |
 | iOS (CMake flags) | `./ios/gen_ios -D<FLAG>=ON` then `xcodebuild` as above | e.g. `-DENABLE_TIME_PROFILER=ON` |
 | Android (all arch) | `cd android/SeatCanvasSample && ./gradlew assembleRelease` | Slower; all architectures |
 | Web (debug) | `cd web && npm run build:wasm:debug` | Debug WASM with `-sSAFE_HEAP=1`; uses `build_debug/` |
@@ -136,10 +136,11 @@ Uses clang-format 14.x for C++ and swiftformat for Swift. A pre-commit hook auto
 
 ## Unit Test Notes
 
-- **Agent: run unit tests via `./autotest.sh` only.** Do not hand-roll `cmake` / `ninja` / run `SeatCanvasUnitTests` directly unless the user explicitly asks. The script configures (`Ninja` + `MAC_ARM64`), builds `SeatCanvasUnitTests`, and runs the binary from `build_test/`.
+- **Agent: run tests via `./autotest.sh` only.** Do not hand-roll `cmake` / `ninja` / run `SeatCanvasFullTests` directly unless the user explicitly asks. The script configures (`Ninja` + `MAC_ARM64`), builds targets, and runs the binary from `build_test/`.
 - **Do not pass `clean` unless necessary.** Default `./autotest.sh` is enough for normal verification. Use `./autotest.sh clean` only when the build tree is corrupted, CMake options changed incompatibly, or a full rebuild is required — `clean` deletes the entire `build_test/` directory and forces a full recompile.
-- Unit tests are enabled only on macOS (`SEATCANVAS_BUILD_TESTS=ON`). iOS / Android / OHOS / Web builds do not include this target.
+- Tests are enabled only on macOS (`SEATCANVAS_BUILD_TESTS=ON`). iOS / Android / OHOS / Web builds do not include this target.
 - Prerequisites: same as macOS builds (Xcode toolchain, `./sync_deps.sh` on first run).
+- Full workflow (unit tests + rendering snapshots, baseline accept/update, CI): see [Autotest Guide](autotest.md).
 
 ## macOS Build Notes
 
@@ -222,6 +223,9 @@ rm -rf ohos/.cxx
 
 **Unit tests fail to configure or link after CMake changes**
 → Retry with `./autotest.sh clean` once; otherwise see [Unit Test Notes](#unit-test-notes)
+
+**Autotest / snapshot baseline tests fail**
+→ See [Autotest Guide](autotest.md)
 
 ## Web Build Notes
 

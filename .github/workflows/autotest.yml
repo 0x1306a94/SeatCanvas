@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Check Out Repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Get Third-Party Cache
         uses: actions/cache/restore@v4
@@ -30,6 +32,14 @@ jobs:
           path: third_party
           key: third-party-${{ hashFiles('DEPS') }}
           restore-keys: third-party-
+
+      - name: Get Baseline Cache
+        id: baseline-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: tests/baseline/.cache/metal
+          key: autotest-baseline-metal-${{ hashFiles('tests/baseline/version.json') }}
+          restore-keys: autotest-baseline-metal-
 
       - uses: tecolicom/actions-use-homebrew-tools@v1
         with:
@@ -41,6 +51,13 @@ jobs:
 
       - name: Run autotest
         run: ./autotest.sh clean
+
+      - name: Save Baseline Cache
+        if: ${{ (github.event_name == 'push') && (steps.baseline-cache.outputs.cache-hit != 'true') }}
+        uses: actions/cache/save@v4
+        with:
+          path: tests/baseline/.cache/metal
+          key: autotest-baseline-metal-${{ hashFiles('tests/baseline/version.json') }}
 
       - name: Upload Test Output
         if: ${{ failure() }}
