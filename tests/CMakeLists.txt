@@ -54,15 +54,3 @@ if(SEATCANVAS_ENABLE_COVERAGE AND MACOS)
     target_compile_options(SeatCanvasFullTests PRIVATE -fprofile-instr-generate -fcoverage-mapping)
     target_link_options(SeatCanvasFullTests PRIVATE -fprofile-instr-generate)
 endif()
-
-set(CACHE_DIR ${PROJECT_SOURCE_DIR}/tests/baseline/.cache)
-file(MAKE_DIRECTORY ${CACHE_DIR})
-execute_process(COMMAND git rev-parse --short HEAD
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    OUTPUT_VARIABLE HEAD_COMMIT
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    ERROR_QUIET
-)
-if(HEAD_COMMIT)
-    file(WRITE ${CACHE_DIR}/HEAD "${HEAD_COMMIT}")
-endif()

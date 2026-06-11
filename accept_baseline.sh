@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Accept baseline changes.
-# Runs compare tests to generate tests/out/, then accepts version.json and refreshes cache.
+# Recommended: run ./update_baseline.sh first (verify develop, then compare current branch).
+# This script runs compare tests to generate tests/out/, then accepts version.json.
 
 set -e
 
@@ -29,10 +30,6 @@ fi
 cmake --build "${BUILD_DIR}" --target SeatCanvasFullTests -j"$(sysctl -n hw.logicalcpu)"
 
 echo "Step 2: Running SeatCanvasFullTests..."
-if [ ! -f "tests/baseline/.cache/md5.json" ]; then
-    echo "Seeding baseline cache (first run or cache missing)..."
-    SEATCANVAS_UPDATE_BASELINE=1 "${TEST_BIN}"
-fi
 set +e
 "${TEST_BIN}"
 COMPARE_EXIT=$?
@@ -50,9 +47,6 @@ fi
 
 echo "Step 3: Accepting version.json..."
 cp tests/out/version.json tests/baseline/version.json
-
-echo "Step 4: Running SeatCanvasFullTests in update baseline mode..."
-SEATCANVAS_UPDATE_BASELINE=1 "${TEST_BIN}"
 
 echo ""
 echo "Baseline accepted. Commit:"
