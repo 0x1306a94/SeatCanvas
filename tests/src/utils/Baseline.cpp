@@ -23,16 +23,32 @@
 
 namespace kk::test {
 
-static const std::string kBaselineVersionPath = AbsolutePath("tests/baseline/version.json");
+#ifndef SEATCANVAS_BACKEND_NAME
+#define SEATCANVAS_BACKEND_NAME "metal"
+#endif
+
+static const std::string kBaselineRoot = AbsolutePath("tests/baseline/");
+static const std::string kBaselineVersionPath = kBaselineRoot + "version.json";
+static const std::string kCacheDir = kBaselineRoot + ".cache/" + SEATCANVAS_BACKEND_NAME + "/";
+static const std::string kCacheMd5Path = kCacheDir + "md5.json";
+static const std::string kCacheVersionPath = kCacheDir + "version.json";
+static const std::string kGitHeadPath = kCacheDir + "HEAD";
 static const std::string kOutRoot = AbsolutePath("tests/out/");
+static const std::string kOutMd5Path = kOutRoot + "md5.json";
 static const std::string kOutVersionPath = kOutRoot + "version.json";
 static const std::string kWebpExtension = ".webp";
 
 static nlohmann::json baselineVersion = {};
+static nlohmann::json cacheVersion = {};
 static nlohmann::json outputVersion = {};
+static nlohmann::json cacheMd5 = {};
+static nlohmann::json outputMd5 = {};
 static std::mutex jsonLocker = {};
+static std::string currentVersion = {};
+static bool hasFailure = false;
 
 void Baseline::RecordFailure() {
+    hasFailure = true;
 }
 
 static nlohmann::json *FindJsonNode(nlohmann::json &md5Json, const std::string &key, std::string *lastKey) {
@@ -84,13 +100,26 @@ static std::string ComputePixmapMd5(const tgfx::Pixmap &pixmap) {
 
 static bool CompareVersionAndMd5(const std::string &md5, const std::string &key,
                                  const std::function<void(bool)> &callback) {
-    auto expected = GetJsonValue(baselineVersion, key);
-    bool matched = !expected.empty() && expected == md5;
-    SetJsonValue(outputVersion, key, matched ? expected : md5);
-    if (callback) {
-        callback(matched);
+#ifdef UPDATE_BASELINE
+    SetJsonValue(outputMd5, key, md5);
+    return true;
+#endif
+    auto expectedVersion = GetJsonValue(baselineVersion, key);
+    auto cachedVersion = GetJsonValue(cacheVersion, key);
+    if (expectedVersion.empty() ||
+        (expectedVersion == cachedVersion && GetJsonValue(cacheMd5, key) != md5)) {
+        SetJsonValue(outputVersion, key, currentVersion);
+        SetJsonValue(outputMd5, key, md5);
+        if (callback) {
+            callback(false);
+        }
+        return false;
     }
-    return matched;
+    SetJsonValue(outputVersion, key, expectedVersion);
+    if (callback) {
+        callback(true);
+    }
+    return true;
 }
 
 bool Baseline::Compare(const std::shared_ptr<tgfx::Surface> &surface, const std::string &key) {
@@ -135,10 +164,25 @@ bool Baseline::ComparePixmap(const tgfx::Pixmap &pixmap, const std::string &key)
 }
 
 void Baseline::SetUp() {
+    std::ifstream cacheMd5File(kCacheMd5Path);
+    if (cacheMd5File.is_open()) {
+        cacheMd5File >> cacheMd5;
+        cacheMd5File.close();
+    }
     std::ifstream baselineVersionFile(kBaselineVersionPath);
     if (baselineVersionFile.is_open()) {
         baselineVersionFile >> baselineVersion;
         baselineVersionFile.close();
+    }
+    std::ifstream cacheVersionFile(kCacheVersionPath);
+    if (cacheVersionFile.is_open()) {
+        cacheVersionFile >> cacheVersion;
+        cacheVersionFile.close();
+    }
+    std::ifstream headFile(kGitHeadPath);
+    if (headFile.is_open()) {
+        headFile >> currentVersion;
+        headFile.close();
     }
 }
 
@@ -164,8 +208,20 @@ static void WriteJsonFile(const std::string &path, const nlohmann::json &json) {
 }
 
 void Baseline::TearDown() {
+#ifdef UPDATE_BASELINE
+    if (!hasFailure) {
+        WriteJsonFile(kCacheMd5Path, outputMd5);
+        std::filesystem::copy(kBaselineVersionPath, kCacheVersionPath,
+                              std::filesystem::copy_options::overwrite_existing);
+    }
+#else
+    std::filesystem::remove(kOutMd5Path);
+    if (!outputMd5.empty()) {
+        WriteJsonFile(kOutMd5Path, outputMd5);
+    }
     WriteJsonFile(kOutVersionPath, outputVersion);
     RemoveEmptyFolder(kOutRoot);
+#endif
 }
 
 };  // namespace kk::test

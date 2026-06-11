@@ -2,7 +2,7 @@
 
 # Accept baseline changes.
 # Recommended: run ./update_baseline.sh first (verify develop, then compare current branch).
-# This script runs compare tests to generate tests/out/, then accepts version.json.
+# This script runs compare tests to generate tests/out/, accepts version.json, then refreshes local md5 cache.
 
 set -e
 
@@ -11,12 +11,14 @@ cd "$(dirname "$0")"
 PROJECT_DIR=$(pwd)
 BUILD_DIR=${PROJECT_DIR}/build_test
 TEST_BIN="${BUILD_DIR}/tests/SeatCanvasFullTests"
+UPDATE_BIN="${BUILD_DIR}/tests/SeatCanvasUpdateBaseline"
+CACHE_DIR="tests/baseline/.cache/metal"
 
 if [ "${1}" = "clean" ]; then
     rm -rf "${BUILD_DIR}"
 fi
 
-echo "Step 1: Building SeatCanvasFullTests..."
+echo "Step 1: Building test targets..."
 mkdir -p "${BUILD_DIR}"
 if [ ! -f "${BUILD_DIR}/CMakeCache.txt" ]; then
     cmake -S "${PROJECT_DIR}" -B "${BUILD_DIR}" \
@@ -27,7 +29,7 @@ if [ ! -f "${BUILD_DIR}/CMakeCache.txt" ]; then
         -DCMAKE_BUILD_TYPE=Debug \
         -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 fi
-cmake --build "${BUILD_DIR}" --target SeatCanvasFullTests -j"$(sysctl -n hw.logicalcpu)"
+cmake --build "${BUILD_DIR}" --target SeatCanvasFullTests SeatCanvasUpdateBaseline -j"$(sysctl -n hw.logicalcpu)"
 
 echo "Step 2: Running SeatCanvasFullTests..."
 set +e
@@ -47,6 +49,9 @@ fi
 
 echo "Step 3: Accepting version.json..."
 cp tests/out/version.json tests/baseline/version.json
+
+echo "Step 4: Refreshing local md5 cache (${CACHE_DIR})..."
+"${UPDATE_BIN}"
 
 echo ""
 echo "Baseline accepted. Commit:"
