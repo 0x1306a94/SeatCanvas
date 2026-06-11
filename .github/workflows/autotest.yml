@@ -18,18 +18,16 @@ jobs:
         id: third-party-cache
         uses: actions/cache/restore@v4
         with:
-          path: |
-            third_party
-          key: third-party-autotest-${{ hashFiles('DEPS') }}
-          restore-keys: |
-            third-party-mac-${{ hashFiles('DEPS') }}
-            third-party-autotest-
+          path: third_party
+          key: third-party-${{ hashFiles('DEPS') }}
+          restore-keys: third-party-
 
       - uses: tecolicom/actions-use-homebrew-tools@v1
         with:
           tools: cmake ninja yasm git-lfs 0x1306a94/tap/depctl
 
       - name: Run depctl
+        if: steps.third-party-cache.outputs.cache-hit != 'true'
         run: |
           depctl --version
           depctl --skip-paths third_party/tgfx/third_party/shaderc
@@ -43,12 +41,11 @@ jobs:
         run: ./autotest.sh clean
 
       - name: Save Third-Party Cache
-        if: ${{ (github.event_name == 'push') && (steps.third-party-cache.outputs.cache-hit != 'true') }}
+        if: steps.third-party-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: |
-            third_party
-          key: third-party-autotest-${{ hashFiles('DEPS') }}
+          path: third_party
+          key: third-party-${{ hashFiles('DEPS') }}
 
       - name: Upload Test Output
         if: ${{ failure() }}
