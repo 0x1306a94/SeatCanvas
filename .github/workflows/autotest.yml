@@ -8,32 +8,32 @@ on:
     branches: [master, develop]
 
 jobs:
+  ci-runners:
+    uses: ./.github/workflows/ci-runners.yml
+
+  third-party:
+    needs: ci-runners
+    uses: ./.github/workflows/third-party.yml
+    with:
+      runner: ${{ needs.ci-runners.outputs.linux }}
+
   autotest:
-    runs-on: macos-26
+    needs: [ci-runners, third-party]
+    runs-on: ${{ needs.ci-runners.outputs.macos }}
     steps:
       - name: Check Out Repo
         uses: actions/checkout@v4
 
       - name: Get Third-Party Cache
-        id: third-party-cache
         uses: actions/cache/restore@v4
         with:
-          path: |
-            third_party
-          key: third-party-autotest-${{ hashFiles('DEPS') }}
-          restore-keys: |
-            third-party-mac-${{ hashFiles('DEPS') }}
-            third-party-autotest-
+          path: third_party
+          key: third-party-${{ hashFiles('DEPS') }}
+          restore-keys: third-party-
 
       - uses: tecolicom/actions-use-homebrew-tools@v1
         with:
-          tools: cmake ninja yasm git-lfs 0x1306a94/tap/depctl
-
-      - name: Run depctl
-        run: |
-          depctl --version
-          depctl --skip-paths third_party/tgfx/third_party/shaderc
-        shell: bash
+          tools: cmake ninja yasm git-lfs
 
       - uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -41,14 +41,6 @@ jobs:
 
       - name: Run autotest
         run: ./autotest.sh clean
-
-      - name: Save Third-Party Cache
-        if: ${{ (github.event_name == 'push') && (steps.third-party-cache.outputs.cache-hit != 'true') }}
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            third_party
-          key: third-party-autotest-${{ hashFiles('DEPS') }}
 
       - name: Upload Test Output
         if: ${{ failure() }}

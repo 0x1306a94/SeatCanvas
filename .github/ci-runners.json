@@ -1,0 +1,4 @@
+{
+  "macos": "macos-26",
+  "linux": "ubuntu-latest"
+}

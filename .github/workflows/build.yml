@@ -8,29 +8,32 @@ on:
     branches: [master, develop]
 
 jobs:
+  ci-runners:
+    uses: ./.github/workflows/ci-runners.yml
+
+  third-party:
+    needs: ci-runners
+    uses: ./.github/workflows/third-party.yml
+    with:
+      runner: ${{ needs.ci-runners.outputs.linux }}
+
   ios:
-    runs-on: macos-26
+    needs: [ci-runners, third-party]
+    runs-on: ${{ needs.ci-runners.outputs.macos }}
     steps:
       - name: Check Out Repo
         uses: actions/checkout@v4
 
       - name: Get Third-Party Cache
-        id: third-party-cache
         uses: actions/cache/restore@v4
         with:
-          path: |
-            third_party
-          key: third-party-ios-${{ hashFiles('DEPS') }}
+          path: third_party
+          key: third-party-${{ hashFiles('DEPS') }}
+          restore-keys: third-party-
 
       - uses: tecolicom/actions-use-homebrew-tools@v1
         with:
-          tools: cmake ninja yasm git-lfs 0x1306a94/tap/depctl
-
-      - name: Run depctl
-        run: |
-          depctl --version
-          depctl --skip-paths third_party/tgfx/third_party/shaderc
-        shell: bash
+          tools: cmake ninja yasm git-lfs
 
       - uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -47,14 +50,6 @@ jobs:
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO
 
-      - name: Save Third-Party Cache
-        if: ${{ (github.event_name == 'push') && (steps.third-party-cache.outputs.cache-hit != 'true') }}
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            third_party
-          key: third-party-ios-${{ hashFiles('DEPS') }}
-
       - name: Job Failed
         if: ${{ failure() }}
         uses: actions/upload-artifact@v4
@@ -63,53 +58,18 @@ jobs:
           path: ios
 
   android:
-    runs-on: ubuntu-latest
+    needs: [ci-runners, third-party]
+    runs-on: ${{ needs.ci-runners.outputs.linux }}
     steps:
       - name: Check Out Repo
         uses: actions/checkout@v4
 
       - name: Get Third-Party Cache
-        id: third-party-cache
         uses: actions/cache/restore@v4
         with:
-          path: |
-            third_party
-          key: third-party-android-${{ hashFiles('DEPS') }}
-
-      - name: Get depctl Cache
-        id: depctl-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/depctl
-          key: depctl-linux-x86_64-69ac32ee
-
-      - name: Install depctl
-        if: steps.depctl-cache.outputs.cache-hit != 'true'
-        run: |
-          DEPCTL_URL="https://github.com/0x1306a94/depctl/releases/download/v1.4.7/depctl-linux-x86_64.tar.gz"
-          curl -L -o /tmp/depctl.tar.gz "$DEPCTL_URL"
-          rm -rf ~/depctl
-          mkdir -p ~/depctl
-          tar -xzf /tmp/depctl.tar.gz -C ~/depctl
-          chmod +x ~/depctl/depctl
-
-      - name: Save depctl Cache
-        if: steps.depctl-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            ~/depctl
-          key: depctl-linux-x86_64-69ac32ee
-
-      - name: Configure depctl PATH
-        run: |
-          echo "$HOME/depctl" >> $GITHUB_PATH
-
-      - name: Run depctl
-        run: |
-          depctl --version
-          depctl --skip-paths third_party/tgfx/third_party/shaderc
-        shell: bash
+          path: third_party
+          key: third-party-${{ hashFiles('DEPS') }}
+          restore-keys: third-party-
 
       - uses: seanmiddleditch/gha-setup-ninja@master
 
@@ -124,14 +84,6 @@ jobs:
           cd android/SeatCanvasSample
           ./gradlew assembleRelease -Parm64-only --no-daemon
 
-      - name: Save Third-Party Cache
-        if: ${{ (github.event_name == 'push') && (steps.third-party-cache.outputs.cache-hit != 'true') }}
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            third_party
-          key: third-party-android-${{ hashFiles('DEPS') }}
-
       - name: Job Failed
         if: ${{ failure() }}
         uses: actions/upload-artifact@v4
@@ -140,7 +92,8 @@ jobs:
           path: android
 
   web:
-    runs-on: ubuntu-latest
+    needs: [ci-runners, third-party]
+    runs-on: ${{ needs.ci-runners.outputs.linux }}
     env:
       EMSDK_QUIET: 1
     steps:
@@ -150,12 +103,11 @@ jobs:
           lfs: true
 
       - name: Get Third-Party Cache
-        id: third-party-cache
         uses: actions/cache/restore@v4
         with:
           path: third_party
-          key: third-party-web-${{ hashFiles('DEPS') }}
-          restore-keys: third-party-web-
+          key: third-party-${{ hashFiles('DEPS') }}
+          restore-keys: third-party-
 
       - name: Get node_modules Cache
         id: node-cache
@@ -164,39 +116,6 @@ jobs:
           path: web/node_modules
           key: node-modules-web-${{ hashFiles('web/package-lock.json') }}
           restore-keys: node-modules-web-
-
-      - name: Get depctl Cache
-        id: depctl-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/depctl
-          key: depctl-linux-x86_64-69ac32ee
-
-      - name: Install depctl
-        if: steps.depctl-cache.outputs.cache-hit != 'true'
-        run: |
-          DEPCTL_URL="https://github.com/0x1306a94/depctl/releases/download/v1.4.7/depctl-linux-x86_64.tar.gz"
-          curl -L -o /tmp/depctl.tar.gz "$DEPCTL_URL"
-          rm -rf ~/depctl
-          mkdir -p ~/depctl
-          tar -xzf /tmp/depctl.tar.gz -C ~/depctl
-          chmod +x ~/depctl/depctl
-
-      - name: Save depctl Cache
-        if: steps.depctl-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: ~/depctl
-          key: depctl-linux-x86_64-69ac32ee
-
-      - name: Configure depctl PATH
-        run: echo "$HOME/depctl" >> $GITHUB_PATH
-
-      - name: Run depctl
-        run: |
-          depctl --version
-          depctl --skip-paths third_party/tgfx/third_party/shaderc
-        shell: bash
 
       - uses: actions/setup-node@v4
         with:
@@ -221,13 +140,6 @@ jobs:
       - name: Build Web
         run: cd web && npm run build:wasm
 
-      - name: Save Third-Party Cache
-        if: ${{ (github.event_name == 'push') && (steps.third-party-cache.outputs.cache-hit != 'true') }}
-        uses: actions/cache/save@v4
-        with:
-          path: third_party
-          key: third-party-web-${{ hashFiles('DEPS') }}
-
       - name: Save node_modules Cache
         if: ${{ (github.event_name == 'push') && (steps.node-cache.outputs.cache-hit != 'true') }}
         uses: actions/cache/save@v4
@@ -245,7 +157,8 @@ jobs:
             web/lib/wasm
 
   ohos:
-    runs-on: macos-latest
+    needs: [ci-runners, third-party]
+    runs-on: ${{ needs.ci-runners.outputs.macos }}
     steps:
       - name: Check Out Repo
         uses: actions/checkout@v4
@@ -269,8 +182,7 @@ jobs:
         if: steps.cli-tools-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: |
-            ~/ohos-cmd-tools
+          path: ~/ohos-cmd-tools
           key: ohos-cli-6.0.0.868-mac-arm64-v2
 
       - name: Configure Environment
@@ -305,21 +217,15 @@ jobs:
             hvigor-${{ runner.os }}-
 
       - name: Get Third-Party Cache
-        id: third-party-cache
         uses: actions/cache/restore@v4
         with:
           path: third_party
-          key: third-party-ohos-${{ hashFiles('DEPS') }}
+          key: third-party-${{ hashFiles('DEPS') }}
+          restore-keys: third-party-
 
       - uses: tecolicom/actions-use-homebrew-tools@v1
         with:
-          tools: ninja yasm 0x1306a94/tap/depctl
-
-      - name: Run depctl
-        run: |
-          depctl --version
-          depctl --skip-paths third_party/tgfx/third_party/shaderc
-        shell: bash
+          tools: ninja yasm
 
       - name: Install ohpm dependencies
         run: |
@@ -331,13 +237,6 @@ jobs:
         run: |
           cd ohos
           hvigorw assembleHar --mode module -p module=libseatcanvas@default -p buildMode=release -p product=default --no-daemon
-
-      - name: Save Third-Party Cache
-        if: ${{ (github.event_name == 'push') && (steps.third-party-cache.outputs.cache-hit != 'true') }}
-        uses: actions/cache/save@v4
-        with:
-          path: third_party
-          key: third-party-ohos-${{ hashFiles('DEPS') }}
 
       - name: Job Failed
         if: ${{ failure() }}
