@@ -12,4 +12,4 @@ else
   brew upgrade 0x1306a94/tap/depctl > /dev/null
 fi
 
-depctl --skip-paths third_party/tgfx/third_party/shaderc || exit 1
+depctl --skip-paths third_party/tgfx/third_party/shaderc,third_party/tgfx/third_party/tint || exit 1

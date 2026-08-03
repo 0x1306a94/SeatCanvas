@@ -7,7 +7,7 @@
     "common": [
       {
         "url": "${GITHUB_BASE_URL}/libpag/tgfx.git",
-        "commit": "64c8597101809078bc71499c13fe850553fbfa1e",
+        "commit": "622f021ebbc49f92f5631fbddbb5339d22bac543",
         "dir": "third_party/tgfx"
       },
       {
@@ -34,7 +34,7 @@
         "dir": "third_party"
       },
       {
-        "command": "python tgfx/third_party/shaderc/utils/git-sync-deps",
+        "command": "python3 tgfx/third_party/shaderc/utils/git-sync-deps",
         "dir": "third_party"
       }
     ]
